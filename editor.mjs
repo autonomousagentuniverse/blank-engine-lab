@@ -1,7 +1,7 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js';
 import { DEFAULT_SPEC, validateSpec, compilePrompt, parseImportedGameSpec } from './core.mjs';
 import { playableLayout, isWalkable, questPlan, startQuest, questEvent, nearestTarget, currentObjective, saveProgress, loadProgress, questTargets } from './quest.mjs';
-import {createActor,stepActor,stepAccumulator,createFallbackMover} from './physics/locomotion.mjs';
+import {createActor,stepActor,stepAccumulator,createFallbackMover,frameDelta} from './physics/locomotion.mjs';
 import {initializeRapier,makePhysicsWorld} from './physics/rapier.mjs';
 import {createCharacterRig,SKIN_NAMES} from './character/rig.mjs';
 import {loadGlbAvatar,loadMotionGlb,disposeMotionGlb,MAX_AVATAR_BYTES} from './character/gltf.mjs';
@@ -180,7 +180,7 @@ function rebuild(){
   for(const [target,entry] of authoredFiles)applyAuthoredFiles(target,entry.files,pbrLibrary,{restoring:true,fallbacks:entry.fallbacks}).catch(e=>setStatus('Texture restore failed: '+e.message,true));
   syncUI(); refreshQuestHUD();
 }
-function frame(now){requestAnimationFrame(frame);let dt=Math.min(.05,(now-last)/1000);last=now;if(!paused){update(dt);renderer.render(scene,camera);}fpsSum+=dt;fpsFrames++;if(fpsSum>=.5){$('fps').textContent=Math.round(fpsFrames/fpsSum)+' FPS';fpsSum=0;fpsFrames=0;}}
+function frame(now){requestAnimationFrame(frame);let dt=frameDelta(now,last);last=now;if(!paused){update(dt);renderer.render(scene,camera);}fpsSum+=dt;fpsFrames++;if(fpsSum>=.5){$('fps').textContent=Math.round(fpsFrames/fpsSum)+' FPS';fpsSum=0;fpsFrames=0;}}
 function update(dt){
   t+=dt;
   let dx=0,dz=0;

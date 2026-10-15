@@ -8,6 +8,13 @@ export const WALK_SPEED = 6.8;
 export const RUN_SPEED = 10.2;
 export const FOOT_LIMIT = 0;
 
+/** RAF timestamps can briefly precede performance.now() (shared frame timestamps).
+ * Never allow negative/nonfinite elapsed time to reach gait/IK solvers. */
+export function frameDelta(now,last){
+ if(!Number.isFinite(now)||!Number.isFinite(last))return 0;
+ return Math.max(0,Math.min(.05,(now-last)/1000));
+}
+
 export function createActor(x=0,z=0) {
   if (![x,z].every(Number.isFinite)) throw new Error('Actor spawn must be finite');
   return {x,z,y:0,vx:0,vz:0,vy:0,grounded:true,jumpHeld:false,motion:'idle'};

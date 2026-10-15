@@ -34,3 +34,4 @@ jobs:
             library/
             artifacts/alpha06-polyhaven-material.png
           retention-days: 7
+# Browser smoke rerun after non-negative RAF frame delta guard; one-time only.

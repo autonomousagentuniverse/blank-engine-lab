@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createActor,stepActor,stepAccumulator,createFallbackMover,PHYSICS_STEP,WALK_SPEED,RUN_SPEED} from '../physics/locomotion.mjs';
+import {createActor,stepActor,stepAccumulator,createFallbackMover,frameDelta,PHYSICS_STEP,WALK_SPEED,RUN_SPEED} from '../physics/locomotion.mjs';
 import {limbWeights,validateSkin,SKIN_NAMES,createCharacterRig} from '../character/rig.mjs';
 import {makePhysicsWorld,loadRapier,RAPIER_CDN} from '../physics/rapier.mjs';
 import {playableLayout} from '../quest.mjs';
@@ -112,4 +112,11 @@ test('loadRapier uses injected WASM loader for safe initialization tests',async(
  let count=0;const fake={init:async()=>{count++}};
  assert.equal(await loadRapier(async()=>({default:fake})),fake);assert.equal(count,1);
  assert.match(RAPIER_CDN,/rapier3d-compat@0\.18\.0/);
+});
+
+test('RAF frame timestamp precedes performance clock without crashing gait',()=>{
+ assert.equal(frameDelta(1000,1001),0);
+ assert.equal(frameDelta(1060,1000),.05);
+ assert.equal(frameDelta(1025,1000),.025);
+ assert.equal(frameDelta(NaN,1000),0);
 });
