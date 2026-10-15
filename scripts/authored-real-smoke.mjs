@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import * as THREE from 'three';
+import {createPBRLibrary} from '../materials/pbr.mjs';
+const pbr=createPBRLibrary(THREE);
+const mat=pbr.materialFor('buildings'),original=mat.map;
+const tex=new THREE.DataTexture(new Uint8Array([255,180,120,255]),1,1,THREE.RGBAFormat);
+tex.colorSpace=THREE.SRGBColorSpace;
+let released=false;
+const set={textures:{albedo:tex},budget:{pixels:1,decodedBytes:4},dispose(){released=true;tex.dispose();}};
+pbr.installAuthored('buildings',set);
+assert.equal(mat.map,tex);assert.equal(mat.color.getHex(),0xffffff);
+assert.equal(mat.normalMap.colorSpace,THREE.NoColorSpace);
+assert.equal(mat.roughnessMap,mat.metalnessMap);
+pbr.update('buildings','stone');assert.ok(released);assert.notEqual(mat.map,original);
+console.log('REAL THREE AUTHOR PBR: PASS — authored image replacement, fallback channels and GPU disposal');
+pbr.dispose();
