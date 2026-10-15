@@ -56,8 +56,6 @@ The **rigged-skin / physical-character** integration is in progress. See [engine
 
 This is a GitHub-only development feature until the next authorized **major manual Vercel deployment**. In the editor choose **Import rigged GLB**. An uploaded, **self-contained glTF 2.0 `.glb`** (up to 8 MB) must contain a skinned humanoid with hips and left/right upper arms and legs. Supported bone aliases include Mixamo-style and Blender-style naming. The browser validates the GLB before loading; external resource URLs, required decoder extensions, and oversized rigs are rejected.
 
-To transfer named motion clips from another humanoid rig, import the playable character first and then select **Import motion GLB**. The donor file is prevalidated, its named locomotion clips are rotation-retargeted into the playable skeleton, and the physics body continues to own translation.
-
 The avatar is normalized to approximately 3 meters high. Existing authored bone-quaternion animation clips are blended between idle/walk/run/jump/fall when their names match; missing locomotion states use procedural joint animation. Translation/root-motion tracks do **not** control the physics body. The same camera, collision, quest interaction, and movement controls remain in use. User-uploaded GLB data stays in the **current browser session memory only** and is reloaded on world edits; browser refresh returns to the procedural avatar. **Skin** returns to procedural mode after importing a GLB.
 
 `character/retarget.mjs` provides rotation-only local-rest-delta clip retargeting between similarly oriented humanoid skeletons; this does **not yet** solve dramatically different T-pose/A-pose bone axes, hand/foot inverse kinematics, foot sliding, cloth/hair or facial animations. Advanced animation retargeting and grounded foot IK are still acceptance gates before we can call the characters production-ready.
@@ -69,18 +67,21 @@ Run `npm test` for the pure contracts. To verify with actual glTFExporter/GLTFLo
 The optional pose layer (`character/ik.mjs`) probes Rapier ground contacts and applies two-bone knee/elbow IK after the skeletal animation update. It preserves physics authority and degrades gracefully when imported GLBs lack a complete two-bone chain. See `docs/alpha06-ik-qa.md`. This code is **not deployed to Vercel**.
 
 
-### Alpha 0.6 motion polish (development)
-Grounded feet retain world-space stance locks, release on swing/jump/reach limits, and procedural gait phase follows physical speed. Imported GLB animation transitions retain cyclic walk/run phase and use bounded crossfades. Right-hand IK targets bounded object-surface contact points (farther interactions remain gestures); Rapier alone moves the player. Run `npm test` and `node scripts/motion-real-smoke.mjs` with pinned Three/Rapier. See `docs/alpha06-motion-qa.md`. No Vercel deployment.
+## Alpha 0.6 slope + browser integration (not deployed)
+- Static low-angle calibration ramp with matching Rapier collider and Three.js mesh, placed clear of quest locations.
+- Physical raycasts supply foot planting and imported ankle orientation while physics remains authoritative.
+- Run `node scripts/ik-real-smoke.mjs` and `node scripts/browser-integration.mjs` with pinned Three/Rapier/Playwright dependencies installed.
+- See `docs/alpha06-browser-qa.md` for validation scope and remaining manual QA.
 
-### Authored high-resolution PBR textures (Alpha 0.6 development)
+### Authored PBR textures (Alpha 0.6 development)
 
-The material editor now accepts local PNG/JPEG/WebP color maps, optional tangent-space normals, and packed ORM images on buildings, terrain, roads, robots and procedural armor. Each map can be up to 2048 pixels, with a strict global decoded-source budget of 32 MiB across authored surfaces. Image-only changes do not restart Rapier, the active quest, or the renderer. Presets remain fallbacks; source maps are tab-local and **not persisted or uploaded**. See [texture QA and limits](docs/alpha06-authored-textures.md).
-
-### GPU compressed PBR textures (Alpha 0.6 development)
-
-The PBR editor supports local Basis Universal KTX2 textures (ETC1S or UASTC), using pinned Three.js transcoding and renderer-format detection. PNG/JPEG/WebP remain supported, and an explicit color fallback can be supplied. The offline conversion CLI uses Khronos KTX-Software; this is not an image-generation service. See [the KTX2 pipeline and testing limits](docs/alpha06-ktx2.md). No Vercel auto-deployment.
+Import a local albedo PNG/JPEG/WebP plus optional tangent-space normal and glTF packed ORM maps to any procedural surface. Imported images up to 2048px are bounded by a total 32 MiB decoded-source budget; preset materials remain the fallback, and physics/quest state is preserved during texture-only changes. No images leave the browser or persist beyond its session. See [`docs/alpha06-authored-textures.md`](docs/alpha06-authored-textures.md).
 
 
 ### Alpha 0.6 — licensed real-world PBR asset packs (development)
 
 A curated set of **five authored Poly Haven CC0 materials** can be prepared offline and selected in the editor: worn concrete, weathered asphalt, grey wood planks, rusty metal and worn leather. Source pages and real-world tile dimensions are declared in `materials/catalog.mjs`. Assets are **not embedded in Git**; run `npm run materials:prepare -- --out . --resolution 1k` on an internet-connected build machine to create `library/manifest.json` and the three map files per material. Local image integrity, file budgets and licensed provenance are checked before use; no live Poly Haven requests occur inside a running game. The editor labels the Poly Haven source clearly. It uses built-in PBR presets when a pack has not been prepared. A 32 MiB global GPU estimate still applies. Build artifacts are intended to be included explicitly in a future, approved major deployment; the Alpha 0.5 deployment stays unchanged. See `docs/alpha06-cc0-library.md`.
+
+### Full material-catalog QA (Alpha 0.6 development)
+
+Run `node scripts/prepare-material-library.mjs --out . --resolution 1k` in an internet-enabled build environment; run `node scripts/cc0-catalog-acceptance.mjs` after installing pinned Three.js, Rapier, and Playwright. This checks all five real Poly Haven CC0 assets (three maps each) in Chrome with a phone-sized viewport, SHA-256 verification, quest and physics continuity, and JSON/screenshot artifacts. Browser RAF frame timings are software-rendered QA proxies **not physical-phone performance**. See `docs/alpha06-cc0-mobile-validation.md`.
