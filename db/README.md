@@ -26,3 +26,19 @@ After installing dependencies and securely supplying BLANK_PG_URL:
 npm run db:check
 
 Database migration is NEVER invoked automatically on commits or Vercel deployments. This module lays the foundation for a future authenticated backend and workers; a persistent orchestrator and server authorization layer are still required.
+
+
+## GitHub-hosted runner network compatibility
+
+The read-only workflow can report `NETWORK_UNREACHABLE` when a database
+hostname resolves only to IPv6 addresses. Standard GitHub-hosted runners
+may not have outbound IPv6 connectivity. Reordering DNS to prefer IPv4
+cannot help unless the hostname has an IPv4 (A) record.
+
+Obtain a provider-supplied **IPv4-reachable PostgreSQL connection string**,
+typically a *session pooler* URL (or enable the provider's IPv4 endpoint),
+then replace the GitHub Actions repository secret `BLANK_PG_URL`.
+Do not paste database URLs into commits, issues or logs. Ensure the
+endpoint permits connections from GitHub-hosted runners and requires TLS.
+Rerun the manual workflow with `operation=check`. This runs only
+`SELECT 1` and does not apply migrations.
