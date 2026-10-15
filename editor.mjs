@@ -7,6 +7,7 @@ import {createCharacterRig,SKIN_NAMES} from './character/rig.mjs';
 import {loadGlbAvatar,loadMotionGlb,disposeMotionGlb,MAX_AVATAR_BYTES} from './character/gltf.mjs';
 import {createPoseController} from './character/ik.mjs';
 import {createPBRLibrary,DEFAULT_MATERIALS,PRESETS,TARGETS,validateMaterialProfiles,compileMaterialCommand,tileBoxGeometry,tilePlaneGeometry} from './materials/pbr.mjs';
+import {loadAuthoredSet} from './materials/authored.mjs';
 const $=(id)=>document.getElementById(id);
 const holder=$('viewport');
 let spec;
@@ -15,6 +16,7 @@ let renderer,scene,camera,player,characterRig,actor,physicsWorld,physicsToken=0,
 const pressed=new Set();
 const palette={cyan:0x24bde4,violet:0x9c83ff,amber:0xffb95b,emerald:0x43dca8};
 let materials=[],pbrLibrary=null,robotBodyMaterials=[];
+const authoredFiles=new Map(); // Session-only, never persisted to browser storage.
 const materialKey='blankbox-material-profiles-v1';
 let materialProfiles={...DEFAULT_MATERIALS};
 try{materialProfiles=validateMaterialProfiles(JSON.parse(localStorage.getItem(materialKey)));}catch{}
@@ -172,6 +174,7 @@ function rebuild(){
     for(const sx of [-1.35,1.35]){const post=addMesh(new THREE.CylinderGeometry(.07,.07,2.8,6),material(0x7299ba),stall);post.position.set(sx,1.4,-.7);}
     scene.add(stall);objects.push(stall);
   }
+  for(const [target,files] of authoredFiles)applyAuthoredFiles(target,files,pbrLibrary,{restoring:true}).catch(e=>setStatus('Texture restore failed: '+e.message,true));
   syncUI(); refreshQuestHUD();
 }
 function frame(now){requestAnimationFrame(frame);let dt=Math.min(.05,(now-last)/1000);last=now;if(!paused){update(dt);renderer.render(scene,camera);}fpsSum+=dt;fpsFrames++;if(fpsSum>=.5){$('fps').textContent=Math.round(fpsFrames/fpsSum)+' FPS';fpsSum=0;fpsFrames=0;}}
@@ -276,17 +279,17 @@ function setStatus(text,error=false){const el=$('status');el.textContent=text;el
 function syncMaterialUI(){
  const target=$('materialTarget')?.value||'buildings';
  if($('materialPreset'))$('materialPreset').value=materialProfiles[target];
- if($('materialSummary')&&pbrLibrary){const budget=pbrLibrary.budget;$('materialSummary').textContent=target+': '+materialProfiles[target]+' · '+budget.mapCount+' maps, '+(budget.cpuBytes/1048576).toFixed(2)+' MiB';}
+ if($('materialSummary')&&pbrLibrary){const budget=pbrLibrary.budget;$('materialSummary').textContent=pbrLibrary.hasAuthored(target)?target+': imported images · '+(budget.authoredBytes/1048576).toFixed(1)+' MiB decoded · current session only':target+': '+materialProfiles[target]+' · '+budget.mapCount+' maps, '+(budget.cpuBytes/1048576).toFixed(2)+' MiB';}
 }
 function persistMaterials(){try{localStorage.setItem(materialKey,JSON.stringify(materialProfiles));}catch{setStatus('Texture preferences could not be saved in this browser.',true);}}
 function updateMaterial(target,preset){
  if(!TARGETS.includes(target)||!Object.hasOwn(PRESETS,preset))throw Error('Unsupported texture preset');
  const previous=materialProfiles[target];
- if(previous===preset){syncMaterialUI();return;}
+ if(previous===preset&&!pbrLibrary?.hasAuthored(target)){syncMaterialUI();return;}
  try{
   pbrLibrary.update(target,preset);
   if(target==='robots')for(const m of robotBodyMaterials){const glow=m.emissive?.clone();pbrLibrary.applyTo(target,m);if(glow)m.emissive.copy(glow);}
-  materialProfiles[target]=preset;persistMaterials();syncMaterialUI();
+  authoredFiles.delete(target);materialProfiles[target]=preset;persistMaterials();syncMaterialUI();
  }catch(e){pbrLibrary.update(target,previous);throw e;}
 }
 function applyPrompt(text){
@@ -297,6 +300,7 @@ function applyPrompt(text){
   if(worldEdit.applied.length){
    playableLayout(worldEdit.spec);
    spec=worldEdit.spec;materialProfiles=materialEdit.profiles;
+   for(const target of TARGETS)if(oldMaterials[target]!==materialProfiles[target])authoredFiles.delete(target);
    clearProgress();rebuild();persist();persistMaterials();
   }else for(const target of TARGETS){if(oldMaterials[target]!==materialEdit.profiles[target])updateMaterial(target,materialEdit.profiles[target]);}
   setStatus([...worldEdit.applied,...materialEdit.applied].join(' · '));$('prompt').value='';
@@ -309,6 +313,28 @@ function applyPrompt(text){
 }
 function persist(){try{localStorage.setItem('blankbox-game-v1',JSON.stringify(spec));}catch(e){setStatus('Local storage unavailable; use Export to save your project.',true);}}
 function exportSpec(){const b=new Blob([JSON.stringify(spec,null,2)],{type:'application/json'});const url=URL.createObjectURL(b);const a=document.createElement('a');a.href=url;a.download='blank-game-spec.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);setStatus('Downloaded validated GameSpec JSON.');}
+
+async function applyAuthoredFiles(target,files,library,{restoring=false}={}){
+ const set=await loadAuthoredSet(THREE,files);
+ if(library!==pbrLibrary){set.dispose();return false;}
+ try{
+  library.installAuthored(target,set);
+  if(target==='robots')for(const mat of robotBodyMaterials){const glow=mat.emissive?.clone();library.applyTo(target,mat);if(glow)mat.emissive.copy(glow);}
+  authoredFiles.set(target,files);syncMaterialUI();
+  if(!restoring)setStatus('Imported '+set.budget.maps+' authored PBR map(s) for '+target+' · '+(set.budget.decodedBytes/1048576).toFixed(1)+' MiB · physics and quest preserved.');
+  return true;
+ }catch(e){set.dispose();throw e;}
+}
+async function importAuthoredImages(){
+ const target=$('materialTarget').value;
+ const files={albedo:$('pbrAlbedo').files?.[0],normal:$('pbrNormal').files?.[0],orm:$('pbrOrm').files?.[0]};
+ if(!files.albedo){setStatus('Select a color/albedo image first.',true);return;}
+ for(const slot of ['normal','orm'])if(!files[slot])delete files[slot];
+ $('pbrImport').disabled=true;
+ try{await applyAuthoredFiles(target,files,pbrLibrary);}catch(e){setStatus('PBR import rejected: '+e.message,true);}
+ finally{$('pbrImport').disabled=false;}
+}
+$('pbrImport').onclick=importAuthoredImages;
 $('materialTarget').onchange=syncMaterialUI;
 $('materialApply').onclick=()=>{try{const target=$('materialTarget').value,preset=$('materialPreset').value;updateMaterial(target,preset);setStatus('Applied '+preset+' texture to '+target+'; quest and physics preserved.');}catch(e){setStatus('Material edit failed: '+e.message,true);}};
 $('runBtn').onclick=()=>applyPrompt($('prompt').value);
