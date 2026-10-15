@@ -4,6 +4,7 @@ import { playableLayout, isWalkable, questPlan, startQuest, questEvent, nearestT
 import {createActor,stepActor,stepAccumulator,createFallbackMover} from './physics/locomotion.mjs';
 import {initializeRapier,makePhysicsWorld} from './physics/rapier.mjs';
 import {createCharacterRig,SKIN_NAMES} from './character/rig.mjs';
+import {loadGlbAvatar,MAX_AVATAR_BYTES} from './character/gltf.mjs';
 const $=(id)=>document.getElementById(id);
 const holder=$('viewport');
 let spec;
@@ -16,11 +17,13 @@ let playerPos=new THREE.Vector3(0,0.95,0), beaconPos=new THREE.Vector3(27,0,25);
 const progressKey='blankbox-playstate-v1';
 const skinKey='blankbox-player-skin-v1';
 let selectedSkin=SKIN_NAMES.includes(localStorage.getItem(skinKey))?localStorage.getItem(skinKey):SKIN_NAMES[0];
+let avatarBytes=null,avatarGeneration=0;
 let autoDemoRequested=false;
 function material(color, extra={}) { const m=new THREE.MeshStandardMaterial({color,roughness:.62,metalness:.26,...extra}); materials.push(m); return m; }
 function addMesh(geo,mat,parent=scene){ const mesh=new THREE.Mesh(geo,mat); parent.add(mesh); return mesh; }
 function clearWorld(){
-  physicsToken++;
+  physicsToken++;avatarGeneration++;
+  characterRig?.dispose?.();
   if(physicsWorld){physicsWorld.dispose();physicsWorld=null;}
   crateMeshes=[];physicsAccum=0;
   for(const m of objects){scene.remove(m); m.traverse(n=>{if(n.geometry)n.geometry.dispose();});}
@@ -109,6 +112,9 @@ function rebuild(){
   characterRig=createCharacterRig(THREE,{skin:selectedSkin,makeMaterial:material});
   player=characterRig.root;player.position.set(actor.x,0,actor.z);
   scene.add(player);objects.push(player);
+  // An imported GLB is kept only in memory. Rebuilds reparse it so materials
+  // cannot reference geometry disposed by clearWorld(). Stale loads are ignored.
+  if(avatarBytes)loadAvatarBytes(avatarBytes,{restoring:true});
   const generation=physicsToken;
   $('physicsState').textContent='PHYSICS: LOADING';
   initializeRapier().then(RAPIER=>{
@@ -200,7 +206,7 @@ function syncUI(){
   $('gameTitle').textContent=spec.title;$('sceneName').textContent=spec.title;
   $('worldTime').textContent=spec.time==='night'?'Night':'Day';$('buildingCount').textContent=spec.buildings;
   $('robotCount').textContent=spec.robots;$('worldTheme').textContent=spec.theme[0].toUpperCase()+spec.theme.slice(1);
-  $('skinName').textContent=selectedSkin;
+  $('skinName').textContent=avatarBytes?'Imported GLB':selectedSkin;
   $('worldLiveSummary').textContent=`${spec.robots} robots · ${spec.time==='day'?'Daytime':'Nighttime'} · ${spec.buildings} buildings`;
   $('missionText').textContent=spec.mission||'Explore the world';$('entityCount').textContent=spec.robots+spec.buildings+4;
   $('specPreview').textContent=JSON.stringify(spec,null,2);
@@ -275,7 +281,52 @@ $('dayBtn').onclick=()=>applyPrompt(spec.time==='night'?'Make it daytime':'Make 
 $('resetBtn').onclick=()=>{actor=createActor(world.spawn.x,world.spawn.z);if(physicsWorld)physicsWorld.teleport(actor.x,0,actor.z);playerPos.set(actor.x,actor.y,actor.z);physicsAccum=0;cameraYaw=.45;cameraPitch=.32;cameraDistance=16;setStatus('Player and physics body reset. Quest progress retained.');};
 $('restartQuestBtn').onclick=()=>{clearProgress();progress=startQuest(quest);refreshQuestHUD();setStatus('Mission restarted.');};
 $('interactBtn').onclick=interact;
-$('skinBtn').onclick=()=>{selectedSkin=SKIN_NAMES[(SKIN_NAMES.indexOf(selectedSkin)+1)%SKIN_NAMES.length];characterRig.setSkin(selectedSkin);$('skinName').textContent=selectedSkin;try{localStorage.setItem(skinKey,selectedSkin);}catch{}setStatus('Changed skinned character appearance: '+selectedSkin);};
+function discardAvatarRig(rig){
+  const i=objects.indexOf(rig.root);if(i!==-1)objects.splice(i,1);
+  scene.remove(rig.root);rig.dispose?.();
+  if(!rig.dispose)rig.root.traverse(o=>{if(o.geometry)o.geometry.dispose();});
+}
+function replaceAvatarRig(candidate){
+  if(!scene||!actor)throw Error('Game world is not ready');
+  const previous=characterRig;
+  candidate.root.position.set(actor.x,actor.y,actor.z);
+  scene.add(candidate.root);objects.push(candidate.root);
+  characterRig=candidate;player=candidate.root;
+  if(previous)discardAvatarRig(previous);
+  $('skinName').textContent=avatarBytes?'Imported GLB':selectedSkin;
+}
+async function loadAvatarBytes(buffer,{restoring=false}={}){
+  const current=++avatarGeneration;
+  if(!restoring){$('avatarStatus').textContent='Avatar: validating rig and animation clips…';}
+  let candidate;
+  try{
+    const {GLTFLoader}=await import('three/addons/loaders/GLTFLoader.js');
+    candidate=await loadGlbAvatar(THREE,GLTFLoader,buffer);
+    if(current!==avatarGeneration){candidate.dispose();return;}
+    // Preserve existing scene and physics if loading or validation fails.
+    avatarBytes=buffer;
+    replaceAvatarRig(candidate);
+    $('avatarStatus').textContent=`Avatar: rigged GLB (${candidate.boneCount} mapped bones, ${candidate.skinnedCount} skinned meshes) · animation blended to physics`;
+    if(!restoring)setStatus('Imported rigged GLB. Walk, run or jump to test skeletal animation.');
+  }catch(e){
+    if(current!==avatarGeneration)return;
+    if(restoring){avatarBytes=null;$('avatarStatus').textContent='Avatar: procedural fallback (could not reload GLB)';}
+    else {$('avatarStatus').textContent='Avatar import rejected: '+e.message;setStatus('Avatar import rejected: '+e.message,true);}
+  }
+}
+$('avatarBtn').onclick=()=>$('avatarInput').click();
+$('avatarInput').onchange=async event=>{
+  const file=event.target.files?.[0];
+  try {if(!file)return;if(file.size>MAX_AVATAR_BYTES)throw Error('GLB must be under 8 MB');await loadAvatarBytes(await file.arrayBuffer());}
+  catch(e){setStatus('Avatar import rejected: '+e.message,true);}
+  finally{event.target.value='';}
+};
+$('skinBtn').onclick=()=>{
+  if(avatarBytes){avatarBytes=null;avatarGeneration++;replaceAvatarRig(createCharacterRig(THREE,{skin:selectedSkin,makeMaterial:material}));$('avatarStatus').textContent='Avatar: procedural rig restored';setStatus('Imported GLB unloaded; procedural avatar restored.');return;}
+  selectedSkin=SKIN_NAMES[(SKIN_NAMES.indexOf(selectedSkin)+1)%SKIN_NAMES.length];characterRig.setSkin(selectedSkin);$('skinName').textContent=selectedSkin;
+  try{localStorage.setItem(skinKey,selectedSkin);}catch{}
+  setStatus('Changed skinned character appearance: '+selectedSkin);
+};
 $('demoBtn').onclick=()=>loadDemo();
 $('saveBtn').onclick=()=>{persist();setStatus('Project saved in this browser.');};
 $('exportBtn').onclick=exportSpec;

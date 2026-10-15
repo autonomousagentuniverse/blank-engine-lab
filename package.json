@@ -10,7 +10,8 @@
     "ai:smoke": "node scripts/nvidia-smoke.mjs",
     "ai:demo": "node scripts/ai-demo.mjs",
     "ai:create": "node scripts/create-game.mjs",
-    "physics:smoke": "node scripts/physics-real-smoke.mjs"
+    "physics:smoke": "node scripts/physics-real-smoke.mjs",
+    "avatar:smoke": "node scripts/avatar-real-smoke.mjs"
   },
   "dependencies": {
     "pg": "8.16.3"

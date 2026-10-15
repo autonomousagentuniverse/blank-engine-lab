@@ -51,3 +51,13 @@ Offline engine tests: `npm test`. WebGL rendering needs a browser that supports 
 ## Alpha 0.6-dev: Hard part first
 
 The **rigged-skin / physical-character** integration is in progress. See [engineering notes](docs/alpha06-engineering.md) for accurate capabilities, test evidence, and limitations. Major Vercel deployment is intentionally deferred.
+
+## Alpha 0.6 development: imported humanoid GLB + animation retargeting
+
+This is a GitHub-only development feature until the next authorized **major manual Vercel deployment**. In the editor choose **Import rigged GLB**. An uploaded, **self-contained glTF 2.0 `.glb`** (up to 8 MB) must contain a skinned humanoid with hips and left/right upper arms and legs. Supported bone aliases include Mixamo-style and Blender-style naming. The browser validates the GLB before loading; external resource URLs, required decoder extensions, and oversized rigs are rejected.
+
+The avatar is normalized to approximately 3 meters high. Existing authored bone-quaternion animation clips are blended between idle/walk/run/jump/fall when their names match; missing locomotion states use procedural joint animation. Translation/root-motion tracks do **not** control the physics body. The same camera, collision, quest interaction, and movement controls remain in use. User-uploaded GLB data stays in the **current browser session memory only** and is reloaded on world edits; browser refresh returns to the procedural avatar. **Skin** returns to procedural mode after importing a GLB.
+
+`character/retarget.mjs` provides rotation-only local-rest-delta clip retargeting between similarly oriented humanoid skeletons; this does **not yet** solve dramatically different T-pose/A-pose bone axes, hand/foot inverse kinematics, foot sliding, cloth/hair or facial animations. Advanced animation retargeting and grounded foot IK are still acceptance gates before we can call the characters production-ready.
+
+Run `npm test` for the pure contracts. To verify with actual glTFExporter/GLTFLoader, `npm install --no-save --ignore-scripts three@0.186.1 @dimforge/rapier3d-compat@0.18.0` and `node scripts/avatar-real-smoke.mjs`. The real-library smoke synthesizes a rigged humanoid `.glb` in memory, reloads it and exercises motion blending and retargeted clips.
