@@ -307,7 +307,10 @@ async function loadAvatarBytes(buffer,{restoring=false}={}){
     if(!restoring)avatarMotionBytes=null;
     avatarBytes=buffer;
     replaceAvatarRig(candidate);
-    if(avatarMotionBytes)await loadMotionBytes(avatarMotionBytes,{restoring:true});
+    if(avatarMotionBytes){
+      try{await loadMotionBytes(avatarMotionBytes,{restoring:true});}
+      catch{avatarMotionBytes=null;$('avatarStatus').textContent='Avatar: imported GLB · saved donor clip unavailable (fallback animations active)';}
+    }
     $('avatarStatus').textContent=`Avatar: rigged GLB (${candidate.boneCount} mapped bones, ${candidate.skinnedCount} skinned meshes) · animation blended to physics`;
     if(!restoring)setStatus('Imported rigged GLB. Walk, run or jump to test skeletal animation.');
   }catch(e){
