@@ -55,3 +55,8 @@ test('near-straight standing leg keeps a grounded lock within calibrated floor c
  const lock=updateFootLock(null,{stance:true,foot,hip,contact:{y:0,normal},dt:1/60,maxReach:naturalLength*1.12});
  assert(lock.point&&lock.weight>0&&!lock.blocked,'floor should not cause an immediate lock release');
 });
+
+test('planted-foot solver rejects non-finite frame data rather than corrupting IK state',()=>{
+ assert.throws(()=>updateFootLock(null,{stance:true,foot:xyz(NaN,0,0),hip:xyz(0,1,0),contact:{y:0,normal},dt:.016}),/Invalid/);
+ assert.throws(()=>updateFootLock(null,{stance:true,foot:xyz(0,0,0),hip:xyz(0,1,0),dt:-.01}),/Invalid/);
+});

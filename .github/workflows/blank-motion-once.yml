@@ -19,7 +19,18 @@ jobs:
         with:
           node-version: '22'
       - run: npm install --ignore-scripts --no-audit --no-fund
-      - run: npm install --no-save --ignore-scripts --no-audit --no-fund three@0.186.1 @dimforge/rapier3d-compat@0.18.0
+      - run: npm install --no-save --ignore-scripts --no-audit --no-fund three@0.186.1 @dimforge/rapier3d-compat@0.18.0 playwright@1.56.1
       - run: npm test
       - run: node scripts/motion-real-smoke.mjs
       - run: node scripts/physics-real-smoke.mjs && node scripts/ik-real-smoke.mjs && node scripts/avatar-real-smoke.mjs
+
+      - name: Real Chrome browser WebGL, physics and editing
+        run: node scripts/browser-integration.mjs
+      - name: Save Chrome screenshot
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: blank-engine-motion-chrome
+          path: artifacts/alpha06-ik-browser.png
+          retention-days: 7
+          if-no-files-found: ignore
