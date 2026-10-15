@@ -14,7 +14,7 @@ export function createNvidiaClient({apiKey=process.env.NVIDIA_API_KEY,fetchImpl=
         const res=await fetchImpl('https://integrate.api.nvidia.com/v1/chat/completions',{
           method:'POST',
           headers:{Authorization:'Bearer '+apiKey,'Content-Type':'application/json'},
-          body:JSON.stringify({model,messages,max_tokens:maxTokens,temperature:0.3,stream:false}),
+          body:JSON.stringify({model,messages,max_tokens:maxTokens,temperature:0.3,stream:false,...(model.startsWith('openai/gpt-oss-')?{reasoning_effort:'low'}:{})}),
           signal:controller.signal
         });
         if(!res.ok) throw Error('NVIDIA request failed [HTTP_'+res.status+']');
