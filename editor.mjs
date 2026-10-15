@@ -9,6 +9,7 @@ import {createPoseController} from './character/ik.mjs';
 import {createPBRLibrary,DEFAULT_MATERIALS,PRESETS,TARGETS,validateMaterialProfiles,compileMaterialCommand,tileBoxGeometry,tilePlaneGeometry,retileGeometry} from './materials/pbr.mjs';
 import {loadCompressedAuthoredSet,createKTX2Adapter} from './materials/compression.mjs';
 import {CC0_CATALOG,readPreparedMaterial} from './materials/catalog.mjs';
+import {facadePlan,addArchitecturalDetails} from './geometry/architecture.mjs';
 const $=(id)=>document.getElementById(id);
 const holder=$('viewport');
 let spec;
@@ -16,7 +17,7 @@ try { spec=validateSpec(JSON.parse(localStorage.getItem('blankbox-game-v1'))); }
 let renderer,scene,camera,player,characterRig,actor,physicsWorld,physicsToken=0,physicsAccum=0,crateMeshes=[],light,hemi,sky,ground,beacon,gateDoor,lanternObject,world,quest,progress,robotActors=[],walls=[],objects=[],t=0,last=performance.now(),fpsSum=0,fpsFrames=0,cameraYaw=0.45,cameraPitch=0.32,cameraDistance=16,mouseDown=false,prevX=0,prevY=0,paused=false;
 const pressed=new Set();
 const palette={cyan:0x24bde4,violet:0x9c83ff,amber:0xffb95b,emerald:0x43dca8};
-let materials=[],pbrLibrary=null,robotBodyMaterials=[];
+let materials=[],pbrLibrary=null,robotBodyMaterials=[],architectureMaterials=null;
 const authoredFiles=new Map();
 const catalogSelections=new Map(); // Session-only, never persisted to browser storage.
 let ktx2Adapter=null;
@@ -39,7 +40,7 @@ function clearWorld(){
   for(const m of objects){scene.remove(m); m.traverse(n=>{if(n.geometry)n.geometry.dispose();});}
   for(const m of materials)m.dispose();
   pbrLibrary?.dispose();pbrLibrary=null;robotBodyMaterials=[];
-  objects=[];materials=[];walls=[];robotActors=[];lanternObject=null;characterRig=null;
+  objects=[];materials=[];walls=[];robotActors=[];lanternObject=null;characterRig=null;architectureMaterials=null;
 }
 function init(){
   scene=new THREE.Scene();
@@ -89,20 +90,22 @@ function makeBuilding(x,z,width,height,accent,i){
   const depth=width*(.7+(i%3)*.14),grp=new THREE.Group();grp.position.set(x,0,z);
   const slab=pbrLibrary.materialFor('buildings');
   const tower=addMesh(tileBoxGeometry(THREE,width,height,depth,3),slab,grp);tower.position.y=height/2;tower.userData.surfaceType='buildings';
-  const cap=addMesh(new THREE.BoxGeometry(width+.35,.25,depth+.35),material(accent,{emissive:accent,emissiveIntensity:.9}),grp);cap.position.y=height;
-  const edge=material(accent,{emissive:accent,emissiveIntensity:.9});
-  for(const side of [-1,1]){const strip=addMesh(new THREE.BoxGeometry(.09,height*.78,.09),edge,grp);strip.position.set(side*(width/2-.15),height*.5,-depth/2-.018);}
-  const windows=material(i%4===0?0xffd08a:accent,{emissive:i%4===0?0xffd08a:accent,emissiveIntensity:.75,transparent:true,opacity:.85});
-  const rows=Math.min(8,Math.floor(height/2.8));
-  for(let r=0;r<rows;r++)for(let col=0;col<3;col++){
-    if((r*5+col*7+i)%5===0)continue;
-    const window=addMesh(new THREE.PlaneGeometry(.48,.55),windows,grp);window.position.set((col-1)*width*.24,2.1+r*2.8,-depth/2-.018);
-  }
+  const plan=facadePlan({width,height,depth,index:i,seed:spec.seed,detail:'mobile'});
+  addArchitecturalDetails(THREE,grp,plan,architectureMaterials);
   scene.add(grp);objects.push(grp);walls.push({x,z,hw:width/2,hd:depth/2});
 }
 function rebuild(){
   clearWorld();t=0;pbrLibrary=createPBRLibrary(THREE,materialProfiles);
   const accent=palette[spec.theme],night=spec.time==='night';
+  // Shared facade materials: hundreds of window panes cost two instanced draws
+  // per building, rather than one GPU submission per window.
+  architectureMaterials={
+    glass:material(0x17354b,{metalness:.68,roughness:.22}),
+    lit:material(0x9bd1df,{metalness:.1,roughness:.42,emissive:0x447899,emissiveIntensity:.4}),
+    door:material(0x223544,{metalness:.55,roughness:.48}),
+    trim:material(accent,{metalness:.45,roughness:.28,emissive:accent,emissiveIntensity:.15}),
+    roof:material(0x293744,{metalness:.18,roughness:.84})
+  };
   sky.set(night?0x06101d:0x80b5d1);scene.fog.color.set(night?0x071325:0xa3c9cf);scene.fog.density=night?.012:.007;
   renderer.toneMappingExposure=night?1.35:1.0;
   hemi.color.set(night?0x6e91ec:0xe0eeff);hemi.groundColor.set(night?0x15192a:0x667b6f);hemi.intensity=night?1.5:2.8;
@@ -180,7 +183,7 @@ function rebuild(){
   for(const [target,entry] of authoredFiles)applyAuthoredFiles(target,entry.files,pbrLibrary,{restoring:true,fallbacks:entry.fallbacks}).catch(e=>setStatus('Texture restore failed: '+e.message,true));
   syncUI(); refreshQuestHUD();
 }
-function frame(now){requestAnimationFrame(frame);let dt=frameDelta(now,last);last=now;if(!paused){update(dt);renderer.render(scene,camera);}fpsSum+=dt;fpsFrames++;if(fpsSum>=.5){$('fps').textContent=Math.round(fpsFrames/fpsSum)+' FPS';fpsSum=0;fpsFrames=0;}}
+function frame(now){requestAnimationFrame(frame);let dt=frameDelta(now,last);last=now;if(!paused){update(dt);renderer.render(scene,camera);}fpsSum+=dt;fpsFrames++;if(fpsSum>=.5){$('fps').textContent=Math.round(fpsFrames/fpsSum)+' FPS';if($('drawCalls'))$('drawCalls').textContent=String(renderer.info.render.calls);fpsSum=0;fpsFrames=0;}}
 function update(dt){
   t+=dt;
   let dx=0,dz=0;

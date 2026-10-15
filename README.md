@@ -85,3 +85,8 @@ A curated set of **five authored Poly Haven CC0 materials** can be prepared offl
 ### Full material-catalog QA (Alpha 0.6 development)
 
 Run `node scripts/prepare-material-library.mjs --out . --resolution 1k` in an internet-enabled build environment; run `node scripts/cc0-catalog-acceptance.mjs` after installing pinned Three.js, Rapier, and Playwright. This checks all five real Poly Haven CC0 assets (three maps each) in Chrome with a phone-sized viewport, SHA-256 verification, quest and physics continuity, and JSON/screenshot artifacts. Browser RAF frame timings are software-rendered QA proxies **not physical-phone performance**. See `docs/alpha06-cc0-mobile-validation.md`.
+
+
+### Alpha 0.6: budgeted architecture and visual regression
+
+The procedural Night Market buildings now include deterministic windows batched into GPU instanced draws, entry doors, distinct rooftop styles and shared trim/glass materials. Colliders and navigation remain unchanged. The HUD reports draw calls, and a manual browser regression exercises real Chrome, Three.js/Rapier, mobile-width controls, and day/night screenshots. See [architecture QA](docs/alpha06-architecture.md). No Vercel deployment.
