@@ -132,7 +132,8 @@ export function createPoseController(THREE,rig){
         const probePoint=locks[side]?.point??foot;
         const sample=stance?groundContact(groundProbe(probePoint.x,probePoint.z,actor.y+1.2),actor.y):null;
         const knee=chain.lower.getWorldPosition(new THREE.Vector3());
-        const maxReach=(hip.distanceTo(knee)+knee.distanceTo(foot))*.96;
+        // Allow standing foot-floor clearance without stretching anatomical bones.
+        const maxReach=(hip.distanceTo(knee)+knee.distanceTo(foot))*1.12;
         // Neither foot follows moving ankles once planted. Stance ends on gait phase
         // change, jumping, invalid contact, or a reach limit (never stretch the leg).
         locks[side]=updateFootLock(locks[side],{stance:stance&&!!sample,foot,hip,

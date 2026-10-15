@@ -49,3 +49,9 @@ test('animation transitions give falling and jumping priority, and walking stays
  assert.equal(fadeSeconds('run','run'),0);
  assert(fadeSeconds('walk','run')>0);
 });
+
+test('near-straight standing leg keeps a grounded lock within calibrated floor clearance',()=>{
+ const hip=xyz(0,1.23,0),foot=xyz(0,.061,0),naturalLength=1.169;
+ const lock=updateFootLock(null,{stance:true,foot,hip,contact:{y:0,normal},dt:1/60,maxReach:naturalLength*1.12});
+ assert(lock.point&&lock.weight>0&&!lock.blocked,'floor should not cause an immediate lock release');
+});
