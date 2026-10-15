@@ -30,8 +30,14 @@ export function compilePrompt(text, current) {
   const input = text.toLowerCase().replace(/\s+/g,' ').trim();
   const next = {...validateSpec(current)};
   let applied = [];
-  if (/\b(night|dark|midnight|sunset)\b/.test(input)) { next.time='night'; applied.push('Set nighttime'); }
-  if (/\b(day|daylight|sunny|morning|sunrise)\b/.test(input)) { next.time='day'; applied.push('Set daytime'); }
+  // Follow the last explicit time-of-day instruction; recognize natural compounds
+  // such as 'daytime' and 'nighttime' rather than only standalone 'day'/'night'.
+  const timeWords = [...input.matchAll(/\b(daytime|daylight|day|sunny|morning|sunrise|noon|nighttime|night|dark|midnight|sunset|evening)\b/g)];
+  if (timeWords.length) {
+    const word = timeWords[timeWords.length-1][1];
+    next.time = /^(?:nighttime|night|dark|midnight|sunset|evening)$/.test(word) ? 'night' : 'day';
+    applied.push(next.time === 'day' ? 'Set daytime' : 'Set nighttime');
+  }
   for (const theme of themes) if (new RegExp(`\\b${theme}\\b`).test(input)) { next.theme=theme; applied.push(`Set ${theme} palette`); break; }
   const count = (key) => {
     const re = key === 'robots' ? /\b(\d+)\s*(?:robots?|enemies?|drones?)\b/ : /\b(\d+)\s*(?:buildings?|towers?|skyscrapers?)\b/;

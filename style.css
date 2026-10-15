@@ -11,3 +11,6 @@
 .hud.interaction button{background:#1ea5d4;border-radius:6px;padding:10px 13px;color:#051724;border:none;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap}
 .hud.interaction button:disabled{background:#34495d;color:#8eabb7;cursor:not-allowed}
 @media(max-width:680px){.hud.mission{width:48%;max-width:48%;padding:9px;right:8px;top:55px;gap:4px}.hud.mission #questObjective{font-size:11px}.hud.mission .mission-story{display:none}.hud.interaction{left:auto;right:8px;bottom:52px;transform:none;min-width:0;max-width:47%;font-size:10px;padding:6px}.hud.interaction button{padding:9px;font-size:10px}.scene-controls{flex-wrap:wrap}.scene-head{align-items:start}.top-actions{gap:3px}.top-actions button{padding:7px 5px;font-size:9px}.top-actions #saveBtn{display:none}}
+
+.world-live-summary{display:block;margin-top:5px;color:#81e9d7;font-size:11px;font-weight:600;letter-spacing:.02em}
+@media(max-width:680px){.world-live-summary{font-size:10px;margin-top:4px}}

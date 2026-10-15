@@ -163,6 +163,7 @@ function syncUI(){
   $('gameTitle').textContent=spec.title;$('sceneName').textContent=spec.title;
   $('worldTime').textContent=spec.time==='night'?'Night':'Day';$('buildingCount').textContent=spec.buildings;
   $('robotCount').textContent=spec.robots;$('worldTheme').textContent=spec.theme[0].toUpperCase()+spec.theme.slice(1);
+  $('worldLiveSummary').textContent=`${spec.robots} robots · ${spec.time==='day'?'Daytime':'Nighttime'} · ${spec.buildings} buildings`;
   $('missionText').textContent=spec.mission||'Explore the world';$('entityCount').textContent=spec.robots+spec.buildings+4;
   $('specPreview').textContent=JSON.stringify(spec,null,2);
 }
@@ -204,7 +205,29 @@ async function loadDemo(silent=false){
   finally{autoDemoRequested=false;}
 }
 function setStatus(text,error=false){const el=$('status');el.textContent=text;el.classList.toggle('error',error);}
-function applyPrompt(text){try{const result=compilePrompt(text,spec);if(result.applied.length){spec=result.spec;clearProgress();rebuild();persist();}setStatus(result.message,!result.applied.length);$('prompt').value='';}catch(e){setStatus(e.message,true);}}
+function applyPrompt(text){
+  const previous=spec;
+  try{
+    const result=compilePrompt(text,spec);
+    if(result.applied.length){
+      // Check the new scene before changing the live world. An invalid edit must
+      // never silently destroy the existing scene or saved GameSpec.
+      playableLayout(result.spec);
+      spec=result.spec;
+      clearProgress();
+      rebuild();
+      persist();
+    }
+    setStatus(result.message,!result.applied.length);
+    $('prompt').value='';
+  }catch(e){
+    if(spec!==previous){
+      spec=previous;
+      try{rebuild();}catch{ /* Keep the original failure visible. */ }
+    }
+    setStatus('World edit failed: '+e.message,true);
+  }
+}
 function persist(){try{localStorage.setItem('blankbox-game-v1',JSON.stringify(spec));}catch(e){setStatus('Local storage unavailable; use Export to save your project.',true);}}
 function exportSpec(){const b=new Blob([JSON.stringify(spec,null,2)],{type:'application/json'});const url=URL.createObjectURL(b);const a=document.createElement('a');a.href=url;a.download='blank-game-spec.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);setStatus('Downloaded validated GameSpec JSON.');}
 $('runBtn').onclick=()=>applyPrompt($('prompt').value);
