@@ -1,12 +1,6 @@
-# Temporary integration verification for approved Alpha 0.6 development.
-# Triggered only by creation/change of THIS file, not by future source pushes.
-# Delete after verifying the real Three/Rapier smoke. Does NOT deploy to Vercel.
-name: Blank Engine - one-time real physics and rig check
+name: Blank Engine — manual real physics and rig test
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/blank-physics-one-time.yml'
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
