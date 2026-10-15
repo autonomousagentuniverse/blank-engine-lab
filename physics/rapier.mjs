@@ -51,6 +51,15 @@ export function makePhysicsWorld(RAPIER,layout,{gateOpen=false}={}) {
       world.step();
       return {delta:{x:moved.x,y:moved.y,z:moved.z},grounded:controller.computedGrounded()};
     },
+    /** Downward physics probe for animation only. Never changes rigid bodies. */
+    probeGround(x,z,originY=2){
+      if(disposed||![x,z,originY].every(Number.isFinite))return null;
+      const ray=new RAPIER.Ray({x,y:originY,z},{x:0,y:-1,z:0});
+      // Exclude the controlled capsule, otherwise the ray can detect the player.
+      const hit=world.castRayAndGetNormal(ray,4,true,undefined,undefined,playerCollider);
+      if(!hit||!Number.isFinite(hit.timeOfImpact))return null;
+      return {y:originY-hit.timeOfImpact,normal:{x:hit.normal.x,y:hit.normal.y,z:hit.normal.z}};
+    },
     getCrates(){return crates.map(({id,body})=>({id,position:body.translation(),rotation:body.rotation()}));},
     setGateOpen(open){if(open&&gateCollider){world.removeCollider(gateCollider,true);gateCollider=null;}},
     teleport(x,y,z){playerCollider.setTranslation({x,y:y+heightOffset,z});world.step();},

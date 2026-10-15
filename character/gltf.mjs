@@ -2,6 +2,7 @@
  * Never loads remote sidecar resources or imports scripts from user content.
  */
 import {assertHumanoidMap,mapHumanoidBones,boneRotationClips,retargetRotationClip} from './retarget.mjs';
+import {makeMappedChains} from './ik.mjs';
 export const MAX_AVATAR_BYTES=8*1024*1024;
 const DECODER=new TextDecoder('utf-8',{fatal:true});
 export function inspectAvatarGlb(buffer) {
@@ -74,7 +75,7 @@ export function createGlbAvatar(THREE,gltf){
   let playing='idle',disposed=false;
   actions.idle.play();
   return {
-    root,skinnedCount:skinned,boneCount:Object.keys(mapping).length,
+    root,poseChains:makeMappedChains(THREE,mapping),skinnedCount:skinned,boneCount:Object.keys(mapping).length,
     get animation(){return playing;},
     installRetargetedClips(donor){
       if(disposed)throw Error('Avatar disposed');

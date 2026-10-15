@@ -88,5 +88,12 @@ export function createCharacterRig(THREE,{skin='explorer',makeMaterial}={}) {
     root.position.y=actor.y+((actor.grounded&&speed>.35)?Math.abs(Math.sin(phase))*.045:0);
     return anim;
   }
-  return {root,limbs,update,setSkin,get skin(){return currentSkin;},get animation(){return anim;},get skeletonCount(){return 4;}};
+  const poseChains={};
+  for(const [side,part] of [['left','Leg'],['right','Leg'],['left','Arm'],['right','Arm']]){
+    const limb=limbs[`${side}${part}`];
+    const total=part==='Leg'?1.17:1.05;
+    poseChains[`${side}${part}`]={upper:limb.upper,lower:limb.lower,
+      endLocal:{x:0,y:-total*.45,z:0}};
+  }
+  return {root,limbs,poseChains,update,setSkin,get skin(){return currentSkin;},get animation(){return anim;},get skeletonCount(){return 4;}};
 }

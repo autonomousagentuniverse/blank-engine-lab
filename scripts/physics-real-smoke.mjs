@@ -10,6 +10,8 @@ import {DEFAULT_SPEC} from '../core.mjs';
 await RAPIER.init();
 const layout=playableLayout({...DEFAULT_SPEC,buildings:10,robots:4});
 const physics=makePhysicsWorld(RAPIER,layout);
+const firstProbe=physics.probeGround(layout.spawn.x,layout.spawn.z,1.3);
+assert(firstProbe&&Math.abs(firstProbe.y)<.05&&firstProbe.normal.y>.95);
 const model=createCharacterRig(THREE,{makeMaterial:(color,more={})=>new THREE.MeshStandardMaterial({color,...more})});
 assert.equal(model.skeletonCount,4);
 assert.equal(Object.values(model.limbs).filter(l=>l.skinned.isSkinnedMesh).length,4);

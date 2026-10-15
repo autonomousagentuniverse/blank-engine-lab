@@ -1,6 +1,5 @@
-# Manual-only regression for the Alpha 0.6 rigged GLB/avatar integration.
-# No deploy, no secrets, and no automatic push/pull-request triggers.
-name: Blank Engine - manual rigged avatar and retarget tests
+# Permanent manual-only regressions; never deploy from Actions.
+name: Blank Engine - manual rigged avatar and IK tests
 on:
   workflow_dispatch:
 permissions:
@@ -14,13 +13,15 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '22'
-      - name: Install project dependencies
+      - name: Install engine dependencies
         run: npm install --ignore-scripts --no-audit --no-fund
-      - name: Install pinned real Three and Rapier libraries
+      - name: Install pinned integration libraries
         run: npm install --no-save --ignore-scripts --no-audit --no-fund three@0.186.1 @dimforge/rapier3d-compat@0.18.0
-      - name: Regression suite
+      - name: Regression tests
         run: npm test
-      - name: Real Three.js GLB avatar and cross-rig motion transfer
+      - name: Real avatar retargeting
         run: node scripts/avatar-real-smoke.mjs
-      - name: Real Rapier physics and procedural skinning
+      - name: Real Rapier movement and ground probing
         run: node scripts/physics-real-smoke.mjs
+      - name: Real Three.js two-bone IK
+        run: node scripts/ik-real-smoke.mjs

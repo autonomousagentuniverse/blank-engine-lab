@@ -1,0 +1,32 @@
+# One-time, no-secrets, no-deploy integration check for approved Alpha 0.6 IK work.
+# Remove immediately after the result is reviewed.
+name: Blank Engine - one-time real IK integration check
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/blank-ik-once.yml'
+permissions:
+  contents: read
+jobs:
+  ik:
+    if: github.event.head_commit.message == 'blank-ik-release-check-20261015'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Install project dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Install pinned real libraries
+        run: npm install --no-save --ignore-scripts --no-audit --no-fund three@0.186.1 @dimforge/rapier3d-compat@0.18.0
+      - name: Regression tests
+        run: npm test
+      - name: Real avatar import and retargeting
+        run: node scripts/avatar-real-smoke.mjs
+      - name: Real Rapier physics and ground probe
+        run: node scripts/physics-real-smoke.mjs
+      - name: Real IK ground planting and hand reach
+        run: node scripts/ik-real-smoke.mjs

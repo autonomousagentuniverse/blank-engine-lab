@@ -63,3 +63,7 @@ The avatar is normalized to approximately 3 meters high. Existing authored bone-
 `character/retarget.mjs` provides rotation-only local-rest-delta clip retargeting between similarly oriented humanoid skeletons; this does **not yet** solve dramatically different T-pose/A-pose bone axes, hand/foot inverse kinematics, foot sliding, cloth/hair or facial animations. Advanced animation retargeting and grounded foot IK are still acceptance gates before we can call the characters production-ready.
 
 Run `npm test` for the pure contracts. To verify with actual glTFExporter/GLTFLoader, `npm install --no-save --ignore-scripts three@0.186.1 @dimforge/rapier3d-compat@0.18.0` and `node scripts/avatar-real-smoke.mjs`. The real-library smoke synthesizes a rigged humanoid `.glb` in memory, reloads it and exercises motion blending and retargeted clips.
+
+## Alpha 0.6 IK development milestone
+
+The optional pose layer (`character/ik.mjs`) probes Rapier ground contacts and applies two-bone knee/elbow IK after the skeletal animation update. It preserves physics authority and degrades gracefully when imported GLBs lack a complete two-bone chain. See `docs/alpha06-ik-qa.md`. This code is **not deployed to Vercel**.

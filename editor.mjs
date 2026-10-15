@@ -5,6 +5,7 @@ import {createActor,stepActor,stepAccumulator,createFallbackMover} from './physi
 import {initializeRapier,makePhysicsWorld} from './physics/rapier.mjs';
 import {createCharacterRig,SKIN_NAMES} from './character/rig.mjs';
 import {loadGlbAvatar,loadMotionGlb,disposeMotionGlb,MAX_AVATAR_BYTES} from './character/gltf.mjs';
+import {createPoseController} from './character/ik.mjs';
 const $=(id)=>document.getElementById(id);
 const holder=$('viewport');
 let spec;
@@ -17,7 +18,7 @@ let playerPos=new THREE.Vector3(0,0.95,0), beaconPos=new THREE.Vector3(27,0,25);
 const progressKey='blankbox-playstate-v1';
 const skinKey='blankbox-player-skin-v1';
 let selectedSkin=SKIN_NAMES.includes(localStorage.getItem(skinKey))?localStorage.getItem(skinKey):SKIN_NAMES[0];
-let avatarBytes=null,avatarMotionBytes=null,avatarGeneration=0;
+let avatarBytes=null,avatarMotionBytes=null,avatarGeneration=0,poseController=null,poseReach=0,poseReachTarget=null;
 let autoDemoRequested=false;
 function material(color, extra={}) { const m=new THREE.MeshStandardMaterial({color,roughness:.62,metalness:.26,...extra}); materials.push(m); return m; }
 function addMesh(geo,mat,parent=scene){ const mesh=new THREE.Mesh(geo,mat); parent.add(mesh); return mesh; }
@@ -110,6 +111,7 @@ function rebuild(){
   // A skinned player rig follows the authoritative physics actor, never the reverse.
   actor=createActor(world.spawn.x,world.spawn.z);
   characterRig=createCharacterRig(THREE,{skin:selectedSkin,makeMaterial:material});
+  poseController=createPoseController(THREE,characterRig);poseReach=0;poseReachTarget=null;
   player=characterRig.root;player.position.set(actor.x,0,actor.z);
   scene.add(player);objects.push(player);
   // An imported GLB is kept only in memory. Rebuilds reparse it so materials
@@ -179,6 +181,10 @@ function update(dt){
   playerPos.set(actor.x,actor.y,actor.z);
   player.position.set(actor.x,0,actor.z);
   characterRig.update(actor,dt);
+  if(poseController){
+    poseController.update({actor,dt,groundProbe:(x,z,fromY)=>physicsWorld?.probeGround(x,z,fromY)??{y:0,normal:{x:0,y:1,z:0}},handTarget:poseReachTarget,reach:poseReach});
+    poseReach=Math.max(0,poseReach-dt*2.4);
+  }
   if(Math.hypot(actor.vx,actor.vz)>0.2)player.rotation.y=Math.atan2(actor.vx,actor.vz);
   if(physicsWorld){
     const crates=physicsWorld.getCrates();
@@ -233,7 +239,10 @@ function interact(){
   const target=nearestTarget(quest,progress,liveLayout(),playerPos);
   if(!target){setStatus('Move close to an active mission target, then press E or Interact.',true);return;}
   const out=questEvent(quest,progress,{type:target.type,index:target.index});
-  if(out.changed){progress=out.state;persistProgress();if(physicsWorld)physicsWorld.setGateOpen(progress.completed);}
+  if(out.changed){
+    poseReachTarget={x:target.position.x,y:target.type==='robot'?2.05:target.type==='lantern'?1.6:2.3,z:target.position.z};
+    poseReach=1;progress=out.state;persistProgress();if(physicsWorld)physicsWorld.setGateOpen(progress.completed);
+  }
   setStatus(out.message,!out.changed);refreshQuestHUD();
 }
 async function loadDemo(silent=false){
@@ -291,7 +300,7 @@ function replaceAvatarRig(candidate){
   const previous=characterRig;
   candidate.root.position.set(actor.x,actor.y,actor.z);
   scene.add(candidate.root);objects.push(candidate.root);
-  characterRig=candidate;player=candidate.root;
+  characterRig=candidate;player=candidate.root;poseController=createPoseController(THREE,candidate);poseReach=0;poseReachTarget=null;
   if(previous)discardAvatarRig(previous);
   $('skinName').textContent=avatarBytes?'Imported GLB':selectedSkin;
 }

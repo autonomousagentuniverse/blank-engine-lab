@@ -15,7 +15,8 @@ const ALIASES = Object.freeze({
   rightUpperLeg:['rightupleg','rightupperleg','rightthigh','thighr','uplegr','rthigh','upperlegr'],
   leftLowerLeg:['leftleg','leftlowerleg','leftshin','shinl','lowerlegl','calfl'],
   rightLowerLeg:['rightleg','rightlowerleg','rightshin','shinr','lowerlegr','calfr'],
-  leftFoot:['leftfoot','footl','lfoot'],rightFoot:['rightfoot','footr','rfoot']
+  leftFoot:['leftfoot','footl','lfoot'],rightFoot:['rightfoot','footr','rfoot'],
+  leftHand:['lefthand','handl','lhand'],rightHand:['righthand','handr','rhand']
 });
 export function normalizeBoneName(name) {
   if(typeof name!=='string')return '';
