@@ -1,3 +1,4 @@
+/** Scoped, one-time GitHub integration verification for the authored PBR browser import. */
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
 import {readFile,mkdir} from 'node:fs/promises';
