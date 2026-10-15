@@ -2,7 +2,7 @@
 import {createNvidiaClient,DEFAULT_NVIDIA_MODEL} from '../ai/nvidia.mjs';
 try {
  const client=createNvidiaClient();
- const answer=await client.complete({role:'smoke',model:process.env.BLANK_MODEL||DEFAULT_NVIDIA_MODEL,maxTokens:128,messages:[
+ const answer=await client.complete({role:'smoke',model:process.env.BLANK_MODEL||DEFAULT_NVIDIA_MODEL,maxTokens:1024,messages:[
   {role:'system',content:'Reply with only READY.'},
   {role:'user',content:'Confirm this NVIDIA chat endpoint works.'}
  ]});
