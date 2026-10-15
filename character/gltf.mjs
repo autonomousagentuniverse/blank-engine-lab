@@ -1,3 +1,4 @@
+import {fadeSeconds} from './motion.mjs';
 /** Client-only, self-contained glTF 2.0 GLB import boundary.
  * Never loads remote sidecar resources or imports scripts from user content.
  */
@@ -101,8 +102,18 @@ export function createGlbAvatar(THREE,gltf){
       if(disposed)return;
       const desired=states.includes(actor.motion)?actor.motion:'idle';
       if(desired!==playing){
-        actions[playing].fadeOut(.2);
-        actions[desired].reset().fadeIn(.2).play();
+        const previous=actions[playing], next=actions[desired];
+        const duration=fadeSeconds(playing,desired);
+        const cadence=['walk','run'].includes(playing)&&['walk','run'].includes(desired);
+        next.reset();
+        if(cadence){
+          const sourceDuration=previous.getClip().duration;
+          const targetDuration=next.getClip().duration;
+          if(sourceDuration>0&&targetDuration>0)next.time=(previous.time%sourceDuration)/sourceDuration*targetDuration;
+        }
+        next.enabled=true;
+        next.play();
+        next.crossFadeFrom(previous,duration,false);
         playing=desired;
       }
       mixer.update(Math.min(.05,Math.max(0,dt)));

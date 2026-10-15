@@ -18,7 +18,7 @@ let playerPos=new THREE.Vector3(0,0.95,0), beaconPos=new THREE.Vector3(27,0,25);
 const progressKey='blankbox-playstate-v1';
 const skinKey='blankbox-player-skin-v1';
 let selectedSkin=SKIN_NAMES.includes(localStorage.getItem(skinKey))?localStorage.getItem(skinKey):SKIN_NAMES[0];
-let avatarBytes=null,avatarMotionBytes=null,avatarGeneration=0,poseController=null,poseReach=0,poseReachTarget=null;
+let avatarBytes=null,avatarMotionBytes=null,avatarGeneration=0,poseController=null,poseReach=0,poseReachTarget=null,poseReachRadius=0;
 let autoDemoRequested=false;
 function material(color, extra={}) { const m=new THREE.MeshStandardMaterial({color,roughness:.62,metalness:.26,...extra}); materials.push(m); return m; }
 function addMesh(geo,mat,parent=scene){ const mesh=new THREE.Mesh(geo,mat); parent.add(mesh); return mesh; }
@@ -111,7 +111,7 @@ function rebuild(){
   // A skinned player rig follows the authoritative physics actor, never the reverse.
   actor=createActor(world.spawn.x,world.spawn.z);
   characterRig=createCharacterRig(THREE,{skin:selectedSkin,makeMaterial:material});
-  poseController=createPoseController(THREE,characterRig);poseReach=0;poseReachTarget=null;
+  poseController=createPoseController(THREE,characterRig);poseReach=0;poseReachTarget=null;poseReachRadius=0;
   player=characterRig.root;player.position.set(actor.x,0,actor.z);
   scene.add(player);objects.push(player);
   // An imported GLB is kept only in memory. Rebuilds reparse it so materials
@@ -188,12 +188,12 @@ function update(dt){
   });
   playerPos.set(actor.x,actor.y,actor.z);
   player.position.set(actor.x,0,actor.z);
+  if(Math.hypot(actor.vx,actor.vz)>0.2)player.rotation.y=Math.atan2(actor.vx,actor.vz);
   characterRig.update(actor,dt);
   if(poseController){
-    poseController.update({actor,dt,groundProbe:(x,z,fromY)=>physicsWorld?.probeGround(x,z,fromY)??{y:0,normal:{x:0,y:1,z:0}},handTarget:poseReachTarget,reach:poseReach});
+    poseController.update({actor,dt,groundProbe:(x,z,fromY)=>physicsWorld?.probeGround(x,z,fromY)??{y:0,normal:{x:0,y:1,z:0}},handTarget:poseReachTarget,handRadius:poseReachRadius,reach:poseReach});
     poseReach=Math.max(0,poseReach-dt*2.4);
   }
-  if(Math.hypot(actor.vx,actor.vz)>0.2)player.rotation.y=Math.atan2(actor.vx,actor.vz);
   if(physicsWorld){
     const crates=physicsWorld.getCrates();
     crateMeshes.forEach((mesh,i)=>{const body=crates[i];if(!body)return;
@@ -249,6 +249,7 @@ function interact(){
   const out=questEvent(quest,progress,{type:target.type,index:target.index});
   if(out.changed){
     poseReachTarget={x:target.position.x,y:target.type==='robot'?2.05:target.type==='lantern'?1.6:2.3,z:target.position.z};
+    poseReachRadius=target.type==='robot'?.55:target.type==='lantern'?.35:.15;
     poseReach=1;progress=out.state;persistProgress();if(physicsWorld)physicsWorld.setGateOpen(progress.completed);
   }
   setStatus(out.message,!out.changed);refreshQuestHUD();
@@ -295,7 +296,7 @@ $('runBtn').onclick=()=>applyPrompt($('prompt').value);
 $('prompt').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();applyPrompt(e.target.value);}});
 document.querySelectorAll('[data-command]').forEach(x=>x.addEventListener('click',()=>applyPrompt(x.dataset.command)));
 $('dayBtn').onclick=()=>applyPrompt(spec.time==='night'?'Make it daytime':'Make it nighttime');
-$('resetBtn').onclick=()=>{actor=createActor(world.spawn.x,world.spawn.z);if(physicsWorld)physicsWorld.teleport(actor.x,0,actor.z);playerPos.set(actor.x,actor.y,actor.z);physicsAccum=0;cameraYaw=.45;cameraPitch=.32;cameraDistance=16;setStatus('Player and physics body reset. Quest progress retained.');};
+$('resetBtn').onclick=()=>{actor=createActor(world.spawn.x,world.spawn.z);if(physicsWorld)physicsWorld.teleport(actor.x,0,actor.z);playerPos.set(actor.x,actor.y,actor.z);physicsAccum=0;cameraYaw=.45;cameraPitch=.32;cameraDistance=16;poseController?.reset();setStatus('Player and physics body reset. Quest progress retained.');};
 $('restartQuestBtn').onclick=()=>{clearProgress();progress=startQuest(quest);refreshQuestHUD();setStatus('Mission restarted.');};
 $('interactBtn').onclick=interact;
 function discardAvatarRig(rig){
@@ -308,7 +309,7 @@ function replaceAvatarRig(candidate){
   const previous=characterRig;
   candidate.root.position.set(actor.x,actor.y,actor.z);
   scene.add(candidate.root);objects.push(candidate.root);
-  characterRig=candidate;player=candidate.root;poseController=createPoseController(THREE,candidate);poseReach=0;poseReachTarget=null;
+  characterRig=candidate;player=candidate.root;poseController=createPoseController(THREE,candidate);poseReach=0;poseReachTarget=null;poseReachRadius=0;
   if(previous)discardAvatarRig(previous);
   $('skinName').textContent=avatarBytes?'Imported GLB':selectedSkin;
 }

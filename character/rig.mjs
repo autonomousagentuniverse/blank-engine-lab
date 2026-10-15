@@ -1,3 +1,4 @@
+import {fadeSeconds,nextGaitPhase} from './motion.mjs';
 /** Procedural skinned character rig: actual Three.js bones and GPU skin weights.
  * A rig/animation contract that can later be populated by authored glTF assets.
  */
@@ -59,30 +60,48 @@ export function createCharacterRig(THREE,{skin='explorer',makeMaterial}={}) {
   const leftArm=limb({x:-.65,y:2.28,length:1.05,radius:.16,material:bodySkin});
   const rightArm=limb({x:.65,y:2.28,length:1.05,radius:.16,material:bodySkin});
   const limbs={leftLeg,rightLeg,leftArm,rightArm};
-  let phase=0,anim='idle',elapsed=0,currentSkin=skin;
+  let phase=0,anim='idle',elapsed=0,currentSkin=skin,blend=0,transitionDuration=.2,previousPose=null;
   function setSkin(name){
     validateSkin(name);currentSkin=name;const colors=SKINS[name];
     armor.color.setHex(colors.armor);bodySkin.color.setHex(colors.skin);
     accent.color.setHex(colors.accent);accent.emissive.setHex(colors.accent);
     return name;
   }
+  const joints=[leftLeg.upper,rightLeg.upper,leftArm.upper,rightArm.upper,
+    leftLeg.lower,rightLeg.lower,leftArm.lower,rightArm.lower];
   function update(actor,dt){
     const desired=['idle','walk','run','jump','fall'].includes(actor.motion)?actor.motion:'idle';
-    const speed=Math.hypot(actor.vx,actor.vz);
-    if(desired!==anim){anim=desired;elapsed=0;}
+    const speed=Math.hypot(actor.vx||0,actor.vz||0);
+    // Drive both gait and foot lock cadence from physical distance, not a separately
+    // clocked cycle. This avoids speed changes desynchronizing planted feet.
+    phase=nextGaitPhase(phase,speed,dt);
+    if(desired!==anim){
+      const duration=fadeSeconds(anim,desired);
+      previousPose=joints.map(b=>b.rotation.x);
+      blend=duration;transitionDuration=duration;elapsed=0;anim=desired;
+    }
     elapsed+=dt;
-    const actionSpeed=desired==='run'?10:7.2;
-    phase+=(desired==='walk'||desired==='run'?actionSpeed:1.2)*dt;
     const stride=desired==='run'?.72:desired==='walk'?.49:0;
     const s=Math.sin(phase)*stride;
-    leftLeg.upper.rotation.x=desired==='jump'?-0.32:desired==='fall'?.12:s;
-    rightLeg.upper.rotation.x=desired==='jump'?.12:desired==='fall'?-.2:-s;
-    leftArm.upper.rotation.x=desired==='jump'?.8:desired==='fall'?.32:-s*.9;
-    rightArm.upper.rotation.x=desired==='jump'?.8:desired==='fall'?.32:s*.9;
-    leftLeg.lower.rotation.x=desired==='jump'?.68:Math.max(0,-s)*.85;
-    rightLeg.lower.rotation.x=desired==='jump'?.68:Math.max(0,s)*.85;
-    leftArm.lower.rotation.x=desired==='jump'?-.32:-.15;
-    rightArm.lower.rotation.x=desired==='jump'?-.32:-.15;
+    const target=[
+      desired==='jump'?-.32:desired==='fall'?.12:s,
+      desired==='jump'?.12:desired==='fall'?-.2:-s,
+      desired==='jump'?.8:desired==='fall'?.32:-s*.9,
+      desired==='jump'?.8:desired==='fall'?.32:s*.9,
+      desired==='jump'?.68:Math.max(0,-s)*.85,
+      desired==='jump'?.68:Math.max(0,s)*.85,
+      desired==='jump'?-.32:-.15,
+      desired==='jump'?-.32:-.15
+    ];
+    if(previousPose&&blend>0){
+      const duration=transitionDuration||.2;
+      // Decay the pose difference rather than resetting joint rotation at state changes.
+      const alpha=1-Math.exp(-Math.min(.05,Math.max(0,dt))*Math.log(50)/Math.max(.05,duration));
+      previousPose=previousPose.map((v,i)=>v+(target[i]-v)*alpha);
+      joints.forEach((b,i)=>b.rotation.x=previousPose[i]);
+      blend=Math.max(0,blend-dt);
+      if(blend===0)previousPose=null;
+    } else joints.forEach((b,i)=>b.rotation.x=target[i]);
     torso.rotation.z=(desired==='walk'||desired==='run')?Math.sin(phase)*.025:0;
     head.rotation.y=Math.sin(phase*.34)*.035;
     root.position.y=actor.y+((actor.grounded&&speed>.35)?Math.abs(Math.sin(phase))*.045:0);

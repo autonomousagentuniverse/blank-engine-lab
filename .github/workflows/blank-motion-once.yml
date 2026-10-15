@@ -1,0 +1,25 @@
+# Temporary, narrow GitHub CI smoke for this Alpha 0.6 motion commit only.
+# REMOVE immediately after this validation. Does not deploy or use secrets.
+name: Blank Engine - one-time motion integration validation
+on:
+  push:
+    paths:
+      - 'character/motion.mjs'
+      - 'test/motion.test.mjs'
+permissions:
+  contents: read
+jobs:
+  motion:
+    if: github.repository == 'autonomousagentuniverse/blank-engine-lab'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - run: npm install --ignore-scripts --no-audit --no-fund
+      - run: npm install --no-save --ignore-scripts --no-audit --no-fund three@0.186.1 @dimforge/rapier3d-compat@0.18.0
+      - run: npm test
+      - run: node scripts/motion-real-smoke.mjs
+      - run: node scripts/physics-real-smoke.mjs && node scripts/ik-real-smoke.mjs && node scripts/avatar-real-smoke.mjs

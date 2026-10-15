@@ -67,3 +67,7 @@ Run `npm test` for the pure contracts. To verify with actual glTFExporter/GLTFLo
 ## Alpha 0.6 IK development milestone
 
 The optional pose layer (`character/ik.mjs`) probes Rapier ground contacts and applies two-bone knee/elbow IK after the skeletal animation update. It preserves physics authority and degrades gracefully when imported GLBs lack a complete two-bone chain. See `docs/alpha06-ik-qa.md`. This code is **not deployed to Vercel**.
+
+
+### Alpha 0.6 motion polish (development)
+Grounded feet retain world-space stance locks, release on swing/jump/reach limits, and procedural gait phase follows physical speed. Imported GLB animation transitions retain cyclic walk/run phase and use bounded crossfades. Right-hand IK targets bounded object-surface contact points (farther interactions remain gestures); Rapier alone moves the player. Run `npm test` and `node scripts/motion-real-smoke.mjs` with pinned Three/Rapier. See `docs/alpha06-motion-qa.md`. No Vercel deployment.

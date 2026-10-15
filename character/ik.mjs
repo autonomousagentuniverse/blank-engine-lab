@@ -1,3 +1,4 @@
+import {nextGaitPhase,stanceForFoot,updateFootLock,calibrateHandContact} from './motion.mjs';
 /** Animation-layer IK. Rapier is the only authority for actor/world motion.
  * Two-bone IK adjusts rotations, never model/world translations.
  * Safe on rigs that are missing an ankle or wrist: unsupported chains are skipped.
@@ -106,38 +107,53 @@ export function createPoseController(THREE,rig){
   const chains=rig?.poseChains||{};
   let phase=0,locks={left:null,right:null};
   const tmp=Object.keys(chains).length?new THREE.Vector3():null;
+  const state=()=>Object.fromEntries(['left','right'].map(side=>[side,{
+    planted:!!locks[side]?.point&&locks[side].weight>.5,
+    weight:locks[side]?.weight??0,
+    position:locks[side]?.point?{...locks[side].point}:null
+  }]));
   return {
     get chains(){return Object.keys(chains);},
+    get footState(){return state();},
+    get gaitPhase(){return phase;},
     reset(){locks={left:null,right:null};phase=0;},
-    update({actor,dt,groundProbe,handTarget=null,reach=0}){
+    update({actor,dt,groundProbe,handTarget=null,handRadius=0,reach=0}){
       if(!actor||!(dt>=0)||!Number.isFinite(dt)||!rig?.root)return;
       rig.root.updateWorldMatrix(true,true);
-      const grounded=!!actor.grounded;
       const speed=Math.hypot(actor.vx||0,actor.vz||0);
-      phase+=(speed>.25?speed*.9:0)*Math.min(dt,.05);
-      if(!grounded){locks={left:null,right:null};return;}
+      phase=nextGaitPhase(phase,speed,dt);
       for(const side of ['left','right']){
         const chain=chains[`${side}Leg`];if(!chain||typeof groundProbe!=='function')continue;
         chain.lower.updateWorldMatrix(true,true);
-        const foot=chain.lower.localToWorld(tmp.copy(chain.endLocal));
-        const stance=speed<.25||Math.sin(phase+(side==='right'?Math.PI:0))>=-.25;
-        if(!stance){locks[side]=null;continue;}
-        const sample=groundContact(groundProbe(foot.x,foot.z,actor.y+1.2),actor.y);
-        if(!sample){locks[side]=null;continue;}
-        let lock=locks[side];
-        if(!lock||Math.hypot(lock.x-foot.x,lock.z-foot.z)>MAX_FOOT_REACH){lock={x:foot.x,y:sample.y+.035,z:foot.z};}
-        locks[side]=lock;
-        chain.upper.getWorldPosition(tmp);
-        const pole={x:tmp.x,y:tmp.y+.15,z:tmp.z-1};
-        applyTwoBoneIK(THREE,chain,lock,pole,speed<.25?.75:.65);
-        if(chain.end?.isBone)alignFootToGround(THREE,chain.end,sample.normal,.45);
+        const foot=chain.lower.localToWorld(tmp.copy(chain.endLocal)).clone();
+        const hip=chain.upper.getWorldPosition(new THREE.Vector3());
+        const grounded=!!actor.grounded;
+        const stance=grounded&&stanceForFoot(phase,side,speed);
+        const probePoint=locks[side]?.point??foot;
+        const sample=stance?groundContact(groundProbe(probePoint.x,probePoint.z,actor.y+1.2),actor.y):null;
+        const knee=chain.lower.getWorldPosition(new THREE.Vector3());
+        const maxReach=(hip.distanceTo(knee)+knee.distanceTo(foot))*.96;
+        // Neither foot follows moving ankles once planted. Stance ends on gait phase
+        // change, jumping, invalid contact, or a reach limit (never stretch the leg).
+        locks[side]=updateFootLock(locks[side],{stance:stance&&!!sample,foot,hip,
+          contact:sample,dt:Math.min(dt,.05),maxReach:Math.max(.15,maxReach)});
+        const lock=locks[side];
+        if(!lock.point||lock.weight<.025)continue;
+        const pole={x:hip.x,y:hip.y+.15,z:hip.z-1};
+        applyTwoBoneIK(THREE,chain,lock.point,pole,lock.weight*.86);
+        if(chain.end?.isBone&&lock.normal)alignFootToGround(THREE,chain.end,lock.normal,lock.weight*.45);
       }
-      if(reach>0&&finite(handTarget)){
-        const chain=chains.rightArm;if(!chain)return;
-        chain.upper.getWorldPosition(tmp);
-        // Never pull the hand beyond its anatomical reach or move the actor collider.
-        const pole={x:tmp.x+1,y:tmp.y-.2,z:tmp.z-.45};
-        applyTwoBoneIK(THREE,chain,handTarget,pole,clamp(reach,0,1)*.82);
+      if(reach>0&&finite(handTarget)&&chains.rightArm){
+        const chain=chains.rightArm;
+        const shoulder=chain.upper.getWorldPosition(new THREE.Vector3());
+        const elbow=chain.lower.getWorldPosition(new THREE.Vector3());
+        const hand=chain.lower.localToWorld(new THREE.Vector3().copy(chain.endLocal));
+        const length=shoulder.distanceTo(elbow)+elbow.distanceTo(hand);
+        if(length>.05){
+          const contact=calibrateHandContact(shoulder,handTarget,{armLength:length,surfaceRadius:handRadius});
+          const pole={x:shoulder.x+1,y:shoulder.y-.2,z:shoulder.z-.45};
+          applyTwoBoneIK(THREE,chain,contact.target,pole,clamp(reach,0,1)*.9);
+        }
       }
     }
   };
