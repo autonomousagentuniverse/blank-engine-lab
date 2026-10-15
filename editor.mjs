@@ -1,5 +1,5 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js';
-import { DEFAULT_SPEC, validateSpec, compilePrompt, worldLayout } from './core.mjs';
+import { DEFAULT_SPEC, validateSpec, compilePrompt, worldLayout, parseImportedGameSpec } from './core.mjs';
 const $=(id)=>document.getElementById(id);
 const holder=$('viewport');
 let spec;
@@ -143,6 +143,18 @@ $('dayBtn').onclick=()=>applyPrompt(spec.time==='night'?'Make it daytime':'Make 
 $('resetBtn').onclick=()=>{playerPos=new THREE.Vector3(0,.95,0);cameraYaw=.45;cameraPitch=.32;cameraDistance=16;setStatus('Camera and player reset.');};
 $('saveBtn').onclick=()=>{persist();setStatus('Project saved in this browser.');};
 $('exportBtn').onclick=exportSpec;
+$('importBtn').onclick=()=>$('importInput').click();
+$('importInput').onchange=async (event)=>{
+  const file=event.target.files?.[0];
+  try {
+    if(!file) return;
+    if(file.size>8192) throw new Error('GameSpec file must be under 8 KB');
+    const updated=parseImportedGameSpec(await file.text());
+    spec=updated; rebuild(); persist();
+    setStatus('Imported validated GameSpec. World regenerated.');
+  } catch(e) { setStatus('Import rejected: '+e.message,true); }
+  finally {event.target.value='';}
+};
 const openModal=()=>{$('jsonText').value=JSON.stringify(spec,null,2);$('modal').hidden=false;};
 const closeModal=()=>{$('modal').hidden=true;};
 $('navSpec').onclick=openModal;$('closeModal').onclick=closeModal;$('cancelSpec').onclick=closeModal;

@@ -1,4 +1,4 @@
-// Blank Engine GameSpec compiler and deterministic world generator
+// Blank Engine: versioned, renderer-independent world specification and safe command compiler.
 export const VERSION = 1;
 export const DEFAULT_SPEC = Object.freeze({
   version: VERSION, title: 'Neon Frontier', time: 'night', theme: 'cyan',
@@ -73,4 +73,12 @@ export function worldLayout(spec) {
     robots.push({x:Math.cos(a)*d,z:Math.sin(a)*d,phase:rnd()*Math.PI*2});
   }
   return {buildings:positions,robots};
+}
+
+/** Pure import boundary shared by browser and server tests. Never executes imported content. */
+export function parseImportedGameSpec(source) {
+  if (typeof source !== 'string' || source.length > 8192) throw new Error('GameSpec file must be valid JSON under 8 KB');
+  let parsed;
+  try { parsed=JSON.parse(source); } catch { throw new Error('GameSpec file is not valid JSON'); }
+  return validateSpec(parsed);
 }

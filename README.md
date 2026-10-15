@@ -25,6 +25,9 @@ Deploy as a static project with the project root as the output (no build step). 
 - No networking, marketplace, persistence server, advanced physics or sophisticated AAA visuals.
 - Add an LLM on the server side that outputs strictly validated GameSpec patches before live application; version and review all updates.
 
-The initial Vercel deployment was uploaded directly and is not Git-linked; pushing this repository does not automatically change that deployed build.
 
-This repository is proprietary work in progress. No open-source license has been granted.
+### Alpha 0.4 — persistent AI→game bridge
+
+Run **Blank Engine — create playable GameSpec (manual)** in GitHub Actions. Enter a world-building prompt, wait for six NVIDIA agents plus QA to finish, then download the workflow artifact. Import `blank-game-spec.json` in the updated browser editor (only after a separately authorized Vercel deploy) to regenerate the matching procedural 3D scene. PostgreSQL stores the accepted GameSpec revision and per-agent provenance. This is not a live interactive AI endpoint; browser requests cannot access the model or database directly.
+
+The existing Vercel deployment stays unchanged until explicitly authorized. Only Actions workflow_dispatch events invoke NVIDIA inference.

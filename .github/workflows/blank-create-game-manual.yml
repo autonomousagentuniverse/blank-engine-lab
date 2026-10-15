@@ -1,0 +1,45 @@
+name: Blank Engine — create playable GameSpec (manual)
+on:
+  workflow_dispatch:
+    inputs:
+      prompt:
+        description: Game creation instruction, 1–1000 characters
+        required: true
+        default: Create a futuristic village at night with ten buildings, four robots, and a marketplace mission.
+        type: string
+      project_id:
+        description: Optional existing Blank project UUID; leave blank to create a new project
+        required: false
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: blank-engine-manual-game-creation
+  cancel-in-progress: false
+jobs:
+  create-game:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Install server dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Run validation tests
+        run: npm test
+      - name: Create and persist a validated GameSpec
+        env:
+          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+          BLANK_PG_URL: ${{ secrets.BLANK_PG_URL }}
+          BLANK_GAME_PROMPT: ${{ inputs.prompt }}
+          BLANK_PROJECT_ID: ${{ inputs.project_id }}
+        run: node scripts/create-game.mjs
+      - name: Publish sanitized GameSpec and receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: blank-engine-game-spec
+          path: artifacts/*.json
+          if-no-files-found: error
+          retention-days: 7

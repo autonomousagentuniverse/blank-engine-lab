@@ -1,56 +1,71 @@
-/** Multi-agent GameSpec creation. All model calls stay server-side. */
+/** Six bounded, independently testable creation agents; they cannot bypass GameSpec validation. */
 import {DEFAULT_SPEC,validateSpec} from '../core.mjs';
-import {parseAgentJson,DEFAULT_NVIDIA_MODEL} from './nvidia.mjs';
+import {DEFAULT_NVIDIA_MODEL,parseAgentJson} from './nvidia.mjs';
+
 export const AGENT_ROLES=Object.freeze(['director','world','gameplay','character','mission','qa']);
 const specialists=['world','gameplay','character','mission'];
 const instructions={
- director:'Creative direction. Output JSON only: {"intent":"short text","title":"game title max 70 chars"}.',
- world:'Create a world using existing engine capabilities. Output JSON only: {"time":"day or night","theme":"cyan or violet or amber or emerald","buildings":10,"seed":25}. Use valid ranges.',
- gameplay:'Balance hostile robots. Output JSON only: {"robots":4}. Robot count must be integer from 0 to 80.',
- character:'Offer character ideas as future work; do not claim they already exist. Output JSON only: {"note":"character design idea"} with note under 200 chars.',
- mission:'Write one playable game goal. Output JSON only: {"mission":"short objective"} under 160 chars.',
- qa:'Review this version-1 GameSpec for basic validity and the requested gameplay; do not claim a live gameplay test. Output JSON only: {"approve":true,"issues":[]}. Reject if invalid.'
+ director:'Propose a concise creative direction for this playable game. Respond only JSON with keys: intent, title. Title max 70 characters.',
+ world:'Design the setting. Respond only JSON: {"time":"day|night","theme":"cyan|violet|amber|emerald","buildings":integer_0_to_150,"seed":integer_0_to_999999}.',
+ gameplay:'Balance simple action gameplay. Respond only JSON: {"robots":integer_0_to_80}.',
+ character:'Describe character ideas without claiming they are implemented. Respond only JSON: {"note":"string under 200 chars"}.',
+ mission:'Write one playable objective. Respond only JSON: {"mission":"string under 160 chars"}.',
+ qa:'Review the proposed JSON GameSpec for consistency and requested scope. Respond only JSON: {"approve":true_or_false,"issues":[]}. Do not claim to have played or rendered the game.',
 };
 export function roleModel(role,env=process.env) {
- if(!AGENT_ROLES.includes(role)) throw Error('Unsupported agent role');
- return env['BLANK_MODEL_'+role.toUpperCase()]||env.BLANK_MODEL||DEFAULT_NVIDIA_MODEL;
+  if(!AGENT_ROLES.includes(role)) throw new Error('Unsupported role');
+  const key=`BLANK_MODEL_${role.toUpperCase()}`;
+  return env[key]||env.BLANK_MODEL||DEFAULT_NVIDIA_MODEL;
 }
-export async function mapBounded(items,concurrency,fn) {
- if(!Number.isInteger(concurrency)||concurrency<1||concurrency>4) throw Error('Invalid concurrency');
- let next=0;const results=new Array(items.length);
- async function worker(){while(next<items.length){let i=next++;results[i]=await fn(items[i],i);}}
- await Promise.all(Array.from({length:Math.min(items.length,concurrency)},()=>worker()));
- return results;
+function restrictedMerge(spec,role,output) {
+  const allowed=role==='world'?['time','theme','buildings','seed']
+    :role==='gameplay'?['robots']
+    :role==='mission'?['mission']
+    :role==='director'?['title']:[];
+  const next={...spec};
+  for (const key of allowed) if(Object.hasOwn(output,key)) next[key]=output[key];
+  return validateSpec(next);
 }
-function merge(spec,role,out){
- const keys=role==='director'?['title']:role==='world'?['time','theme','buildings','seed']:role==='gameplay'?['robots']:role==='mission'?['mission']:[];
- let result={...spec};
- for(const k of keys) if(Object.hasOwn(out,k))result[k]=out[k];
- return validateSpec(result);
+function asJsonPrompt(instruction,spec,context='') {
+  const request=JSON.stringify({instruction,currentSpec:spec,context});
+  if(request.length>5000) throw new Error('AI context too large');
+  return request;
 }
-export async function createGameWithAgents({instruction,currentSpec=DEFAULT_SPEC,client,models={},concurrency=2,onResult=()=>{}}){
- if(typeof instruction!=='string'||!instruction.trim()||instruction.length>1000)throw Error('Invalid instruction');
- if(!client||typeof client.complete!=='function')throw Error('AI client required');
- const initial=validateSpec(currentSpec);
- const outputs={},usage={};
- async function call(role,spec,context=''){
-  const model=models[role]||roleModel(role);
-  const data=JSON.stringify({request:instruction,spec,context});
-  if(data.length>5000)throw Error('Agent input too large');
-  const reply=await client.complete({role,model,maxTokens:1024,messages:[
-   {role:'system',content:instructions[role]+' Respond with a single valid JSON object and no commentary. Preserve current spec if uncertain.'},
-   {role:'user',content:data}
-  ]});
-  const value=parseAgentJson(reply.content);
-  outputs[role]=value;usage[role]={model:reply.model,prompt_tokens:reply.usage?.prompt_tokens||0,completion_tokens:reply.usage?.completion_tokens||0};
-  onResult({role,model:reply.model,usage:usage[role]});
-  return value;
- }
- const director=await call('director',initial);
- let spec=merge(initial,'director',director);
- const pieces=await mapBounded(specialists,concurrency,role=>call(role,spec,JSON.stringify({intent:director.intent||''}).slice(0,350)));
- for(let i=0;i<specialists.length;i++)spec=merge(spec,specialists[i],pieces[i]);
- const review=await call('qa',spec,JSON.stringify({characterIdeas:outputs.character||{}}));
- if(review.approve!==true)throw Error('QA rejected generated GameSpec');
- return {spec:validateSpec(spec),roles:AGENT_ROLES,usage,notes:outputs.character?.note||'',qa:review};
+/** At most concurrency active independent jobs; propagates error without silent retries. */
+export async function mapBounded(values,concurrency,fn) {
+  if(!Number.isInteger(concurrency)||concurrency<1||concurrency>4) throw new Error('Invalid concurrency');
+  const results=new Array(values.length);
+  let next=0;
+  async function runner(){while(next<values.length){const i=next++;results[i]=await fn(values[i],i);}}
+  await Promise.all(Array.from({length:Math.min(concurrency,values.length)},()=>runner()));
+  return results;
+}
+/**
+ * Produces a validated v1 GameSpec. No generated code is executed, no database
+ * write occurs, and none of the LLMs can mutate the renderer directly.
+ */
+export async function createGameWithAgents({instruction,currentSpec=DEFAULT_SPEC,client,models={},concurrency=2,onResult=()=>{}}) {
+  if(typeof instruction!=='string'||!instruction.trim()||instruction.length>1000) throw new Error('Invalid game instruction');
+  if(!client||typeof client.complete!=='function') throw new Error('Model client required');
+  const initial=validateSpec(currentSpec);
+  const outputs={}; const usage={};
+  async function call(role,spec,context='') {
+    const reply=await client.complete({role,model:models[role]||roleModel(role),maxTokens:512,messages:[
+      {role:'system',content:instructions[role]+' Return strictly valid JSON with no commentary. If uncertain, preserve existing specification values.'},
+      {role:'user',content:asJsonPrompt(instruction,spec,context)}
+    ]});
+    const out=parseAgentJson(reply.content);
+    outputs[role]=out;
+    usage[role]={model:reply.model,prompt_tokens:reply.usage?.prompt_tokens||0,completion_tokens:reply.usage?.completion_tokens||0};
+    onResult({role,model:reply.model,usage:usage[role]});
+    return out;
+  }
+  const director=await call('director',initial);
+  let spec=restrictedMerge(initial,'director',director);
+  const contributions=await mapBounded(specialists,concurrency,role=>call(role,spec,JSON.stringify({direction:director.intent||''}).slice(0,350)));
+  // Apply in a stable order regardless of network response order.
+  for(let i=0;i<specialists.length;i++) spec=restrictedMerge(spec,specialists[i],contributions[i]);
+  const review=await call('qa',spec,JSON.stringify({characters:outputs.character}));
+  if(review.approve!==true) throw new Error('QA rejected generated GameSpec');
+  return {spec:validateSpec(spec),roles:AGENT_ROLES,usage,contributions:outputs,notes:outputs.character?.note||'',qa:review};
 }
