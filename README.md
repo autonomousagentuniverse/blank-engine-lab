@@ -46,3 +46,8 @@ The deterministic v1 quest adapter in `quest.mjs` turns recognized narrative pat
 Offline engine tests: `npm test`. WebGL rendering needs a browser that supports hardware acceleration and access to the Three.js CDN. Browser runtime visuals and GPU behavior must be tested before a production release.
 
 **Deployment policy:** GitHub commits do not auto-deploy Vercel. Only deploy on explicit manual authorization.
+
+
+## Alpha 0.6-dev: Hard part first
+
+The **rigged-skin / physical-character** integration is in progress. See [engineering notes](docs/alpha06-engineering.md) for accurate capabilities, test evidence, and limitations. Major Vercel deployment is intentionally deferred.

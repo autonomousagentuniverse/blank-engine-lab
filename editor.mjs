@@ -1,23 +1,31 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js';
 import { DEFAULT_SPEC, validateSpec, compilePrompt, parseImportedGameSpec } from './core.mjs';
 import { playableLayout, isWalkable, questPlan, startQuest, questEvent, nearestTarget, currentObjective, saveProgress, loadProgress, questTargets } from './quest.mjs';
+import {createActor,stepActor,stepAccumulator,createFallbackMover} from './physics/locomotion.mjs';
+import {initializeRapier,makePhysicsWorld} from './physics/rapier.mjs';
+import {createCharacterRig,SKIN_NAMES} from './character/rig.mjs';
 const $=(id)=>document.getElementById(id);
 const holder=$('viewport');
 let spec;
 try { spec=validateSpec(JSON.parse(localStorage.getItem('blankbox-game-v1'))); } catch { spec=validateSpec(DEFAULT_SPEC); }
-let renderer,scene,camera,player,light,hemi,sky,ground,beacon,gateDoor,lanternObject,world,quest,progress,robotActors=[],walls=[],objects=[],t=0,last=performance.now(),fpsSum=0,fpsFrames=0,cameraYaw=0.45,cameraPitch=0.32,cameraDistance=16,mouseDown=false,prevX=0,prevY=0,paused=false;
+let renderer,scene,camera,player,characterRig,actor,physicsWorld,physicsToken=0,physicsAccum=0,crateMeshes=[],light,hemi,sky,ground,beacon,gateDoor,lanternObject,world,quest,progress,robotActors=[],walls=[],objects=[],t=0,last=performance.now(),fpsSum=0,fpsFrames=0,cameraYaw=0.45,cameraPitch=0.32,cameraDistance=16,mouseDown=false,prevX=0,prevY=0,paused=false;
 const pressed=new Set();
 const palette={cyan:0x24bde4,violet:0x9c83ff,amber:0xffb95b,emerald:0x43dca8};
 let materials=[];
 let playerPos=new THREE.Vector3(0,0.95,0), beaconPos=new THREE.Vector3(27,0,25);
 const progressKey='blankbox-playstate-v1';
+const skinKey='blankbox-player-skin-v1';
+let selectedSkin=SKIN_NAMES.includes(localStorage.getItem(skinKey))?localStorage.getItem(skinKey):SKIN_NAMES[0];
 let autoDemoRequested=false;
 function material(color, extra={}) { const m=new THREE.MeshStandardMaterial({color,roughness:.62,metalness:.26,...extra}); materials.push(m); return m; }
 function addMesh(geo,mat,parent=scene){ const mesh=new THREE.Mesh(geo,mat); parent.add(mesh); return mesh; }
 function clearWorld(){
+  physicsToken++;
+  if(physicsWorld){physicsWorld.dispose();physicsWorld=null;}
+  crateMeshes=[];physicsAccum=0;
   for(const m of objects){scene.remove(m); m.traverse(n=>{if(n.geometry)n.geometry.dispose();});}
   for(const m of materials)m.dispose();
-  objects=[];materials=[];walls=[];robotActors=[];lanternObject=null;
+  objects=[];materials=[];walls=[];robotActors=[];lanternObject=null;characterRig=null;
 }
 function init(){
   scene=new THREE.Scene();
@@ -96,12 +104,28 @@ function rebuild(){
   playerPos.set(world.spawn.x,.95,world.spawn.z);
   world.buildings.forEach((b,i)=>makeBuilding(b.x,b.z,b.width,b.height,accent,i));
   world.robots.forEach((r,i)=>makeRobot(r.x,r.z,r.phase,i,accent));
-  const pgroup=new THREE.Group(),armor=material(0xc6e4ec,{metalness:.5}),trim=material(accent,{emissive:accent,emissiveIntensity:.8});
-  const chest=addMesh(new THREE.BoxGeometry(1.15,1.38,.7),armor,pgroup);chest.position.y=1.62;
-  const helmet=addMesh(new THREE.SphereGeometry(.47,12,8),armor,pgroup);helmet.position.y=2.64;
-  const face=addMesh(new THREE.BoxGeometry(.62,.17,.09),trim,pgroup);face.position.set(0,2.65,-.43);
-  for(const s of [-1,1]) {const limb=addMesh(new THREE.BoxGeometry(.32,.87,.35),armor,pgroup);limb.position.set(s*.3,.47,0);}
-  pgroup.position.copy(playerPos);pgroup.position.y=0;scene.add(pgroup);objects.push(pgroup);player=pgroup;
+  // A skinned player rig follows the authoritative physics actor, never the reverse.
+  actor=createActor(world.spawn.x,world.spawn.z);
+  characterRig=createCharacterRig(THREE,{skin:selectedSkin,makeMaterial:material});
+  player=characterRig.root;player.position.set(actor.x,0,actor.z);
+  scene.add(player);objects.push(player);
+  const generation=physicsToken;
+  $('physicsState').textContent='PHYSICS: LOADING';
+  initializeRapier().then(RAPIER=>{
+    if(generation!==physicsToken)return;
+    let engine;
+    try{engine=makePhysicsWorld(RAPIER,world,{gateOpen:progress.completed});}
+    catch(e){$('physicsState').textContent='PHYSICS: FALLBACK';return;}
+    if(generation!==physicsToken){engine.dispose();return;}
+    physicsWorld=engine;
+    engine.teleport(actor.x,actor.y,actor.z);
+    crateMeshes=engine.getCrates().map(crate=>{
+      const mesh=addMesh(new THREE.BoxGeometry(1.1,1.1,1.1),material(0xe5a15b,{metalness:.3,roughness:.7}));
+      mesh.position.set(crate.position.x,crate.position.y,crate.position.z);
+      objects.push(mesh);return mesh;
+    });
+    $('physicsState').textContent='PHYSICS: RAPIER';
+  }).catch(()=>{if(generation===physicsToken)$('physicsState').textContent='PHYSICS: FALLBACK';});
   beacon=new THREE.Group();beacon.position.copy(beaconPos);
   const ring=addMesh(new THREE.TorusGeometry(2.2,.12,8,48),material(0xffd27a,{emissive:0xffbc37,emissiveIntensity:1.8}),beacon);ring.position.y=3;
   const center=addMesh(new THREE.IcosahedronGeometry(.66),material(0xffdc86,{emissive:0xffa51d,emissiveIntensity:2}),beacon);center.position.y=3;
@@ -137,13 +161,26 @@ function update(dt){
   if(pressed.has('KeyS')||pressed.has('ArrowDown'))dz+=1;
   if(pressed.has('KeyA')||pressed.has('ArrowLeft'))dx-=1;
   if(pressed.has('KeyD')||pressed.has('ArrowRight'))dx+=1;
-  if(dx||dz){const angle=Math.atan2(dx,dz)+cameraYaw;const speed=10*dt;const vx=Math.sin(angle)*speed,vz=Math.cos(angle)*speed;
-    const nx=playerPos.x+vx,nz=playerPos.z+vz;
-    if(!wallCollision(nx,playerPos.z))playerPos.x=nx;
-    if(!wallCollision(playerPos.x,nz))playerPos.z=nz;
-    player.rotation.y=Math.atan2(vx,vz);
+  const angle=Math.atan2(dx,dz)+cameraYaw;
+  const magnitude=Math.min(1,Math.hypot(dx,dz));
+  const input={x:Math.sin(angle)*magnitude,z:Math.cos(angle)*magnitude,
+    jump:pressed.has('Space'),run:pressed.has('ShiftLeft')||pressed.has('ShiftRight')};
+  physicsAccum=stepAccumulator(physicsAccum,dt,step=>{
+    const move=physicsWorld ? (delta=>physicsWorld.step(delta)) : createFallbackMover((x,z)=>!wallCollision(x,z),actor);
+    actor=stepActor(actor,input,step,move);
+    if(physicsWorld)physicsWorld.setGateOpen(progress.completed);
+  });
+  playerPos.set(actor.x,actor.y,actor.z);
+  player.position.set(actor.x,0,actor.z);
+  characterRig.update(actor,dt);
+  if(Math.hypot(actor.vx,actor.vz)>0.2)player.rotation.y=Math.atan2(actor.vx,actor.vz);
+  if(physicsWorld){
+    const crates=physicsWorld.getCrates();
+    crateMeshes.forEach((mesh,i)=>{const body=crates[i];if(!body)return;
+      mesh.position.set(body.position.x,body.position.y,body.position.z);
+      mesh.quaternion.set(body.rotation.x,body.rotation.y,body.rotation.z,body.rotation.w);
+    });
   }
-  player.position.set(playerPos.x,Math.sin(t*9)*(dx || dz ? .05 : .01),playerPos.z);
   robotActors.forEach((r,i)=>{const a=t*.65+r.phase+i,rad=.9;const nx=r.homeX+Math.sin(a)*rad,nz=r.homeZ+Math.cos(a)*rad;
     if(isWalkable(world,nx,nz,1.1))r.group.position.set(nx,Math.sin(t*3+i)*.04,nz);else r.group.position.set(r.homeX,0,r.homeZ);
     r.group.rotation.y=-a;r.head.rotation.z=Math.sin(t*2+i)*.06;
@@ -151,7 +188,7 @@ function update(dt){
     r.marker.visible=quest.stages[progress.stage]?.type==='trade'&&!progress.traded.includes(i);
     r.marker.scale.setScalar(1+Math.sin(t*3+i)*.12);
   });
-  const look=new THREE.Vector3(playerPos.x,1.55,playerPos.z),cp=cameraPitch;
+  const look=new THREE.Vector3(playerPos.x,playerPos.y+1.55,playerPos.z),cp=cameraPitch;
   const dest=new THREE.Vector3(look.x+Math.sin(cameraYaw)*Math.cos(cp)*cameraDistance,look.y+Math.sin(cp)*cameraDistance,look.z+Math.cos(cameraYaw)*Math.cos(cp)*cameraDistance);
   camera.position.lerp(dest,Math.min(1,dt*10));camera.lookAt(look);
   // Gate is stationary so the player can walk through its arch once unlocked.
@@ -163,6 +200,7 @@ function syncUI(){
   $('gameTitle').textContent=spec.title;$('sceneName').textContent=spec.title;
   $('worldTime').textContent=spec.time==='night'?'Night':'Day';$('buildingCount').textContent=spec.buildings;
   $('robotCount').textContent=spec.robots;$('worldTheme').textContent=spec.theme[0].toUpperCase()+spec.theme.slice(1);
+  $('skinName').textContent=selectedSkin;
   $('worldLiveSummary').textContent=`${spec.robots} robots · ${spec.time==='day'?'Daytime':'Nighttime'} · ${spec.buildings} buildings`;
   $('missionText').textContent=spec.mission||'Explore the world';$('entityCount').textContent=spec.robots+spec.buildings+4;
   $('specPreview').textContent=JSON.stringify(spec,null,2);
@@ -189,7 +227,7 @@ function interact(){
   const target=nearestTarget(quest,progress,liveLayout(),playerPos);
   if(!target){setStatus('Move close to an active mission target, then press E or Interact.',true);return;}
   const out=questEvent(quest,progress,{type:target.type,index:target.index});
-  if(out.changed){progress=out.state;persistProgress();}
+  if(out.changed){progress=out.state;persistProgress();if(physicsWorld)physicsWorld.setGateOpen(progress.completed);}
   setStatus(out.message,!out.changed);refreshQuestHUD();
 }
 async function loadDemo(silent=false){
@@ -234,9 +272,10 @@ $('runBtn').onclick=()=>applyPrompt($('prompt').value);
 $('prompt').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();applyPrompt(e.target.value);}});
 document.querySelectorAll('[data-command]').forEach(x=>x.addEventListener('click',()=>applyPrompt(x.dataset.command)));
 $('dayBtn').onclick=()=>applyPrompt(spec.time==='night'?'Make it daytime':'Make it nighttime');
-$('resetBtn').onclick=()=>{playerPos.set(world.spawn.x,.95,world.spawn.z);cameraYaw=.45;cameraPitch=.32;cameraDistance=16;setStatus('Camera and player reset. Quest progress retained.');};
+$('resetBtn').onclick=()=>{actor=createActor(world.spawn.x,world.spawn.z);if(physicsWorld)physicsWorld.teleport(actor.x,0,actor.z);playerPos.set(actor.x,actor.y,actor.z);physicsAccum=0;cameraYaw=.45;cameraPitch=.32;cameraDistance=16;setStatus('Player and physics body reset. Quest progress retained.');};
 $('restartQuestBtn').onclick=()=>{clearProgress();progress=startQuest(quest);refreshQuestHUD();setStatus('Mission restarted.');};
 $('interactBtn').onclick=interact;
+$('skinBtn').onclick=()=>{selectedSkin=SKIN_NAMES[(SKIN_NAMES.indexOf(selectedSkin)+1)%SKIN_NAMES.length];characterRig.setSkin(selectedSkin);$('skinName').textContent=selectedSkin;try{localStorage.setItem(skinKey,selectedSkin);}catch{}setStatus('Changed skinned character appearance: '+selectedSkin);};
 $('demoBtn').onclick=()=>loadDemo();
 $('saveBtn').onclick=()=>{persist();setStatus('Project saved in this browser.');};
 $('exportBtn').onclick=exportSpec;
