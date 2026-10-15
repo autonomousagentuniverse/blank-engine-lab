@@ -1,8 +1,5 @@
-name: Blank Engine - one-time CC0 authored avatar real-browser test
+name: Blank Engine - manual CC0 authored avatar real-browser test
 on:
-  push:
-    paths:
-      - '.github/workflows/blank-real-asset-once.yml'
   workflow_dispatch:
 permissions:
   contents: read
