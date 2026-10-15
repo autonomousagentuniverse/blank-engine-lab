@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - '.github/workflows/blank-pbr-once.yml'
+      - 'scripts/material-real-smoke.mjs'
   workflow_dispatch:
 permissions:
   contents: read
