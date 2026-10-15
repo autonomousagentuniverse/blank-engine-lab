@@ -1,0 +1,43 @@
+name: Blank Engine - one-time corrected CC0 hero test
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/blank-hero-repair-once.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  hero:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@49933ea5288ca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Install Chrome and Three.js
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm install --no-save --ignore-scripts --no-audit --no-fund three@0.186.1 playwright@1.56.1
+          npx playwright install chrome
+      - name: Download and pin original licensed asset
+        run: |
+          mkdir -p character-lab/assets
+          curl --fail --location --retry 3 --silent --show-error 'https://raw.githubusercontent.com/kunalkushwaha/vsim/3f97faf85e46d2f9a122b0a8b8d3ccc0af598f91/packages/assets/library/suited.glb' -o character-lab/assets/hero.glb
+          echo '7b5ff9d323b3bea72eddc2faac3ea3ec8f40232acfa2318692ee30efbc202508  character-lab/assets/hero.glb' | sha256sum -c -
+      - name: Repair materials and run regression tests
+        run: |
+          node scripts/repair-hero.mjs
+          npm test
+      - name: Verify real Chrome/WebGL corrected avatar
+        run: node scripts/character-lab-browser.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: blank-hero-repaired-qa
+          path: |
+            artifacts/blank-hero-suited-repaired.glb
+            artifacts/character-lab-*.png
+          if-no-files-found: ignore
+          retention-days: 7

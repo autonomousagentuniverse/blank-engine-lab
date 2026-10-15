@@ -9,7 +9,8 @@ export const HERO_REFERENCE=Object.freeze({
   pinnedBlob:'95033d30a4b4bab4a4a0ce3eb176a4ce7d73d0b5',
   download:'https://raw.githubusercontent.com/kunalkushwaha/vsim/3f97faf85e46d2f9a122b0a8b8d3ccc0af598f91/packages/assets/library/suited.glb',
   localUrl:'./assets/hero.glb',
-  bytes:6675064
+  bytes:6675064,
+  sha256:'7b5ff9d323b3bea72eddc2faac3ea3ec8f40232acfa2318692ee30efbc202508'
 });
 export const MAX_CHARACTER_BYTES=32*1024*1024;
 export function inspectLabGlb(arrayBuffer){

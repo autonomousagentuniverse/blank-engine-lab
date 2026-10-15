@@ -4,19 +4,20 @@ import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {HERO_REFERENCE,MAX_CHARACTER_BYTES,inspectLabGlb,auditLoadedCharacter,createCharacterPackage} from './character-spec.mjs';
 import {mapHumanoidBones,REQUIRED_HUMANOID} from '../character/retarget.mjs';
+import {repairSuitedMaterials} from './repair.mjs';
 const $=id=>document.getElementById(id);
 const viewport=$('viewport'),renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.outputColorSpace=THREE.SRGBColorSpace;
-renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.25;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.02;
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 viewport.insertBefore(renderer.domElement,viewport.firstChild);
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x131f31);
 const camera=new THREE.PerspectiveCamera(39,1,.04,180);camera.position.set(3,1.85,4.7);
 const controls=new OrbitControls(camera,renderer.domElement);controls.target.set(0,1,0);controls.enableDamping=true;controls.minDistance=1.15;controls.maxDistance=14;controls.maxPolarAngle=Math.PI*.54;
-const ambient=new THREE.HemisphereLight(0xdbeeff,0x384052,2.0);scene.add(ambient);
-const key=new THREE.DirectionalLight(0xfff1e0,4.4);key.position.set(-3,7,4);key.castShadow=true;key.shadow.mapSize.set(2048,2048);key.shadow.camera.left=-6;key.shadow.camera.right=6;key.shadow.camera.top=8;key.shadow.camera.bottom=-6;key.shadow.bias=-.00035;scene.add(key);
-const rim=new THREE.DirectionalLight(0x85b7fc,3.3);rim.position.set(4,5,-4);scene.add(rim);
-const fill=new THREE.DirectionalLight(0xc3deff,1.6);fill.position.set(3,2,5);scene.add(fill);
+const ambient=new THREE.HemisphereLight(0xdbeeff,0x384052,1.25);scene.add(ambient);
+const key=new THREE.DirectionalLight(0xfff1e0,2.6);key.position.set(-3,7,4);key.castShadow=true;key.shadow.mapSize.set(2048,2048);key.shadow.camera.left=-6;key.shadow.camera.right=6;key.shadow.camera.top=8;key.shadow.camera.bottom=-6;key.shadow.bias=-.00035;scene.add(key);
+const rim=new THREE.DirectionalLight(0x85b7fc,1.55);rim.position.set(4,5,-4);scene.add(rim);
+const fill=new THREE.DirectionalLight(0xc3deff,.9);fill.position.set(3,2,5);scene.add(fill);
 const floor=new THREE.Mesh(new THREE.PlaneGeometry(40,40),new THREE.MeshStandardMaterial({color:0x5d6877,roughness:.88,metalness:0}));floor.rotateX(-Math.PI/2);floor.receiveShadow=true;scene.add(floor);
 const ring=new THREE.Mesh(new THREE.TorusGeometry(1.05,.018,8,128),new THREE.MeshBasicMaterial({color:0x80abbc,transparent:true,opacity:.6}));ring.rotateX(-Math.PI/2);ring.position.y=.018;scene.add(ring);
 const grid=new THREE.GridHelper(40,40,0x51647a,0x30465b);grid.position.y=.013;grid.material.transparent=true;grid.material.opacity=.26;scene.add(grid);
@@ -30,6 +31,7 @@ function updateMaterialSelection(){
  $('roughnessValue').textContent=Number($('roughness').value).toFixed(2);$('metalnessValue').textContent=Number($('metalness').value).toFixed(2);
 }
 function cleanModel(){
+ $('downloadRepairedBtn').disabled=true;
  if(skeletonHelper){scene.remove(skeletonHelper);skeletonHelper.geometry.dispose();skeletonHelper.material.dispose();skeletonHelper=null;}
  if(stageRoot){scene.remove(stageRoot);stageRoot=null;}
  if(mixer){mixer.stopAllAction();mixer.uncacheRoot(sourceRoot);mixer=null;}
@@ -76,15 +78,19 @@ async function openReference(){
  try{let response=await fetch(HERO_REFERENCE.localUrl,{cache:'no-store'});if(!response.ok)response=await fetch(HERO_REFERENCE.download,{cache:'force-cache'});
   if(!response.ok)throw Error(`Reference not reachable (HTTP ${response.status}); use Import GLB instead`);
   const raw=await response.arrayBuffer();if(raw.byteLength!==HERO_REFERENCE.bytes)throw Error('Reference size differs from pinned upstream asset');
-  await loadGLB(raw,{name:'Suited Human — CC0 reference',origin:HERO_REFERENCE.source,license:HERO_REFERENCE.license});
+  if(await assetDigest(raw)!==HERO_REFERENCE.sha256)throw Error('Reference SHA-256 integrity check failed');
+  await loadGLB(repairSuitedMaterials(raw),{name:'Suited Human — corrected CC0 reference',origin:HERO_REFERENCE.source,license:HERO_REFERENCE.license});
+  $('downloadRepairedBtn').disabled=false;
+  setStatus('Repaired reference loaded: 3 skinned meshes, opaque face, shirt and shoes; face/chest transparency artifacts corrected.');
  }catch(e){setStatus('Reference loading failed: '+e.message,true)}finally{$('referenceBtn').disabled=false;}
 }
 $('referenceBtn').onclick=openReference;
+$('downloadRepairedBtn').onclick=()=>{if(!assetBytes||assetName!=='Suited Human — corrected CC0 reference')return;const b=new Blob([assetBytes],{type:'model/gltf-binary'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download='blank-hero-suited-repaired.glb';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);};
 $('avatarFile').onchange=async event=>{const file=event.target.files?.[0];try{if(file){if(file.size>MAX_CHARACTER_BYTES)throw Error('GLB is larger than 32 MiB');await loadGLB(await file.arrayBuffer(),{name:file.name,origin:'local-file',license:'user-supplied'});}}catch(e){setStatus('Import rejected: '+e.message,true)}finally{event.target.value='';}};
 $('clipSelect').onchange=e=>playClip(Number(e.target.value));$('pauseBtn').onclick=()=>{paused=!paused;$('pauseBtn').textContent=paused?'Resume':'Pause';};
 $('resetPoseBtn').onclick=()=>{actions.forEach(a=>a.stop());mixer?.setTime(0);if(actions.length)playClip(Number($('clipSelect').value));};
 $('turntableBtn').onclick=()=>{turntable=!turntable;$('turntableBtn').textContent=`Orbit: ${turntable?'on':'off'}`;};
-$('lightBtn').onclick=()=>{sunMode=!sunMode;ambient.intensity=sunMode?2.8:2.0;key.intensity=sunMode?5.5:4.4;rim.intensity=sunMode?.9:3.3;scene.background.setHex(sunMode?0xa9b9cc:0x131f31);$('lightBtn').textContent=`Lighting: ${sunMode?'daylight':'studio'}`;};
+$('lightBtn').onclick=()=>{sunMode=!sunMode;ambient.intensity=sunMode?1.65:1.25;key.intensity=sunMode?3.2:2.6;rim.intensity=sunMode?.5:1.55;scene.background.setHex(sunMode?0xa9b9cc:0x131f31);$('lightBtn').textContent=`Lighting: ${sunMode?'daylight':'studio'}`;};
 $('skeletonBtn').onclick=()=>{skeletonVisible=!skeletonVisible;if(!sourceRoot){skeletonVisible=false;return;}if(skeletonHelper){scene.remove(skeletonHelper);skeletonHelper.geometry.dispose();skeletonHelper.material.dispose();skeletonHelper=null;}if(skeletonVisible){skeletonHelper=new THREE.SkeletonHelper(sourceRoot);scene.add(skeletonHelper)}$('skeletonBtn').textContent=`Skeleton: ${skeletonVisible?'on':'off'}`;};
 $('wireBtn').onclick=()=>{wireframe=!wireframe;for(const {material} of originalMaterials.values())material.wireframe=wireframe;$('wireBtn').textContent=`Wireframe: ${wireframe?'on':'off'}`;};
 $('materialSelect').onchange=updateMaterialSelection;

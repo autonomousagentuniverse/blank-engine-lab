@@ -25,10 +25,15 @@ try{
  await page.locator('#referenceBtn').click();
  await page.waitForFunction(()=>document.querySelector('#runtimeState')?.textContent.includes('ACTIVE'),{timeout:40000});
  assert.equal(await page.locator('#viewport canvas').count(),1);
+ assert.equal(await page.locator('#downloadRepairedBtn').isEnabled(),true);
+ assert.match(await page.locator('#status').innerText(),/Repaired reference loaded/);
  assert.match(await page.locator('#status').innerText(),/skinned meshes/);
  const numMaterials=await page.locator('#materialSelect option').count();assert.ok(numMaterials>=2,`expected multiple real material slots, got ${numMaterials}`);
  const clipCount=await page.locator('#clipSelect option').count();assert.ok(clipCount>=2,`expected authored motion, got ${clipCount}`);
  assert.ok(await page.locator('#quality').isVisible());assert.match(await page.locator('#quality').innerText(),/Photorealism: NOT VERIFIED/);
+ await mkdir(join(root,'artifacts'),{recursive:true});
+ await page.locator('#clipSelect').selectOption({label:'idle'});await page.waitForTimeout(200);
+ await page.screenshot({path:join(root,'artifacts','character-lab-repaired-idle.png'),fullPage:true});
  await page.locator('#clipSelect').selectOption({index:Math.min(1,clipCount-1)});await page.waitForTimeout(350);
  await page.locator('#roughness').evaluate(el=>{el.value='0.66';el.dispatchEvent(new Event('input',{bubbles:true}));});await page.locator('#metalness').evaluate(el=>{el.value='0.12';el.dispatchEvent(new Event('input',{bubbles:true}));});
  await page.locator('#lightBtn').click();await page.locator('#skeletonBtn').click();await page.locator('#skeletonBtn').click();
