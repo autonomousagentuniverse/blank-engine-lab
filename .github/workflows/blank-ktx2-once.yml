@@ -5,6 +5,7 @@ on:
     paths:
       - materials/compression.mjs
       - .github/workflows/blank-ktx2-once.yml
+      - scripts/ktx2-browser-smoke.mjs
   workflow_dispatch:
 permissions:
   contents: read

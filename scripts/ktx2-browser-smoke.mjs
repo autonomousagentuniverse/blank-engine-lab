@@ -31,7 +31,7 @@ try{
  await page.locator('#pbrAlbedo').setInputFiles({name:'sample_uastc.ktx2',mimeType:'image/ktx2',buffer:source});
  await page.locator('#pbrImport').click();
  await page.waitForFunction(()=>document.querySelector('#status')?.textContent.includes('1 KTX2'),{timeout:45000});
- assert.match(await page.locator('#materialSummary').innerText(),/est\. GPU/i);
+ assert.match(await page.locator('#materialSummary').innerText(),/estimated GPU payload/i);
  assert.equal(await page.locator('#physicsState').innerText(),'PHYSICS: RAPIER');
  assert.equal(await page.locator('#questProgress').innerText(),quest);
  assert.equal(await page.locator('#viewport canvas').getAttribute('data-ktx-test'),'true');
