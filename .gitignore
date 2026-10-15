@@ -6,3 +6,6 @@ dist/
 
 # Downloaded third-party texture packs are kept as CI artifacts until licensed release packaging
 /library/
+
+# Character Builder reference GLB is downloaded into a local CI-only asset cache.
+character-lab/assets/*.glb

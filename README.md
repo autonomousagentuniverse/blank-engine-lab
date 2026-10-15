@@ -90,3 +90,10 @@ Run `node scripts/prepare-material-library.mjs --out . --resolution 1k` in an in
 ### Alpha 0.6: budgeted architecture and visual regression
 
 The procedural Night Market buildings now include deterministic windows batched into GPU instanced draws, entry doors, distinct rooftop styles and shared trim/glass materials. Colliders and navigation remain unchanged. The HUD reports draw calls, and a manual browser regression exercises real Chrome, Three.js/Rapier, mobile-width controls, and day/night screenshots. See [architecture QA](docs/alpha06-architecture.md). No Vercel deployment.
+
+
+## Character Builder v1 — isolated hero studio (Alpha 0.6 development)
+
+Open `/character-lab/` for a standalone realistic, rigged humanoid test lab. The lab previews a license-verified MakeHuman/MPFB suited human GLB (CC0), with authored animations, UV/PBR material inspection, studio lighting, bones/wireframe diagnostics, model statistics, SHA-256 CharacterSpec export, and mobile responsive layout. Asset files are prepared locally or at CI time; see [full build / acceptance documentation](docs/character-builder-v1.md).
+
+A high-quality realtime preview is not a certification of photorealism; visual acceptance and optional Blender/Cycles still rendering remain separate gates. No Vercel deployment or backend secrets.
