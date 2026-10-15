@@ -41,3 +41,4 @@ jobs:
             character-lab/assets/hero.glb
           if-no-files-found: ignore
           retention-days: 7
+# Retest correct directory-index resolution in the isolated lab server.
