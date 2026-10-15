@@ -1,0 +1,39 @@
+name: Blank Engine - one-time CC0 authored avatar real-browser test
+on:
+  push:
+    paths:
+      - '.github/workflows/blank-real-asset-once.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  actual-asset:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Install pinned real Three, Rapier and browser
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm install --no-save --ignore-scripts --no-audit --no-fund three@0.186.1 @dimforge/rapier3d-compat@0.18.0 playwright@1.56.1
+          npx playwright install chrome
+      - name: Download CC0 model at pinned upstream commit
+        run: |
+          mkdir -p .ci-assets
+          curl --fail --location --retry 3 --silent --show-error 'https://raw.githubusercontent.com/mrdoob/three.js/eba30de865cfbf31ac736f792defd9a60ff28d57/examples/models/gltf/RobotExpressive/RobotExpressive.glb' -o .ci-assets/RobotExpressive.glb
+      - name: Audit actual model and run regression suite
+        run: |
+          node scripts/real-asset-preflight.mjs .ci-assets/RobotExpressive.glb
+          npm test
+      - name: Test real authored avatar in headless Chrome
+        run: node scripts/real-asset-browser.mjs .ci-assets/RobotExpressive.glb
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: blank-alpha06-real-asset-browser
+          path: artifacts/alpha06-authored-browser.png
+          if-no-files-found: ignore
+          retention-days: 7

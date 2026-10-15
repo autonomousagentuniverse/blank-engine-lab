@@ -1,0 +1,10 @@
+import {readFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
+import assert from 'node:assert/strict';
+import {inspectAvatarGlb} from '../character/gltf.mjs';
+const path=process.argv[2];if(!path)throw Error('Pass real GLB path');
+const bytes=readFileSync(path),ab=bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength),manifest=inspectAvatarGlb(ab);
+assert(manifest.skins.length>0);
+const names=(manifest.nodes||[]).map(n=>n.name||'');
+const joints=[...new Set(manifest.skins.flatMap(s=>s.joints.map(i=>names[i]||String(i))))];
+console.log(JSON.stringify({asset:'RobotExpressive',license:'CC0-1.0',sha256:createHash('sha256').update(bytes).digest('hex'),bytes:bytes.length,joints,animations:(manifest.animations||[]).map(a=>a.name),materials:manifest.materials?.length||0},null,2));
