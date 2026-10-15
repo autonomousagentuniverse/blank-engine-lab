@@ -1,41 +1,30 @@
-# Blank Engine Lab — Alpha 0.1
+# Blank Engine Lab — alpha 0.1
 
-AI-native game engine experiment for the **Blank Box** console concept.
+A browser-based first test of the **Blank Box** AI-native game-engine core. This is a 3D **runtime and deterministic GameSpec compiler**, **not** a native Vulkan engine or a completed LLM-connected game generator.
 
-This repository contains the **browser-ready single-file build** of Blank Engine Lab, matching the initial Vercel prototype. The native C++/Vulkan game engine and LLM orchestration layer are future phases, not present in this alpha.
+## Features
+- Realtime 3D sandbox rendered with Three.js WebGL (`0.186.1`, module loaded from jsDelivr).
+- First-party versioned world specification, validator, procedural city generator and prompt-to-command compiler.
+- Player movement, third-person camera, basic entity simulation, collision, procedural robots and buildings.
+- Rebuild environment from commands, edit GameSpec as JSON, browser-local save, JSON export.
+- Desktop WASD/arrow controls, mouse orbit and touch directional controls.
+- Prototype tests of compiler validation and deterministic generation.
 
-## Try it
+## Local development
+Serve this folder with any local static server, e.g. `python3 -m http.server 8080`, and open `http://localhost:8080`. Modern browser and access to jsDelivr are required. No build or npm install is needed.
 
-- [Vercel preview](https://blank-engine-ib4ze16uz-autonomousagentuniverse-3582.vercel.app) (may require access through the owner’s Vercel account)
-- Run locally: `python3 -m http.server 8080` from the repository root, then open `http://localhost:8080`.
+Run unit tests with `node --test test.mjs` (Node 18+). These tests validate the compiler and world generator; WebGL needs separate browser tests.
 
-A browser with WebGL and network access to the Three.js CDN is required.
+## Vercel
+Deploy as a static project with the project root as the output (no build step). Preview deployments are the initial target.
 
-## Implemented
+## Limitations / next work
+- Three.js currently abstracts WebGL; a production native engine would replace the renderer adapter.
+- Natural language edit commands use a **rule-based parser**. No LLM is wired and no provider credentials are stored.
+- Robots follow simple deterministic patrols; they're not autonomous LLM agents.
+- No networking, marketplace, persistence server, advanced physics or sophisticated AAA visuals.
+- Add an LLM on the server side that outputs strictly validated GameSpec patches before live application; version and review all updates.
 
-- Real-time 3D environment with controllable player, third-person camera, buildings and robots.
-- A versioned GameSpec with validation and seeded procedural world generation.
-- Simple deterministic robot patrol simulation and player/world interaction.
-- Rule-based world-edit commands (for example: add robots, change the lighting, regenerate layout).
-- JSON editing, local browser save and GameSpec export.
-- Mouse/keyboard and touch controls.
+The initial Vercel deployment was uploaded directly and is not Git-linked; pushing this repository does not automatically change that deployed build.
 
-## Current limitations
-
-- **No LLM connection yet.** World editing uses a deterministic command parser.
-- **No original Vulkan renderer.** Three.js/WebGL is the prototype rendering backend.
-- **No multiplayer, asset-generation pipeline, real physics middleware, server persistence or AAA-grade graphics.**
-- This is a prototype and does not yet include production hardening or full browser E2E testing.
-
-## Next engineering milestones
-
-1. Extract the engine compiler and renderer adapter into independently tested modules.
-2. Connect a provider-agnostic LLM service that emits only validated GameSpec patches.
-3. Implement scene snapshots, change history, rollback, and automated gameplay testing.
-4. Expand gameplay systems and performance benchmarks.
-
-## Deployment
-
-The initial preview was uploaded directly to Vercel. The Vercel project is **not Git-linked yet**, so GitHub commits do not automatically update that deployment.
-
-This project is proprietary work in progress. No open-source license has been granted.
+This repository is proprietary work in progress. No open-source license has been granted.
