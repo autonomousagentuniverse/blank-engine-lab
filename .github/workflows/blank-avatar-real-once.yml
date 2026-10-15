@@ -28,3 +28,5 @@ jobs:
         run: node scripts/avatar-real-smoke.mjs
 
 # Re-run after fixing GLB import controls in index.html.
+
+# Final donor-to-avatar motion retargeting roundtrip test.
