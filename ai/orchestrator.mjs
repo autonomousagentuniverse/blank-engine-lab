@@ -37,7 +37,7 @@ export async function createGameWithAgents({instruction,currentSpec=DEFAULT_SPEC
   const model=models[role]||roleModel(role);
   const data=JSON.stringify({request:instruction,spec,context});
   if(data.length>5000)throw Error('Agent input too large');
-  const reply=await client.complete({role,model,maxTokens:512,messages:[
+  const reply=await client.complete({role,model,maxTokens:1024,messages:[
    {role:'system',content:instructions[role]+' Respond with a single valid JSON object and no commentary. Preserve current spec if uncertain.'},
    {role:'user',content:data}
   ]});
