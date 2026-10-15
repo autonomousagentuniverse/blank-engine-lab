@@ -1,4 +1,4 @@
-# Single-use integration test, removed after execution.
+# Temporary approved integration check, retry after low-reasoning configuration.
 name: Blank Engine - one-time authorized NVIDIA integration check
 on:
   push:
