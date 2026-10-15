@@ -2,7 +2,7 @@ import {fadeSeconds} from './motion.mjs';
 /** Client-only, self-contained glTF 2.0 GLB import boundary.
  * Never loads remote sidecar resources or imports scripts from user content.
  */
-import {assertHumanoidMap,mapHumanoidBones,boneRotationClips} from './retarget.mjs';
+import {assertHumanoidMap,mapHumanoidBones,boneRotationClips,retargetRotationClip} from './retarget.mjs';
 import {makeMappedChains} from './ik.mjs';
 import {calibrateRigSoles} from './calibration.mjs';
 export const MAX_AVATAR_BYTES=8*1024*1024;
@@ -81,6 +81,26 @@ export function createGlbAvatar(THREE,gltf){
   return {
     root,poseChains,soleOffsets,skinnedCount:skinned,boneCount:Object.keys(mapping).length,
     get animation(){return playing;},
+    installRetargetedClips(donor){
+      if(disposed)throw Error('Avatar disposed');
+      if(!donor?.scene||!Array.isArray(donor.animations))throw Error('Animation source GLB is invalid');
+      // Preflight every clip before touching the existing mixer actions: failures
+      // must never damage a working player animation set.
+      const replacements=[];
+      for(const state of states){
+        const source=findClip(donor.animations,state);
+        if(!source)continue;
+        const mapped=retargetRotationClip(THREE,source,donor.scene,gltf.scene,{name:`${state}-retargeted`});
+        replacements.push([state,mapped]);
+      }
+      if(!replacements.length)throw Error('No matching idle/walk/run/jump/fall animation clips found in motion GLB');
+      for(const [state,clip] of replacements){
+        const previous=actions[state];previous.stop();
+        actions[state]=mixer.clipAction(clip);
+        if(playing===state)actions[state].reset().play();
+      }
+      return replacements.length;
+    },
     update(actor,dt){
       if(disposed)return;
       const desired=states.includes(actor.motion)?actor.motion:'idle';
@@ -111,3 +131,12 @@ export async function loadGlbAvatar(THREE,GLTFLoader,buffer){
   const gltf=await new Promise((resolve,reject)=>new GLTFLoader().parse(buffer,'',resolve,reject));
   return createGlbAvatar(THREE,gltf);
 }
+
+/** Import a second rigged animation donor and return its already-parsed scene.
+ * The caller may safely release donor textures/meshes after clip data is copied.
+ */
+export async function loadMotionGlb(THREE,GLTFLoader,buffer){
+  inspectAvatarGlb(buffer);
+  return new Promise((resolve,reject)=>new GLTFLoader().parse(buffer,'',resolve,reject));
+}
+export function disposeMotionGlb(gltf){if(gltf?.scene)release(gltf.scene);}

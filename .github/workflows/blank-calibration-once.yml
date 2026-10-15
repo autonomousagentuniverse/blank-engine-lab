@@ -36,3 +36,5 @@ jobs:
           name: blank-calibration-browser
           path: artifacts/alpha06-ik-browser.png
           if-no-files-found: ignore
+
+# Retest after preserving preexisting donor motion import.
