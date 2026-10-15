@@ -329,7 +329,7 @@ async function loadAvatarBytes(buffer,{restoring=false}={}){
       try{await loadMotionBytes(avatarMotionBytes,{restoring:true});}
       catch{avatarMotionBytes=null;$('avatarStatus').textContent='Avatar: imported GLB · saved donor clip unavailable (fallback animations active)';}
     }
-    $('avatarStatus').textContent=`Avatar: rigged GLB (${candidate.boneCount} bones, ${candidate.skinnedCount} skinned meshes) · calibrated feet L=${(candidate.soleOffsets.left??0).toFixed(2)}m R=${(candidate.soleOffsets.right??0).toFixed(2)}m · animation blended to physics`;
+    $('avatarStatus').textContent=`Avatar: rigged GLB (${candidate.boneCount} bones, ${candidate.skinnedCount} skinned meshes) · calibrated feet L=${(candidate.soleOffsets.left??0).toFixed(2)}m R=${(candidate.soleOffsets.right??0).toFixed(2)}m · Walk: ${candidate.clipSources.walk} · Run: ${candidate.clipSources.run}`;
     if(!restoring)setStatus('Imported rigged GLB. Walk, run or jump to test skeletal animation.');
   }catch(e){
     if(current!==avatarGeneration)return;

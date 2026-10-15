@@ -31,7 +31,24 @@ export function inspectAvatarGlb(buffer) {
   }
   return manifest;
 }
-function findClip(clips,key){return clips.find(c=>new RegExp(`(^|[^a-z])${key}([^a-z]|$)`,'i').test(c.name))||null;}
+/** Exact authored animation aliases, not substring guesses such as WalkJump. */
+export function selectLocomotionClips(clips){
+ if(!Array.isArray(clips))throw Error('Invalid authored animation list');
+ const aliases={idle:['idle','idling','standing','stand'],walk:['walk','walking'],run:['run','running','sprint','sprinting'],jump:['jump','jumping','leap'],fall:['fall','falling','airborne']};
+ const out={};
+ for(const [state,names] of Object.entries(aliases)){
+  for(const name of names){
+   const clip=clips.find(c=>typeof c?.name==='string'&&c.name.trim().toLowerCase()===name&&c.tracks?.length);
+   if(clip){out[state]=clip;break;}
+  }
+  if(out[state])continue;
+  for(const name of names){
+   const clip=clips.find(c=>typeof c?.name==='string'&&c.name.toLowerCase().split(/[|:/]/).pop().trim()===name&&c.tracks?.length);
+   if(clip){out[state]=clip;break;}
+  }
+ }
+ return out;
+}
 function poseTrack(THREE,bone,amplitude,period) {
   if(!bone)return null;
   const rest=bone.quaternion.clone(),angles=[0,amplitude,0,-amplitude,0];
@@ -68,10 +85,12 @@ export function createGlbAvatar(THREE,gltf){
   root.add(visual);
   const mixer=new THREE.AnimationMixer(gltf.scene);
   const authored=boneRotationClips(THREE,gltf.animations||[],gltf.scene);
+  const authoredStates=selectLocomotionClips(authored);
   const fallback=generateLocomotionClips(THREE,mapping);
-  const states=['idle','walk','run','jump','fall'],actions={};
+  const states=['idle','walk','run','jump','fall'],actions={},clipSources={};
   for(const state of states){
-    const clip=findClip(authored,state)||fallback.find(c=>c.name===state);
+    const clip=authoredStates[state]||fallback.find(c=>c.name===state);
+    clipSources[state]=authoredStates[state]?'authored':'fallback';
     actions[state]=mixer.clipAction(clip);actions[state].enabled=true;
   }
   const poseChains=makeMappedChains(THREE,mapping);
@@ -79,7 +98,7 @@ export function createGlbAvatar(THREE,gltf){
   let playing='idle',disposed=false;
   actions.idle.play();
   return {
-    root,poseChains,soleOffsets,skinnedCount:skinned,boneCount:Object.keys(mapping).length,
+    root,poseChains,soleOffsets,clipSources:Object.freeze({...clipSources}),skinnedCount:skinned,boneCount:Object.keys(mapping).length,
     get animation(){return playing;},
     installRetargetedClips(donor){
       if(disposed)throw Error('Avatar disposed');
