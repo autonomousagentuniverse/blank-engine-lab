@@ -1,11 +1,7 @@
 # Narrowly scoped one-time validation. Removed after result; no deployment.
-name: Blank Engine - one-time architectural visual and WebGL regression
+name: Blank Engine - manual architectural visual and WebGL regression
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/blank-architecture-one-time.yml'
 permissions:
   contents: read
 jobs:
