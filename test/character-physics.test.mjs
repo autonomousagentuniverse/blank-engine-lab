@@ -88,7 +88,7 @@ test('rig creates actual skinned mesh binding for four articulated limbs and app
 
 function fakeRapier(){
  const telemetry={colliders:[],bodies:[],steps:0,freed:0,removed:[]};
- const desc=(type,args)=>({type,args,setTranslation(x,y,z){this.t={x,y,z};return this;},setRestitution(){return this;},setFriction(){return this;},setLinearDamping(){return this;},setAngularDamping(){return this;}});
+ const desc=(type,args)=>({type,args,setTranslation(x,y,z){this.t={x,y,z};return this;},setRotation(q){this.q=q;return this;},setRestitution(){return this;},setFriction(){return this;},setLinearDamping(){return this;},setAngularDamping(){return this;}});
  class World {constructor(){this.t=telemetry;} createCollider(d){const c={kind:d.type,t:d.t||{x:0,y:0,z:0},setTranslation(v){this.t=v;},translation(){return this.t;}};telemetry.colliders.push(c);return c;}
  createRigidBody(d){const b={t:d.t,translation(){return this.t},rotation(){return {x:0,y:0,z:0,w:1}}};telemetry.bodies.push(b);return b;}
  createCharacterController(){return {setApplyImpulsesToDynamicBodies(){},enableAutostep(){},enableSnapToGround(){},computeColliderMovement(c,d){this.d=d;},computedMovement(){return this.d;},computedGrounded(){return false;},free(){telemetry.freed++}};}
@@ -100,7 +100,8 @@ test('Rapier adapter constructs static geometry + capsule + dynamic crates and d
  const p=makePhysicsWorld(rapier,scene);
  assert.equal(telemetry.bodies.length,2);
  assert.equal(telemetry.colliders.filter(c=>c.kind==='capsule').length,1);
- assert.equal(telemetry.colliders.length,1+3+1+1+2);
+ assert.equal(telemetry.colliders.length,1+3+1+1+2+1);
+ assert.equal(p.getTerrain().length,1);
  assert.equal(p.getCrates().length,2);
  const before=p.position;p.step({x:.1,y:0,z:.2});assert.equal(p.position.x,before.x+.1);
  p.teleport(3,1,2);assert.equal(p.position.y,1);

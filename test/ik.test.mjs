@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {solveTwoBone,groundContact,createPoseController,makeMappedChains,MAX_FOOT_STEP} from '../character/ik.mjs';
+import {solveTwoBone,groundContact,createPoseController,makeMappedChains,MAX_FOOT_STEP,alignFootToGround} from '../character/ik.mjs';
 const p=(x,y,z)=>({x,y,z});
 const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z);
 
@@ -47,4 +47,10 @@ test('pose controller degrades to no-op when imported rig lacks foot chains',()=
  ctrl.update({actor:{grounded:false,vx:0,vz:0,y:1},dt:.016});
  assert.equal(probes,0);
  assert.deepEqual(ctrl.chains,[]);
+});
+
+test('ankle rotation safely ignores incomplete rigs and steep contacts',()=>{
+ assert.equal(alignFootToGround(null,null,{x:0,y:1,z:0}),false);
+ assert.equal(alignFootToGround(null,{isBone:true,parent:null},{x:0,y:1,z:0}),false);
+ assert.equal(alignFootToGround(null,{isBone:true,parent:{}},{x:1,y:0,z:0}),false);
 });

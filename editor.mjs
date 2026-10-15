@@ -127,6 +127,14 @@ function rebuild(){
     if(generation!==physicsToken){engine.dispose();return;}
     physicsWorld=engine;
     engine.teleport(actor.x,actor.y,actor.z);
+    // Match slope visuals exactly to the Rapier contact geometry.
+    for(const ramp of engine.getTerrain()){
+      const mesh=addMesh(new THREE.BoxGeometry(ramp.size.x,ramp.size.y,ramp.size.z),
+        material(spec.time==='night'?0x2a5365:0x7b9e9d,{roughness:.93,metalness:.05}));
+      mesh.position.set(ramp.position.x,ramp.position.y,ramp.position.z);
+      mesh.quaternion.set(ramp.rotation.x,ramp.rotation.y,ramp.rotation.z,ramp.rotation.w);
+      mesh.userData.calibrationRamp=true;objects.push(mesh);
+    }
     crateMeshes=engine.getCrates().map(crate=>{
       const mesh=addMesh(new THREE.BoxGeometry(1.1,1.1,1.1),material(0xe5a15b,{metalness:.3,roughness:.7}));
       mesh.position.set(crate.position.x,crate.position.y,crate.position.z);

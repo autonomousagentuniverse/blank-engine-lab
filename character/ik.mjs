@@ -78,12 +78,29 @@ export function makeMappedChains(THREE,bones){
     ['Arm',`${side}UpperArm`,`${side}LowerArm`,`${side}Hand`]]) {
     const upper=bones?.[upperKey],lower=bones?.[lowerKey],end=bones?.[endKey];
     if(upper?.isBone&&lower?.isBone&&end?.isBone&&end.parent===lower){
-      out[`${side}${part}`]={upper,lower,endLocal:end.position.clone()};
+      out[`${side}${part}`]={upper,lower,endLocal:end.position.clone(),end};
     }
   }
   return out;
 }
 
+/** Apply bounded ground-normal compensation to an imported humanoid ankle. */
+export function alignFootToGround(THREE,foot,normal,blend=.35){
+ if(!foot?.isBone||!foot.parent||!finite(normal)||normal.y<.8||!(blend>0))return false;
+ foot.updateWorldMatrix(true,true);
+ const worldQ=foot.getWorldQuaternion(new THREE.Quaternion());
+ const up=new THREE.Vector3(0,1,0).applyQuaternion(worldQ).normalize();
+ const targetUp=new THREE.Vector3(normal.x,normal.y,normal.z).normalize();
+ const angle=Math.acos(clamp(up.dot(targetUp),-1,1));
+ if(angle<.003)return true;
+ const capped=up.clone().lerp(targetUp,Math.min(1,.28/angle)).normalize();
+ const delta=new THREE.Quaternion().setFromUnitVectors(up,capped);
+ const parentQ=foot.parent.getWorldQuaternion(new THREE.Quaternion());
+ const desired=parentQ.invert().multiply(delta.multiply(worldQ));
+ foot.quaternion.slerp(desired,clamp(blend,0,.75));
+ foot.updateWorldMatrix(true,true);
+ return true;
+}
 /** World-space stance lock with budgeted stretch. In air, release all locks. */
 export function createPoseController(THREE,rig){
   const chains=rig?.poseChains||{};
@@ -113,6 +130,7 @@ export function createPoseController(THREE,rig){
         chain.upper.getWorldPosition(tmp);
         const pole={x:tmp.x,y:tmp.y+.15,z:tmp.z-1};
         applyTwoBoneIK(THREE,chain,lock,pole,speed<.25?.75:.65);
+        if(chain.end?.isBone)alignFootToGround(THREE,chain.end,sample.normal,.45);
       }
       if(reach>0&&finite(handTarget)){
         const chain=chains.rightArm;if(!chain)return;

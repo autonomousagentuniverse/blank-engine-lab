@@ -1,5 +1,6 @@
 /** Rapier WASM physics adapter. Renderer-independent: tracks feet position and rigid bodies. */
 import {clearPosition} from '../quest.mjs';
+import {buildTerrainFeatures} from './terrain.mjs';
 export const RAPIER_CDN='https://cdn.jsdelivr.net/npm/@dimforge/rapier3d-compat@0.18.0/rapier.mjs';
 let modulePromise;
 export async function loadRapier(importer=()=>import(RAPIER_CDN)) {
@@ -24,6 +25,9 @@ export function makePhysicsWorld(RAPIER,layout,{gateOpen=false}={}) {
     const depth=b.width*(.7+(i%3)*.14);
     world.createCollider(RAPIER.ColliderDesc.cuboid(b.width/2,b.height/2,depth/2).setTranslation(b.x,b.height/2,b.z));
   });
+  const terrain=buildTerrainFeatures(layout);
+  terrain.forEach(s=>world.createCollider(RAPIER.ColliderDesc.cuboid(s.size.x/2,s.size.y/2,s.size.z/2)
+    .setTranslation(s.position.x,s.position.y,s.position.z).setRotation(s.rotation)));
   let gateCollider=world.createCollider(RAPIER.ColliderDesc.cuboid(2.4,2.25,.4).setTranslation(layout.gate.x,2.25,layout.gate.z));
   const heightOffset=.83;
   const playerCollider=world.createCollider(RAPIER.ColliderDesc.capsule(.46,.37).setTranslation(layout.spawn.x,heightOffset,layout.spawn.z));
@@ -60,6 +64,7 @@ export function makePhysicsWorld(RAPIER,layout,{gateOpen=false}={}) {
       if(!hit||!Number.isFinite(hit.timeOfImpact))return null;
       return {y:originY-hit.timeOfImpact,normal:{x:hit.normal.x,y:hit.normal.y,z:hit.normal.z}};
     },
+    getTerrain(){return terrain.map(s=>({...s,position:{...s.position},size:{...s.size},rotation:{...s.rotation}}));},
     getCrates(){return crates.map(({id,body})=>({id,position:body.translation(),rotation:body.rotation()}));},
     setGateOpen(open){if(open&&gateCollider){world.removeCollider(gateCollider,true);gateCollider=null;}},
     teleport(x,y,z){playerCollider.setTranslation({x,y:y+heightOffset,z});world.step();},
