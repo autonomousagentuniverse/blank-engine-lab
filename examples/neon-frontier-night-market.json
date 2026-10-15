@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "title": "Neon Frontier: Night Market",
+  "time": "night",
+  "theme": "cyan",
+  "seed": 42,
+  "buildings": 10,
+  "robots": 4,
+  "mission": "Explore the neon-lit marketplace, barter with four robots, and locate the hidden crystal lantern to unlock the village's secret gate."
+}
