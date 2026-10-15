@@ -1,0 +1,28 @@
+# One-time, test-only verification for the explicitly authorized Alpha 0.6 work.
+# No Vercel credentials, deployment steps, or stored application secrets.
+# Delete this file after verification; push scope is only this exact file.
+name: Blank Engine - one-time real GLB avatar smoke
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/blank-avatar-real-once.yml'
+permissions:
+  contents: read
+jobs:
+  real-avatar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Install engine dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Install pinned real Three.js runtime for verification
+        run: npm install --no-save --ignore-scripts --no-audit --no-fund three@0.186.1 @dimforge/rapier3d-compat@0.18.0
+      - name: All regression tests
+        run: npm test
+      - name: Real GLTFExporter to GLTFLoader character and retarget integration
+        run: node scripts/avatar-real-smoke.mjs
