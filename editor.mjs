@@ -4,7 +4,7 @@ import { playableLayout, isWalkable, questPlan, startQuest, questEvent, nearestT
 import {createActor,stepActor,stepAccumulator,createFallbackMover} from './physics/locomotion.mjs';
 import {initializeRapier,makePhysicsWorld} from './physics/rapier.mjs';
 import {createCharacterRig,SKIN_NAMES} from './character/rig.mjs';
-import {loadGlbAvatar,MAX_AVATAR_BYTES} from './character/gltf.mjs';
+import {loadGlbAvatar,loadMotionGlb,disposeMotionGlb,MAX_AVATAR_BYTES} from './character/gltf.mjs';
 const $=(id)=>document.getElementById(id);
 const holder=$('viewport');
 let spec;
@@ -17,7 +17,7 @@ let playerPos=new THREE.Vector3(0,0.95,0), beaconPos=new THREE.Vector3(27,0,25);
 const progressKey='blankbox-playstate-v1';
 const skinKey='blankbox-player-skin-v1';
 let selectedSkin=SKIN_NAMES.includes(localStorage.getItem(skinKey))?localStorage.getItem(skinKey):SKIN_NAMES[0];
-let avatarBytes=null,avatarGeneration=0;
+let avatarBytes=null,avatarMotionBytes=null,avatarGeneration=0;
 let autoDemoRequested=false;
 function material(color, extra={}) { const m=new THREE.MeshStandardMaterial({color,roughness:.62,metalness:.26,...extra}); materials.push(m); return m; }
 function addMesh(geo,mat,parent=scene){ const mesh=new THREE.Mesh(geo,mat); parent.add(mesh); return mesh; }
@@ -304,8 +304,10 @@ async function loadAvatarBytes(buffer,{restoring=false}={}){
     candidate=await loadGlbAvatar(THREE,GLTFLoader,buffer);
     if(current!==avatarGeneration){candidate.dispose();return;}
     // Preserve existing scene and physics if loading or validation fails.
+    if(!restoring)avatarMotionBytes=null;
     avatarBytes=buffer;
     replaceAvatarRig(candidate);
+    if(avatarMotionBytes)await loadMotionBytes(avatarMotionBytes,{restoring:true});
     $('avatarStatus').textContent=`Avatar: rigged GLB (${candidate.boneCount} mapped bones, ${candidate.skinnedCount} skinned meshes) · animation blended to physics`;
     if(!restoring)setStatus('Imported rigged GLB. Walk, run or jump to test skeletal animation.');
   }catch(e){
@@ -314,6 +316,27 @@ async function loadAvatarBytes(buffer,{restoring=false}={}){
     else {$('avatarStatus').textContent='Avatar import rejected: '+e.message;setStatus('Avatar import rejected: '+e.message,true);}
   }
 }
+async function loadMotionBytes(buffer,{restoring=false}={}){
+  if(!avatarBytes||!characterRig?.installRetargetedClips)throw Error('Import a rigged character GLB before adding motion clips');
+  const generation=avatarGeneration,rig=characterRig;
+  let donor;
+  try{
+    const {GLTFLoader}=await import('three/addons/loaders/GLTFLoader.js');
+    donor=await loadMotionGlb(THREE,GLTFLoader,buffer);
+    if(generation!==avatarGeneration||rig!==characterRig)return;
+    const count=characterRig.installRetargetedClips(donor);
+    avatarMotionBytes=buffer;
+    $('avatarStatus').textContent=`Avatar: imported GLB · ${count} donor motion states retargeted`;
+    if(!restoring)setStatus(`Transferred ${count} locomotion animations onto the current avatar skeleton.`);
+  }finally{disposeMotionGlb(donor);}
+}
+$('motionBtn').onclick=()=>$('motionInput').click();
+$('motionInput').onchange=async event=>{
+  const file=event.target.files?.[0];
+  try {if(!file)return;if(file.size>MAX_AVATAR_BYTES)throw Error('GLB must be under 8 MB');await loadMotionBytes(await file.arrayBuffer());}
+  catch(e){setStatus('Motion import rejected: '+e.message,true);}
+  finally{event.target.value='';}
+};
 $('avatarBtn').onclick=()=>$('avatarInput').click();
 $('avatarInput').onchange=async event=>{
   const file=event.target.files?.[0];
@@ -322,7 +345,7 @@ $('avatarInput').onchange=async event=>{
   finally{event.target.value='';}
 };
 $('skinBtn').onclick=()=>{
-  if(avatarBytes){avatarBytes=null;avatarGeneration++;replaceAvatarRig(createCharacterRig(THREE,{skin:selectedSkin,makeMaterial:material}));$('avatarStatus').textContent='Avatar: procedural rig restored';setStatus('Imported GLB unloaded; procedural avatar restored.');return;}
+  if(avatarBytes){avatarBytes=null;avatarMotionBytes=null;avatarGeneration++;replaceAvatarRig(createCharacterRig(THREE,{skin:selectedSkin,makeMaterial:material}));$('avatarStatus').textContent='Avatar: procedural rig restored';setStatus('Imported GLB unloaded; procedural avatar restored.');return;}
   selectedSkin=SKIN_NAMES[(SKIN_NAMES.indexOf(selectedSkin)+1)%SKIN_NAMES.length];characterRig.setSkin(selectedSkin);$('skinName').textContent=selectedSkin;
   try{localStorage.setItem(skinKey,selectedSkin);}catch{}
   setStatus('Changed skinned character appearance: '+selectedSkin);

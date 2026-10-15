@@ -70,7 +70,7 @@ test('retarget rejects invalid keyframe data',()=>{
 });
 test('browser has an import-map for pinned GLTFLoader and import controls',()=>{
  const html=readFileSync(new URL('index.html',rootUrl),'utf8'),editor=readFileSync(new URL('editor.mjs',rootUrl),'utf8');
- assert.match(html,/type="importmap"/);assert.match(html,/id="avatarInput"/);assert.match(html,/id="avatarStatus"/);
- assert.match(editor,/loadGlbAvatar/);assert.match(editor,/restoring:true/);
+ assert.match(html,/type="importmap"/);assert.match(html,/id="avatarInput"/);assert.match(html,/id="avatarStatus"/);assert.match(html,/id="motionInput"/);
+ assert.match(editor,/loadGlbAvatar/);assert.match(editor,/loadMotionBytes/);assert.match(editor,/restoring:true/);
  assert.doesNotMatch(editor,/NVIDIA_API_KEY|BLANK_PG_URL/);
 });

@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {GLTFExporter} from 'three/addons/exporters/GLTFExporter.js';
-import {inspectAvatarGlb,loadGlbAvatar} from '../character/gltf.mjs';
+import {inspectAvatarGlb,loadGlbAvatar,loadMotionGlb,disposeMotionGlb} from '../character/gltf.mjs';
 import {retargetRotationClip,mapHumanoidBones} from '../character/retarget.mjs';
 // GLTFExporter expects browser FileReader for Blob-backed buffers.
 if(!globalThis.FileReader){globalThis.FileReader=class {
@@ -58,5 +58,23 @@ for(const role of ['hips','leftUpperArm','rightUpperArm','leftUpperLeg','rightUp
 const retargeted=retargetRotationClip(THREE,imported.animations.find(c=>c.name==='Walk'),imported.scene,target);
 assert(retargeted.tracks.some(t=>t.name==='Thigh.L.quaternion'));
 assert(retargeted.tracks.every(t=>!t.name.endsWith('.position')));
+// A second animation-donor GLB uses Blender bone labels, not Mixamo labels.
+// Verify that the live imported Mixamo avatar accepts retargeted donor movement.
+const blenderNames=['Hips','Spine','Head','UpperArm.L','UpperArm.R','Thigh.L','Thigh.R'];
+bones.forEach((b,i)=>{b.name=blenderNames[i]});
+const donorClip=new THREE.AnimationClip('Run',1,[
+ new THREE.QuaternionKeyframeTrack('Thigh.L.quaternion',[0,.5,1],[0,0,0,1,...rotation.toArray(),0,0,0,1]),
+ new THREE.VectorKeyframeTrack('Hips.position',[0,1],[0,1.45,0,50,1.45,0])
+]);
+const donorOutput=await new Promise((resolve,reject)=>new GLTFExporter().parse(source,resolve,reject,{binary:true,animations:[donorClip]}));
+const donorAb=donorOutput instanceof ArrayBuffer?donorOutput:donorOutput.buffer.slice(donorOutput.byteOffset,donorOutput.byteOffset+donorOutput.byteLength);
+const donor=await loadMotionGlb(THREE,GLTFLoader,donorAb);
+const importedStates=avatar.installRetargetedClips(donor);
+assert.equal(importedStates,1);
+assert.equal(donor.animations[0].name,'Run');
+disposeMotionGlb(donor);
+avatar.update({motion:'run',y:0,vx:5,vz:0},.2);
+assert.equal(avatar.animation,'run');
+assert.equal(avatar.root.position.y,0);
 avatar.dispose();
-console.log(`REAL_AVATAR_SMOKE: PASS; glbBytes=${ab.byteLength}; mappedBones=${avatar.boneCount}; states=walk,jump,fall; retargetedTracks=${retargeted.tracks.length}; physicsY=1.26`);
+console.log(`REAL_AVATAR_SMOKE: PASS; glbBytes=${ab.byteLength}; mappedBones=${avatar.boneCount}; states=walk,jump,fall; retargetedTracks=${retargeted.tracks.length}; donorStates=${importedStates}; physicsY=1.26`);
