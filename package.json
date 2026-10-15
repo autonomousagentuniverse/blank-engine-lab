@@ -1,12 +1,14 @@
 {
   "name": "blank-engine-lab",
-  "version": "0.1.1",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "scripts": {
     "test": "node --test test.mjs test/*.test.mjs",
     "db:check": "node scripts/db-admin.mjs check",
-    "db:migrate": "node scripts/db-admin.mjs migrate"
+    "db:migrate": "node scripts/db-admin.mjs migrate",
+    "ai:smoke": "node scripts/nvidia-smoke.mjs",
+    "ai:demo": "node scripts/ai-demo.mjs"
   },
   "dependencies": {
     "pg": "8.16.3"
