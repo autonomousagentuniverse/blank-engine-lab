@@ -106,11 +106,13 @@ export function createPBRLibrary(THREE,initial=DEFAULT_MATERIALS){
   installAuthored(target,set){own();if(!TARGETS.includes(target)||!set?.textures?.albedo||!set?.budget||typeof set.dispose!=='function')throw Error('Invalid authored texture set');
    const otherPixels=[...authored].reduce((n,[key,value])=>n+(key===target?0:value.budget.pixels),0);
    if(otherPixels+set.budget.pixels>MAX_SET_PIXELS)throw Error('All authored surfaces together exceed the 32 MiB mobile texture budget');
+   const otherGPU=[...authored].reduce((n,[key,value])=>n+(key===target?0:(value.budget.gpuEstimatedBytes??value.budget.decodedBytes)),0);
+   if(otherGPU+(set.budget.gpuEstimatedBytes??set.budget.decodedBytes)>32*1048576)throw Error('All authored surfaces together exceed 32 MiB estimated GPU payload');
    const old=authored.get(target);authored.set(target,set);if(materials.has(target))apply(target,materials.get(target));if(old!==set)old?.dispose();return set.budget;},
   hasAuthored:target=>authored.has(target),
   applyTo:(target,m)=>{if(!TARGETS.includes(target))throw Error('Unknown material target');return apply(target,m);},
   get profiles(){return {...profiles}},
-  get budget(){return {width:TEXTURE_SIZE,height:TEXTURE_SIZE,uniquePresets:cache.size,mapCount:cache.size*3,cpuBytes:cache.size*3*TEXTURE_SIZE*TEXTURE_SIZE*4,maxBytes:MAX_TEXTURE_BYTES,authoredPixels:[...authored.values()].reduce((n,s)=>n+s.budget.pixels,0),authoredBytes:[...authored.values()].reduce((n,s)=>n+s.budget.decodedBytes,0)};},
+  get budget(){return {width:TEXTURE_SIZE,height:TEXTURE_SIZE,uniquePresets:cache.size,mapCount:cache.size*3,cpuBytes:cache.size*3*TEXTURE_SIZE*TEXTURE_SIZE*4,maxBytes:MAX_TEXTURE_BYTES,authoredPixels:[...authored.values()].reduce((n,s)=>n+s.budget.pixels,0),authoredBytes:[...authored.values()].reduce((n,s)=>n+s.budget.decodedBytes,0),authoredGPUBytes:[...authored.values()].reduce((n,s)=>n+(s.budget.gpuEstimatedBytes??s.budget.decodedBytes),0)};},
   dispose(){if(disposed)return;disposed=true;for(const m of materials.values())m.dispose();for(const set of cache.values())for(const m of Object.values(set))m.dispose();for(const entry of authored.values())entry.dispose();authored.clear();materials.clear();cache.clear();}
  };
 }

@@ -75,3 +75,7 @@ Grounded feet retain world-space stance locks, release on swing/jump/reach limit
 ### Authored high-resolution PBR textures (Alpha 0.6 development)
 
 The material editor now accepts local PNG/JPEG/WebP color maps, optional tangent-space normals, and packed ORM images on buildings, terrain, roads, robots and procedural armor. Each map can be up to 2048 pixels, with a strict global decoded-source budget of 32 MiB across authored surfaces. Image-only changes do not restart Rapier, the active quest, or the renderer. Presets remain fallbacks; source maps are tab-local and **not persisted or uploaded**. See [texture QA and limits](docs/alpha06-authored-textures.md).
+
+### GPU compressed PBR textures (Alpha 0.6 development)
+
+The PBR editor supports local Basis Universal KTX2 textures (ETC1S or UASTC), using pinned Three.js transcoding and renderer-format detection. PNG/JPEG/WebP remain supported, and an explicit color fallback can be supplied. The offline conversion CLI uses Khronos KTX-Software; this is not an image-generation service. See [the KTX2 pipeline and testing limits](docs/alpha06-ktx2.md). No Vercel auto-deployment.

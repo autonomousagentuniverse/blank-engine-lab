@@ -7,7 +7,7 @@ import {createCharacterRig,SKIN_NAMES} from './character/rig.mjs';
 import {loadGlbAvatar,loadMotionGlb,disposeMotionGlb,MAX_AVATAR_BYTES} from './character/gltf.mjs';
 import {createPoseController} from './character/ik.mjs';
 import {createPBRLibrary,DEFAULT_MATERIALS,PRESETS,TARGETS,validateMaterialProfiles,compileMaterialCommand,tileBoxGeometry,tilePlaneGeometry} from './materials/pbr.mjs';
-import {loadAuthoredSet} from './materials/authored.mjs';
+import {loadCompressedAuthoredSet,createKTX2Adapter} from './materials/compression.mjs';
 const $=(id)=>document.getElementById(id);
 const holder=$('viewport');
 let spec;
@@ -17,6 +17,7 @@ const pressed=new Set();
 const palette={cyan:0x24bde4,violet:0x9c83ff,amber:0xffb95b,emerald:0x43dca8};
 let materials=[],pbrLibrary=null,robotBodyMaterials=[];
 const authoredFiles=new Map(); // Session-only, never persisted to browser storage.
+let ktx2Adapter=null;
 const materialKey='blankbox-material-profiles-v1';
 let materialProfiles={...DEFAULT_MATERIALS};
 try{materialProfiles=validateMaterialProfiles(JSON.parse(localStorage.getItem(materialKey)));}catch{}
@@ -174,7 +175,7 @@ function rebuild(){
     for(const sx of [-1.35,1.35]){const post=addMesh(new THREE.CylinderGeometry(.07,.07,2.8,6),material(0x7299ba),stall);post.position.set(sx,1.4,-.7);}
     scene.add(stall);objects.push(stall);
   }
-  for(const [target,files] of authoredFiles)applyAuthoredFiles(target,files,pbrLibrary,{restoring:true}).catch(e=>setStatus('Texture restore failed: '+e.message,true));
+  for(const [target,entry] of authoredFiles)applyAuthoredFiles(target,entry.files,pbrLibrary,{restoring:true,fallbacks:entry.fallbacks}).catch(e=>setStatus('Texture restore failed: '+e.message,true));
   syncUI(); refreshQuestHUD();
 }
 function frame(now){requestAnimationFrame(frame);let dt=Math.min(.05,(now-last)/1000);last=now;if(!paused){update(dt);renderer.render(scene,camera);}fpsSum+=dt;fpsFrames++;if(fpsSum>=.5){$('fps').textContent=Math.round(fpsFrames/fpsSum)+' FPS';fpsSum=0;fpsFrames=0;}}
@@ -279,7 +280,7 @@ function setStatus(text,error=false){const el=$('status');el.textContent=text;el
 function syncMaterialUI(){
  const target=$('materialTarget')?.value||'buildings';
  if($('materialPreset'))$('materialPreset').value=materialProfiles[target];
- if($('materialSummary')&&pbrLibrary){const budget=pbrLibrary.budget;$('materialSummary').textContent=pbrLibrary.hasAuthored(target)?target+': imported images · '+(budget.authoredBytes/1048576).toFixed(1)+' MiB decoded · current session only':target+': '+materialProfiles[target]+' · '+budget.mapCount+' maps, '+(budget.cpuBytes/1048576).toFixed(2)+' MiB';}
+ if($('materialSummary')&&pbrLibrary){const budget=pbrLibrary.budget;$('materialSummary').textContent=pbrLibrary.hasAuthored(target)?target+': imported PBR · '+(budget.authoredGPUBytes/1048576).toFixed(2)+' MiB estimated GPU payload · current session only':target+': '+materialProfiles[target]+' · '+budget.mapCount+' maps, '+(budget.cpuBytes/1048576).toFixed(2)+' MiB';}
 }
 function persistMaterials(){try{localStorage.setItem(materialKey,JSON.stringify(materialProfiles));}catch{setStatus('Texture preferences could not be saved in this browser.',true);}}
 function updateMaterial(target,preset){
@@ -314,24 +315,34 @@ function applyPrompt(text){
 function persist(){try{localStorage.setItem('blankbox-game-v1',JSON.stringify(spec));}catch(e){setStatus('Local storage unavailable; use Export to save your project.',true);}}
 function exportSpec(){const b=new Blob([JSON.stringify(spec,null,2)],{type:'application/json'});const url=URL.createObjectURL(b);const a=document.createElement('a');a.href=url;a.download='blank-game-spec.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);setStatus('Downloaded validated GameSpec JSON.');}
 
-async function applyAuthoredFiles(target,files,library,{restoring=false}={}){
- const set=await loadAuthoredSet(THREE,files);
+async function ensureKTX2Adapter(files){
+ if(!Object.values(files).some(file=>file&&/\.ktx2$/i.test(file.name)))return null;
+ if(!ktx2Adapter){
+  const {KTX2Loader}=await import('three/addons/loaders/KTX2Loader.js');
+  ktx2Adapter=createKTX2Adapter(KTX2Loader,renderer);
+ }
+ return ktx2Adapter;
+}
+async function applyAuthoredFiles(target,files,library,{restoring=false,fallbacks={}}={}){
+ const transcoder=await ensureKTX2Adapter(files);
+ const set=await loadCompressedAuthoredSet(THREE,files,{transcoder,fallbacks});
  if(library!==pbrLibrary){set.dispose();return false;}
  try{
   library.installAuthored(target,set);
   if(target==='robots')for(const mat of robotBodyMaterials){const glow=mat.emissive?.clone();library.applyTo(target,mat);if(glow)mat.emissive.copy(glow);}
-  authoredFiles.set(target,files);syncMaterialUI();
-  if(!restoring)setStatus('Imported '+set.budget.maps+' authored PBR map(s) for '+target+' · '+(set.budget.decodedBytes/1048576).toFixed(1)+' MiB · physics and quest preserved.');
+  authoredFiles.set(target,{files,fallbacks});syncMaterialUI();
+  if(!restoring)setStatus('Imported '+set.budget.maps+' authored PBR map(s) for '+target+' · '+set.budget.ktx2Slots+' KTX2 ('+set.budget.compressedSlots+' GPU compressed) · '+(set.budget.gpuEstimatedBytes/1048576).toFixed(2)+' MiB estimated texture payload · physics and quest preserved.');
   return true;
  }catch(e){set.dispose();throw e;}
 }
 async function importAuthoredImages(){
  const target=$('materialTarget').value;
  const files={albedo:$('pbrAlbedo').files?.[0],normal:$('pbrNormal').files?.[0],orm:$('pbrOrm').files?.[0]};
+ const fallbacks={albedo:$('pbrFallback').files?.[0]};
  if(!files.albedo){setStatus('Select a color/albedo image first.',true);return;}
  for(const slot of ['normal','orm'])if(!files[slot])delete files[slot];
  $('pbrImport').disabled=true;
- try{await applyAuthoredFiles(target,files,pbrLibrary);}catch(e){setStatus('PBR import rejected: '+e.message,true);}
+ try{await applyAuthoredFiles(target,files,pbrLibrary,{fallbacks});}catch(e){setStatus('PBR import rejected: '+e.message,true);}
  finally{$('pbrImport').disabled=false;}
 }
 $('pbrImport').onclick=importAuthoredImages;
