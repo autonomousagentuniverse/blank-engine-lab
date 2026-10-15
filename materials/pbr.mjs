@@ -1,3 +1,4 @@
+import {MAX_SET_PIXELS} from './authored.mjs';
 /** Blank Engine: constrained generated PBR textures. No network requests or dynamic shaders. */
 export const TEXTURE_SIZE=128,MAX_TEXTURE_BYTES=8*1024*1024;
 export const TARGETS=Object.freeze(['buildings','ground','roads','robots','armor']);
@@ -78,7 +79,7 @@ export function tilePlaneGeometry(THREE,width,height,meters=3){
  uv.needsUpdate=true;return geometry;
 }
 export function createPBRLibrary(THREE,initial=DEFAULT_MATERIALS){
- const profiles=validateMaterialProfiles(initial),cache=new Map(),materials=new Map();let disposed=false;
+ const profiles=validateMaterialProfiles(initial),cache=new Map(),materials=new Map(),authored=new Map();let disposed=false;
  const own=()=>{if(disposed)throw Error('PBR library disposed');};
  function maps(preset){own();if(cache.has(preset))return cache.get(preset);
   const g=generateMaps(preset),entry={};
@@ -91,18 +92,25 @@ export function createPBRLibrary(THREE,initial=DEFAULT_MATERIALS){
   cache.set(preset,entry);return entry;
  }
  function apply(target,mat){own();const p=PRESETS[profiles[target]],m=maps(profiles[target]);
-  mat.map=m.map;mat.normalMap=m.normalMap;mat.roughnessMap=m.orm;mat.metalnessMap=m.orm;
-  mat.color.setHex(p.color);mat.roughness=1;mat.metalness=1;mat.normalScale?.set(.48,.48);mat.needsUpdate=true;return mat;
+  const a=authored.get(target)?.textures;
+  mat.map=a?.albedo??m.map;mat.normalMap=a?.normal??m.normalMap;mat.roughnessMap=a?.orm??m.orm;mat.metalnessMap=a?.orm??m.orm;
+  mat.color.setHex(a?.albedo?0xffffff:p.color);mat.roughness=1;mat.metalness=1;mat.normalScale?.set(.48,.48);mat.needsUpdate=true;return mat;
  }
  function materialFor(target){own();if(!TARGETS.includes(target))throw Error('Unknown material target');
   if(!materials.has(target)){const m=new THREE.MeshStandardMaterial();materials.set(target,m);apply(target,m);}return materials.get(target);
  }
  function update(target,preset){own();if(!TARGETS.includes(target)||!Object.hasOwn(PRESETS,preset))throw Error('Invalid material update');
-  profiles[target]=preset;if(materials.has(target))apply(target,materials.get(target));return preset;
+  profiles[target]=preset;const old=authored.get(target);authored.delete(target);if(materials.has(target))apply(target,materials.get(target));old?.dispose();return preset;
  }
- return {materialFor,update,applyTo:(target,m)=>{if(!TARGETS.includes(target))throw Error('Unknown material target');return apply(target,m);},
+ return {materialFor,update,
+  installAuthored(target,set){own();if(!TARGETS.includes(target)||!set?.textures?.albedo||!set?.budget||typeof set.dispose!=='function')throw Error('Invalid authored texture set');
+   const otherPixels=[...authored].reduce((n,[key,value])=>n+(key===target?0:value.budget.pixels),0);
+   if(otherPixels+set.budget.pixels>MAX_SET_PIXELS)throw Error('All authored surfaces together exceed the 32 MiB mobile texture budget');
+   const old=authored.get(target);authored.set(target,set);if(materials.has(target))apply(target,materials.get(target));if(old!==set)old?.dispose();return set.budget;},
+  hasAuthored:target=>authored.has(target),
+  applyTo:(target,m)=>{if(!TARGETS.includes(target))throw Error('Unknown material target');return apply(target,m);},
   get profiles(){return {...profiles}},
-  get budget(){return {width:TEXTURE_SIZE,height:TEXTURE_SIZE,uniquePresets:cache.size,mapCount:cache.size*3,cpuBytes:cache.size*3*TEXTURE_SIZE*TEXTURE_SIZE*4,maxBytes:MAX_TEXTURE_BYTES};},
-  dispose(){if(disposed)return;disposed=true;for(const m of materials.values())m.dispose();for(const set of cache.values())for(const m of Object.values(set))m.dispose();materials.clear();cache.clear();}
+  get budget(){return {width:TEXTURE_SIZE,height:TEXTURE_SIZE,uniquePresets:cache.size,mapCount:cache.size*3,cpuBytes:cache.size*3*TEXTURE_SIZE*TEXTURE_SIZE*4,maxBytes:MAX_TEXTURE_BYTES,authoredPixels:[...authored.values()].reduce((n,s)=>n+s.budget.pixels,0),authoredBytes:[...authored.values()].reduce((n,s)=>n+s.budget.decodedBytes,0)};},
+  dispose(){if(disposed)return;disposed=true;for(const m of materials.values())m.dispose();for(const set of cache.values())for(const m of Object.values(set))m.dispose();for(const entry of authored.values())entry.dispose();authored.clear();materials.clear();cache.clear();}
  };
 }
