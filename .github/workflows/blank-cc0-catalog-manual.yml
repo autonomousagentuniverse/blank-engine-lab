@@ -1,10 +1,6 @@
-# One-time scoped push validation. Remove after passing; NEVER deploy from CI.
-name: Blank Engine - one-time full CC0 catalog and mobile viewport validation
+# Manual-only full CC0 catalog and mobile viewport QA. NEVER deploy from CI.
+name: Blank Engine - manual full CC0 catalog and mobile viewport validation
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/blank-cc0-catalog-once.yml'
   workflow_dispatch:
 permissions:
   contents: read
