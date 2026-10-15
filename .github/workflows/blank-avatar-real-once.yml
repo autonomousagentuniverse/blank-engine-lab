@@ -26,3 +26,5 @@ jobs:
         run: npm test
       - name: Real GLTFExporter to GLTFLoader character and retarget integration
         run: node scripts/avatar-real-smoke.mjs
+
+# Re-run after fixing GLB import controls in index.html.
