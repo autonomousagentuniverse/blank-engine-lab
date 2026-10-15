@@ -23,12 +23,13 @@ export function limbWeights(vertexYs,length){
   return {indices,weights};
 }
 
-export function createCharacterRig(THREE,{skin='explorer',makeMaterial}={}) {
+export function createCharacterRig(THREE,{skin='explorer',makeMaterial,armorMaterial}={}) {
   validateSkin(skin);
   if(typeof makeMaterial!=='function')throw new Error('Material allocator required');
   const root=new THREE.Group();
   const palette=SKINS[skin];
-  const armor=makeMaterial(palette.armor,{metalness:.36,roughness:.65});
+  const armor=armorMaterial||makeMaterial(palette.armor,{metalness:.36,roughness:.65});
+  if(armorMaterial)armor.color.setHex(palette.armor);
   const bodySkin=makeMaterial(palette.skin,{roughness:.88,metalness:0});
   const accent=makeMaterial(palette.accent,{emissive:palette.accent,emissiveIntensity:.55});
   const mesh=(geo,mat,parent=root)=>{const m=new THREE.Mesh(geo,mat);parent.add(m);return m;};

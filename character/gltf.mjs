@@ -5,6 +5,7 @@ import {fadeSeconds} from './motion.mjs';
 import {assertHumanoidMap,mapHumanoidBones,boneRotationClips,retargetRotationClip} from './retarget.mjs';
 import {makeMappedChains} from './ik.mjs';
 import {calibrateRigSoles} from './calibration.mjs';
+import {assertImportedTextureBudget} from '../materials/import-budget.mjs';
 export const MAX_AVATAR_BYTES=8*1024*1024;
 const DECODER=new TextDecoder('utf-8',{fatal:true});
 export function inspectAvatarGlb(buffer) {
@@ -148,7 +149,7 @@ export function createGlbAvatar(THREE,gltf){
 export async function loadGlbAvatar(THREE,GLTFLoader,buffer){
   inspectAvatarGlb(buffer);
   const gltf=await new Promise((resolve,reject)=>new GLTFLoader().parse(buffer,'',resolve,reject));
-  return createGlbAvatar(THREE,gltf);
+  try{assertImportedTextureBudget(gltf.scene);return createGlbAvatar(THREE,gltf);}catch(e){release(gltf.scene);throw e;}
 }
 
 /** Import a second rigged animation donor and return its already-parsed scene.

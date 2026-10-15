@@ -19,3 +19,13 @@
 .touchpad .jump-key{background:#387baa;color:#f1faff;font-size:12px;font-weight:800;min-height:42px;width:74px;border-radius:12px;margin-bottom:8px;touch-action:none;}
 #physicsState{font-size:10px;white-space:nowrap;color:#8fe5d2;}
 #skinName{text-transform:capitalize;}
+
+
+/* Alpha 0.6: bounded PBR texture presets, accessible on mobile. */
+.texturebar{margin:12px 0 4px;padding:12px 14px;border:1px solid #35546a;border-radius:10px;background:#111c2c;display:flex;align-items:center;flex-wrap:wrap;gap:8px;color:#c3d4e9;font-size:11px}
+.texturebar strong{color:#80e2d1;letter-spacing:.1em;font-size:10px;margin-right:7px}
+.texturebar label{color:#9db2ca}
+.texturebar select{background:#081421;color:#f1faff;border:1px solid #47617e;border-radius:6px;padding:8px 10px;max-width:150px}
+.texturebar button{background:#a7e8f4;border-radius:6px;padding:9px 12px;color:#091421;font-weight:750}
+.texturebar small{font-size:10px;color:#9bb5c6;flex-basis:100%}
+@media(max-width:680px){.texturebar{padding:10px;gap:7px}.texturebar strong{flex-basis:100%}.texturebar select{flex:1;min-width:90px;max-width:45%}.texturebar button{width:100%;padding:10px}}

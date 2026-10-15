@@ -6,6 +6,7 @@ import {initializeRapier,makePhysicsWorld} from './physics/rapier.mjs';
 import {createCharacterRig,SKIN_NAMES} from './character/rig.mjs';
 import {loadGlbAvatar,loadMotionGlb,disposeMotionGlb,MAX_AVATAR_BYTES} from './character/gltf.mjs';
 import {createPoseController} from './character/ik.mjs';
+import {createPBRLibrary,DEFAULT_MATERIALS,PRESETS,TARGETS,validateMaterialProfiles,compileMaterialCommand,tileBoxGeometry,tilePlaneGeometry} from './materials/pbr.mjs';
 const $=(id)=>document.getElementById(id);
 const holder=$('viewport');
 let spec;
@@ -13,7 +14,10 @@ try { spec=validateSpec(JSON.parse(localStorage.getItem('blankbox-game-v1'))); }
 let renderer,scene,camera,player,characterRig,actor,physicsWorld,physicsToken=0,physicsAccum=0,crateMeshes=[],light,hemi,sky,ground,beacon,gateDoor,lanternObject,world,quest,progress,robotActors=[],walls=[],objects=[],t=0,last=performance.now(),fpsSum=0,fpsFrames=0,cameraYaw=0.45,cameraPitch=0.32,cameraDistance=16,mouseDown=false,prevX=0,prevY=0,paused=false;
 const pressed=new Set();
 const palette={cyan:0x24bde4,violet:0x9c83ff,amber:0xffb95b,emerald:0x43dca8};
-let materials=[];
+let materials=[],pbrLibrary=null,robotBodyMaterials=[];
+const materialKey='blankbox-material-profiles-v1';
+let materialProfiles={...DEFAULT_MATERIALS};
+try{materialProfiles=validateMaterialProfiles(JSON.parse(localStorage.getItem(materialKey)));}catch{}
 let playerPos=new THREE.Vector3(0,0.95,0), beaconPos=new THREE.Vector3(27,0,25);
 const progressKey='blankbox-playstate-v1';
 const skinKey='blankbox-player-skin-v1';
@@ -29,6 +33,7 @@ function clearWorld(){
   crateMeshes=[];physicsAccum=0;
   for(const m of objects){scene.remove(m); m.traverse(n=>{if(n.geometry)n.geometry.dispose();});}
   for(const m of materials)m.dispose();
+  pbrLibrary?.dispose();pbrLibrary=null;robotBodyMaterials=[];
   objects=[];materials=[];walls=[];robotActors=[];lanternObject=null;characterRig=null;
 }
 function init(){
@@ -65,7 +70,7 @@ function resize(){const w=Math.max(1,holder.clientWidth),h=Math.max(1,holder.cli
 function wallCollision(x,z){return !isWalkable(world,x,z,.65)||(!progress.completed&&Math.abs(x-world.gate.x)<2.4&&Math.abs(z-world.gate.z)<.85);}
 function makeRobot(x,z,phase,i,accent){
   const group=new THREE.Group(); group.position.set(x,0,z);
-  const main=material(i%3===0?0xff6b81:0x758fa9,{metalness:.8});
+  const main=pbrLibrary.materialFor('robots').clone();materials.push(main);robotBodyMaterials.push(main);
   const eye=material(accent,{emissive:accent,emissiveIntensity:2.2});
   const shell=addMesh(new THREE.BoxGeometry(1.2,1.6,.8),main,group);shell.position.y=1.65;
   const head=addMesh(new THREE.BoxGeometry(.86,.68,.85),main,group);head.position.y=2.7;
@@ -77,8 +82,8 @@ function makeRobot(x,z,phase,i,accent){
 }
 function makeBuilding(x,z,width,height,accent,i){
   const depth=width*(.7+(i%3)*.14),grp=new THREE.Group();grp.position.set(x,0,z);
-  const slab=material(i%3===0?0x1f3e54:i%3===1?0x283246:0x26384b,{metalness:.35,roughness:.8});
-  const tower=addMesh(new THREE.BoxGeometry(width,height,depth),slab,grp);tower.position.y=height/2;
+  const slab=pbrLibrary.materialFor('buildings');
+  const tower=addMesh(tileBoxGeometry(THREE,width,height,depth,3),slab,grp);tower.position.y=height/2;
   const cap=addMesh(new THREE.BoxGeometry(width+.35,.25,depth+.35),material(accent,{emissive:accent,emissiveIntensity:.9}),grp);cap.position.y=height;
   const edge=material(accent,{emissive:accent,emissiveIntensity:.9});
   for(const side of [-1,1]){const strip=addMesh(new THREE.BoxGeometry(.09,height*.78,.09),edge,grp);strip.position.set(side*(width/2-.15),height*.5,-depth/2-.018);}
@@ -91,17 +96,17 @@ function makeBuilding(x,z,width,height,accent,i){
   scene.add(grp);objects.push(grp);walls.push({x,z,hw:width/2,hd:depth/2});
 }
 function rebuild(){
-  clearWorld();t=0;
+  clearWorld();t=0;pbrLibrary=createPBRLibrary(THREE,materialProfiles);
   const accent=palette[spec.theme],night=spec.time==='night';
   sky.set(night?0x06101d:0x80b5d1);scene.fog.color.set(night?0x071325:0xa3c9cf);scene.fog.density=night?.012:.007;
   renderer.toneMappingExposure=night?1.35:1.0;
   hemi.color.set(night?0x6e91ec:0xe0eeff);hemi.groundColor.set(night?0x15192a:0x667b6f);hemi.intensity=night?1.5:2.8;
   light.color.set(night?0xa3b7ff:0xffedc9);light.intensity=night?1.5:3.0;
   light.position.set(-30,night?18:48,-15);
-  const base=material(night?0x101c2d:0x577176,{roughness:1});
-  ground=addMesh(new THREE.PlaneGeometry(150,150),base);ground.rotation.x=-Math.PI/2;objects.push(ground);
+  const base=pbrLibrary.materialFor('ground');
+  ground=addMesh(tilePlaneGeometry(THREE,150,150,3),base);ground.rotation.x=-Math.PI/2;objects.push(ground);
   const grid=new THREE.GridHelper(150,75,accent,night?0x1a3042:0x688a96);grid.position.y=.026;scene.add(grid);objects.push(grid);
-  for(let i=0;i<8;i++){const road=addMesh(new THREE.BoxGeometry(i%2?150:1.3,.03,i%2?1.3:150),material(0x0b1a23));road.position.set(i%2?0:(i-4)*17,.037,i%2?(i-4)*17:0);objects.push(road);}
+  for(let i=0;i<8;i++){const road=addMesh(tileBoxGeometry(THREE,i%2?150:1.3,.03,i%2?1.3:150,3),pbrLibrary.materialFor('roads'));road.position.set(i%2?0:(i-4)*17,.037,i%2?(i-4)*17:0);objects.push(road);}
   world=playableLayout(spec); quest=questPlan(spec,world);
   progress=loadProgress(spec,quest,readProgress());
   beaconPos.set(world.gate.x,0,world.gate.z);
@@ -110,7 +115,7 @@ function rebuild(){
   world.robots.forEach((r,i)=>makeRobot(r.x,r.z,r.phase,i,accent));
   // A skinned player rig follows the authoritative physics actor, never the reverse.
   actor=createActor(world.spawn.x,world.spawn.z);
-  characterRig=createCharacterRig(THREE,{skin:selectedSkin,makeMaterial:material});
+  characterRig=createCharacterRig(THREE,{skin:selectedSkin,makeMaterial:material,armorMaterial:pbrLibrary.materialFor('armor')});
   poseController=createPoseController(THREE,characterRig);poseReach=0;poseReachTarget=null;poseReachRadius=0;
   player=characterRig.root;player.position.set(actor.x,0,actor.z);
   scene.add(player);objects.push(player);
@@ -224,6 +229,7 @@ function syncUI(){
   $('worldLiveSummary').textContent=`${spec.robots} robots · ${spec.time==='day'?'Daytime':'Nighttime'} · ${spec.buildings} buildings`;
   $('missionText').textContent=spec.mission||'Explore the world';$('entityCount').textContent=spec.robots+spec.buildings+4;
   $('specPreview').textContent=JSON.stringify(spec,null,2);
+  syncMaterialUI();
 }
 function readProgress(){try{return JSON.parse(localStorage.getItem(progressKey));}catch{return null;}}
 function clearProgress(){try{localStorage.removeItem(progressKey);}catch{}}
@@ -267,31 +273,44 @@ async function loadDemo(silent=false){
   finally{autoDemoRequested=false;}
 }
 function setStatus(text,error=false){const el=$('status');el.textContent=text;el.classList.toggle('error',error);}
+function syncMaterialUI(){
+ const target=$('materialTarget')?.value||'buildings';
+ if($('materialPreset'))$('materialPreset').value=materialProfiles[target];
+ if($('materialSummary')&&pbrLibrary){const budget=pbrLibrary.budget;$('materialSummary').textContent=target+': '+materialProfiles[target]+' · '+budget.mapCount+' maps, '+(budget.cpuBytes/1048576).toFixed(2)+' MiB';}
+}
+function persistMaterials(){try{localStorage.setItem(materialKey,JSON.stringify(materialProfiles));}catch{setStatus('Texture preferences could not be saved in this browser.',true);}}
+function updateMaterial(target,preset){
+ if(!TARGETS.includes(target)||!Object.hasOwn(PRESETS,preset))throw Error('Unsupported texture preset');
+ const previous=materialProfiles[target];
+ if(previous===preset){syncMaterialUI();return;}
+ try{
+  pbrLibrary.update(target,preset);
+  if(target==='robots')for(const m of robotBodyMaterials){const glow=m.emissive?.clone();pbrLibrary.applyTo(target,m);if(glow)m.emissive.copy(glow);}
+  materialProfiles[target]=preset;persistMaterials();syncMaterialUI();
+ }catch(e){pbrLibrary.update(target,previous);throw e;}
+}
 function applyPrompt(text){
-  const previous=spec;
-  try{
-    const result=compilePrompt(text,spec);
-    if(result.applied.length){
-      // Check the new scene before changing the live world. An invalid edit must
-      // never silently destroy the existing scene or saved GameSpec.
-      playableLayout(result.spec);
-      spec=result.spec;
-      clearProgress();
-      rebuild();
-      persist();
-    }
-    setStatus(result.message,!result.applied.length);
-    $('prompt').value='';
-  }catch(e){
-    if(spec!==previous){
-      spec=previous;
-      try{rebuild();}catch{ /* Keep the original failure visible. */ }
-    }
-    setStatus('World edit failed: '+e.message,true);
+ const previous=spec,oldMaterials={...materialProfiles};
+ try{
+  const worldEdit=compilePrompt(text,spec),materialEdit=compileMaterialCommand(text,materialProfiles);
+  if(!worldEdit.applied.length&&!materialEdit.applied.length){setStatus(worldEdit.message,true);return;}
+  if(worldEdit.applied.length){
+   playableLayout(worldEdit.spec);
+   spec=worldEdit.spec;materialProfiles=materialEdit.profiles;
+   clearProgress();rebuild();persist();persistMaterials();
+  }else for(const target of TARGETS){if(oldMaterials[target]!==materialEdit.profiles[target])updateMaterial(target,materialEdit.profiles[target]);}
+  setStatus([...worldEdit.applied,...materialEdit.applied].join(' · '));$('prompt').value='';
+ }catch(e){
+  if(spec!==previous||TARGETS.some(k=>materialProfiles[k]!==oldMaterials[k])){
+   spec=previous;materialProfiles=oldMaterials;try{rebuild();}catch{}
   }
+  setStatus('World edit failed: '+e.message,true);
+ }
 }
 function persist(){try{localStorage.setItem('blankbox-game-v1',JSON.stringify(spec));}catch(e){setStatus('Local storage unavailable; use Export to save your project.',true);}}
 function exportSpec(){const b=new Blob([JSON.stringify(spec,null,2)],{type:'application/json'});const url=URL.createObjectURL(b);const a=document.createElement('a');a.href=url;a.download='blank-game-spec.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);setStatus('Downloaded validated GameSpec JSON.');}
+$('materialTarget').onchange=syncMaterialUI;
+$('materialApply').onclick=()=>{try{const target=$('materialTarget').value,preset=$('materialPreset').value;updateMaterial(target,preset);setStatus('Applied '+preset+' texture to '+target+'; quest and physics preserved.');}catch(e){setStatus('Material edit failed: '+e.message,true);}};
 $('runBtn').onclick=()=>applyPrompt($('prompt').value);
 $('prompt').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();applyPrompt(e.target.value);}});
 document.querySelectorAll('[data-command]').forEach(x=>x.addEventListener('click',()=>applyPrompt(x.dataset.command)));
@@ -366,7 +385,7 @@ $('avatarInput').onchange=async event=>{
   finally{event.target.value='';}
 };
 $('skinBtn').onclick=()=>{
-  if(avatarBytes){avatarBytes=null;avatarMotionBytes=null;avatarGeneration++;replaceAvatarRig(createCharacterRig(THREE,{skin:selectedSkin,makeMaterial:material}));$('avatarStatus').textContent='Avatar: procedural rig restored';setStatus('Imported GLB unloaded; procedural avatar restored.');return;}
+  if(avatarBytes){avatarBytes=null;avatarMotionBytes=null;avatarGeneration++;replaceAvatarRig(createCharacterRig(THREE,{skin:selectedSkin,makeMaterial:material,armorMaterial:pbrLibrary.materialFor('armor')}));$('avatarStatus').textContent='Avatar: procedural rig restored';setStatus('Imported GLB unloaded; procedural avatar restored.');return;}
   selectedSkin=SKIN_NAMES[(SKIN_NAMES.indexOf(selectedSkin)+1)%SKIN_NAMES.length];characterRig.setSkin(selectedSkin);$('skinName').textContent=selectedSkin;
   try{localStorage.setItem(skinKey,selectedSkin);}catch{}
   setStatus('Changed skinned character appearance: '+selectedSkin);

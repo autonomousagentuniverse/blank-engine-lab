@@ -1,0 +1,22 @@
+/** Real Three.js PBR contract smoke test. Browser integration covers WebGL. */
+import assert from 'node:assert/strict';
+import * as THREE from 'three';
+import {createPBRLibrary,tileBoxGeometry,tilePlaneGeometry,PRESETS,MAX_TEXTURE_BYTES} from '../materials/pbr.mjs';
+const lib=createPBRLibrary(THREE);
+const road=lib.materialFor('roads'),building=lib.materialFor('buildings');
+assert.ok(road.isMeshStandardMaterial&&building.isMeshStandardMaterial);
+assert.equal(road.map.colorSpace,THREE.SRGBColorSpace);
+assert.equal(road.normalMap.colorSpace,THREE.NoColorSpace);
+assert.equal(road.roughnessMap,road.metalnessMap);
+assert.equal(road.map.image.width,128);
+const geometry=tileBoxGeometry(THREE,7,21,9,3),tower=new THREE.Mesh(geometry,building);
+assert.ok(tower.isMesh&&tower.geometry.attributes.uv.getY(0)>1);
+const plane=tilePlaneGeometry(THREE,150,150),ground=new THREE.Mesh(plane,road);
+assert.equal(ground.geometry.attributes.uv.getX(0),50);
+const original=building.map;
+lib.update('buildings','weathered-steel');
+assert.equal(tower.material,building);assert.notEqual(building.map,original);
+for(const preset of Object.keys(PRESETS))lib.update('roads',preset);
+assert.ok(lib.budget.cpuBytes<MAX_TEXTURE_BYTES);
+console.log('REAL THREE PBR: PASS — '+lib.budget.uniquePresets+' presets / '+lib.budget.mapCount+' maps / '+(lib.budget.cpuBytes/1048576).toFixed(2)+' MiB texture sources');
+lib.dispose();geometry.dispose();plane.dispose();

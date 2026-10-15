@@ -46,6 +46,26 @@ try {
   await page.waitForFunction(()=>document.querySelector('#worldLiveSummary')?.textContent.includes('4 robots'),{timeout:15000});
   assert.equal(await page.locator('#webglError').isVisible(),false,'WebGL renderer must initialize');
   assert.equal(await page.locator('#viewport canvas').count(),1,'Three must render one canvas');
+  // Texture-only edits preserve the mounted WebGL canvas, quest and Rapier world.
+  const questBefore=await page.locator('#questProgress').innerText();
+  await page.locator('#viewport canvas').evaluate(el=>el.dataset.textureTest='retained');
+  await page.locator('#materialTarget').selectOption('robots');
+  await page.locator('#materialPreset').selectOption('polished-steel');
+  await page.locator('#materialApply').click();
+  assert.match(await page.locator('#status').innerText(),/physics preserved/i);
+  assert.match(await page.locator('#materialSummary').innerText(),/polished-steel/);
+  assert.equal(await page.locator('#questProgress').innerText(),questBefore);
+  assert.equal(await page.locator('#physicsState').innerText(),'PHYSICS: RAPIER');
+  assert.equal(await page.locator('#viewport canvas').getAttribute('data-texture-test'),'retained');
+  await page.locator('#prompt').fill('Paint the roads with cobblestone');
+  await page.locator('#runBtn').click();
+  assert.match(await page.locator('#status').innerText(),/Textured roads: stone/);
+  await page.locator('#materialTarget').selectOption('roads');
+  assert.equal(await page.locator('#materialPreset').inputValue(),'stone');
+  assert.equal(await page.locator('#questProgress').innerText(),questBefore);
+  await page.setViewportSize({width:390,height:844});
+  assert.ok(await page.locator('#materialApply').isVisible(),'mobile material edit must remain reachable');
+  await page.setViewportSize({width:1300,height:840});
   await page.locator('#dayBtn').click();
   await page.waitForFunction(()=>document.querySelector('#worldLiveSummary')?.textContent.includes('Daytime'));
   await page.locator('#prompt').fill('Add 5 robots and make it nighttime');
@@ -81,7 +101,7 @@ try {
   await mkdir(join(root,'artifacts'),{recursive:true});
   const screenshot=join(root,'artifacts/alpha06-ik-browser.png');
   await page.screenshot({path:screenshot,fullPage:true});
-  console.log('REAL CHROME ALPHA 0.6: PASS — Two imported GLB proportion fixtures, calibrated feet, Three.js, Rapier, WebGL, animation, physics and skin switching');
+  console.log('REAL CHROME ALPHA 0.6: PASS — texture edits without physics/quest reset, mobile controls, imported GLBs, Rapier, WebGL and animation');
   console.log('SCREENSHOT: '+screenshot);
 } finally {
   await browser?.close();
