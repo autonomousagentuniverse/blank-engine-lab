@@ -1,16 +1,11 @@
-# ONE-TIME build validation only. Remove once the integration passes.
-# Trigger scoped to workflow creation; never deploys and never reads secrets.
-name: Blank Engine - one-time PBR texture integration
+# Manual-only PBR texture and real browser verification, no secrets or deployment.
+name: Blank Engine - manual PBR texture and browser tests
 on:
-  push:
-    paths:
-      - '.github/workflows/blank-pbr-once.yml'
-      - 'scripts/material-real-smoke.mjs'
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
-  texture:
+  pbr:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -18,22 +13,22 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '22'
-      - name: Install dependencies
+      - name: Install test dependencies
         run: |
           npm install --ignore-scripts --no-audit --no-fund
           npm install --no-save --ignore-scripts --no-audit --no-fund three@0.186.1 @dimforge/rapier3d-compat@0.18.0 playwright@1.56.1
           npx playwright install chrome
-      - name: All regressions
+      - name: Run all regressions
         run: npm test
-      - name: Real Three PBR contract
+      - name: Verify Three.js PBR material maps
         run: node scripts/material-real-smoke.mjs
-      - name: Real Chrome WebGL, mobile material editor, physics and quest
+      - name: Test Chrome WebGL, material editing, physics and mobile layout
         run: node scripts/browser-integration.mjs
-      - name: Upload browser screenshot
+      - name: Save graphical evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: blank-alpha06-pbr-browser
+          name: blank-alpha06-pbr-manual-browser
           path: artifacts/alpha06-ik-browser.png
           if-no-files-found: ignore
           retention-days: 7
