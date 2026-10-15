@@ -19,7 +19,28 @@ jobs:
         run: npm install --ignore-scripts --no-audit --no-fund
       - name: Unit tests
         run: npm test
-      - name: Read-only database check
+      - name: Inspect DNS address families without revealing the hostname
         env:
           BLANK_PG_URL: ${{ secrets.BLANK_PG_URL }}
+        run: |
+          node --input-type=module <<'NODE'
+          import {resolve4,resolve6} from 'node:dns/promises';
+          try {
+            const host=new URL(process.env.BLANK_PG_URL).hostname;
+            for(const [type,resolve] of [['IPv4',resolve4],['IPv6',resolve6]]) {
+              try {
+                const ips=await resolve(host);
+                console.log(`DNS ${type} addresses: ${ips.length ? 'available' : 'none'}`);
+              } catch {
+                console.log(`DNS ${type} addresses: unavailable`);
+              }
+            }
+          } catch {
+            console.log('Database URL could not be inspected');
+          }
+          NODE
+      - name: Read-only database check (IPv4 preferred)
+        env:
+          BLANK_PG_URL: ${{ secrets.BLANK_PG_URL }}
+          NODE_OPTIONS: --dns-result-order=ipv4first
         run: node scripts/db-admin.mjs check
