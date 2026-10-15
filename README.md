@@ -79,3 +79,8 @@ The material editor now accepts local PNG/JPEG/WebP color maps, optional tangent
 ### GPU compressed PBR textures (Alpha 0.6 development)
 
 The PBR editor supports local Basis Universal KTX2 textures (ETC1S or UASTC), using pinned Three.js transcoding and renderer-format detection. PNG/JPEG/WebP remain supported, and an explicit color fallback can be supplied. The offline conversion CLI uses Khronos KTX-Software; this is not an image-generation service. See [the KTX2 pipeline and testing limits](docs/alpha06-ktx2.md). No Vercel auto-deployment.
+
+
+### Alpha 0.6 — licensed real-world PBR asset packs (development)
+
+A curated set of **five authored Poly Haven CC0 materials** can be prepared offline and selected in the editor: worn concrete, weathered asphalt, grey wood planks, rusty metal and worn leather. Source pages and real-world tile dimensions are declared in `materials/catalog.mjs`. Assets are **not embedded in Git**; run `npm run materials:prepare -- --out . --resolution 1k` on an internet-connected build machine to create `library/manifest.json` and the three map files per material. Local image integrity, file budgets and licensed provenance are checked before use; no live Poly Haven requests occur inside a running game. The editor labels the Poly Haven source clearly. It uses built-in PBR presets when a pack has not been prepared. A 32 MiB global GPU estimate still applies. Build artifacts are intended to be included explicitly in a future, approved major deployment; the Alpha 0.5 deployment stays unchanged. See `docs/alpha06-cc0-library.md`.

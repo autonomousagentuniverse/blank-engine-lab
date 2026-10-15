@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {TEXTURE_SIZE,MAX_TEXTURE_BYTES,TARGETS,PRESETS,DEFAULT_MATERIALS,validateMaterialProfiles,compileMaterialCommand,generateMaps,createPBRLibrary,tileBoxGeometry,tilePlaneGeometry} from '../materials/pbr.mjs';
+import {TEXTURE_SIZE,MAX_TEXTURE_BYTES,TARGETS,PRESETS,DEFAULT_MATERIALS,validateMaterialProfiles,compileMaterialCommand,generateMaps,createPBRLibrary,tileBoxGeometry,tilePlaneGeometry,retileGeometry} from '../materials/pbr.mjs';
 test('bounded preset library and safe persistent state',()=>{
  assert.equal(TARGETS.length,5);assert.equal(Object.keys(PRESETS).length,8);
  assert.deepEqual(validateMaterialProfiles({roads:'stone'}),{...DEFAULT_MATERIALS,roads:'stone'});
@@ -55,4 +55,14 @@ test('textures reuse maps, set color spaces, update without rebuild and dispose 
  assert.ok(lib.budget.cpuBytes<=MAX_TEXTURE_BYTES);
  const last=robot.map;lib.dispose();assert.ok(robot.disposed);assert.ok(last.disposed);
  lib.dispose();assert.throws(()=>lib.materialFor('roads'),/disposed/);
+});
+
+test('physical tile-size updates remain in-place and are reversible',()=>{
+ const box=tileBoxGeometry(THREE,6,24,9,3);
+ assert.deepEqual(box.getAttribute('uv').arr[0],[3,8]);
+ assert.equal(retileGeometry(box,1.5),true);
+ assert.deepEqual(box.getAttribute('uv').arr[0],[6,16]);
+ assert.equal(retileGeometry(box,3),true);
+ assert.deepEqual(box.getAttribute('uv').arr[0],[3,8]);
+ assert.throws(()=>retileGeometry(box,0),/tile/);
 });

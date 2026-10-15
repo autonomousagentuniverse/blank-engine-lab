@@ -3,3 +3,6 @@ node_modules/
 dist/
 .DS_Store
 *.log
+
+# Downloaded third-party texture packs are kept as CI artifacts until licensed release packaging
+/library/

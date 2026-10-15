@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "test": "node --test test.mjs test/*.test.mjs",
+    "materials:prepare": "node scripts/prepare-material-library.mjs",
     "db:check": "node scripts/db-admin.mjs check",
     "db:migrate": "node scripts/db-admin.mjs migrate",
     "ai:smoke": "node scripts/nvidia-smoke.mjs",

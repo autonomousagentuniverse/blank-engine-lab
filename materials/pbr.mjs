@@ -71,12 +71,23 @@ export function tileBoxGeometry(THREE,width,height,depth,meters=3){
  const geometry=new THREE.BoxGeometry(width,height,depth),uv=geometry.getAttribute('uv');
  const scales=[[depth,height],[depth,height],[width,depth],[width,depth],[width,height],[width,height]];
  for(let f=0;f<6;f++)for(let i=0;i<4;i++){const k=f*4+i;uv.setXY(k,uv.getX(k)*scales[f][0]/meters,uv.getY(k)*scales[f][1]/meters);}
+ geometry.userData={...geometry.userData,uvTileType:'box',uvTileDimensions:[width,height,depth],uvTileMeters:meters};
  uv.needsUpdate=true;return geometry;
 }
 export function tilePlaneGeometry(THREE,width,height,meters=3){
  const geometry=new THREE.PlaneGeometry(width,height),uv=geometry.getAttribute('uv');
  for(let i=0;i<uv.count;i++)uv.setXY(i,uv.getX(i)*width/meters,uv.getY(i)*height/meters);
+ geometry.userData={...geometry.userData,uvTileType:'plane',uvTileDimensions:[width,height],uvTileMeters:meters};
  uv.needsUpdate=true;return geometry;
+}
+/** Change physical UV scale in-place: no geometry replacement or physics reset. */
+export function retileGeometry(geometry,meters){
+ if(!Number.isFinite(meters)||meters<.1||meters>20)throw Error('Invalid physical material tile size');
+ const meta=geometry?.userData,uv=geometry?.getAttribute?.('uv');
+ if(!meta?.uvTileType||!uv)return false;
+ const previous=meta.uvTileMeters,ratio=previous/meters;
+ for(let i=0;i<uv.count;i++)uv.setXY(i,uv.getX(i)*ratio,uv.getY(i)*ratio);
+ uv.needsUpdate=true;meta.uvTileMeters=meters;return true;
 }
 export function createPBRLibrary(THREE,initial=DEFAULT_MATERIALS){
  const profiles=validateMaterialProfiles(initial),cache=new Map(),materials=new Map(),authored=new Map();let disposed=false;

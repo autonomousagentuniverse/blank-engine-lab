@@ -6,8 +6,9 @@ import {initializeRapier,makePhysicsWorld} from './physics/rapier.mjs';
 import {createCharacterRig,SKIN_NAMES} from './character/rig.mjs';
 import {loadGlbAvatar,loadMotionGlb,disposeMotionGlb,MAX_AVATAR_BYTES} from './character/gltf.mjs';
 import {createPoseController} from './character/ik.mjs';
-import {createPBRLibrary,DEFAULT_MATERIALS,PRESETS,TARGETS,validateMaterialProfiles,compileMaterialCommand,tileBoxGeometry,tilePlaneGeometry} from './materials/pbr.mjs';
+import {createPBRLibrary,DEFAULT_MATERIALS,PRESETS,TARGETS,validateMaterialProfiles,compileMaterialCommand,tileBoxGeometry,tilePlaneGeometry,retileGeometry} from './materials/pbr.mjs';
 import {loadCompressedAuthoredSet,createKTX2Adapter} from './materials/compression.mjs';
+import {CC0_CATALOG,readPreparedMaterial} from './materials/catalog.mjs';
 const $=(id)=>document.getElementById(id);
 const holder=$('viewport');
 let spec;
@@ -16,7 +17,8 @@ let renderer,scene,camera,player,characterRig,actor,physicsWorld,physicsToken=0,
 const pressed=new Set();
 const palette={cyan:0x24bde4,violet:0x9c83ff,amber:0xffb95b,emerald:0x43dca8};
 let materials=[],pbrLibrary=null,robotBodyMaterials=[];
-const authoredFiles=new Map(); // Session-only, never persisted to browser storage.
+const authoredFiles=new Map();
+const catalogSelections=new Map(); // Session-only, never persisted to browser storage.
 let ktx2Adapter=null;
 const materialKey='blankbox-material-profiles-v1';
 let materialProfiles={...DEFAULT_MATERIALS};
@@ -86,7 +88,7 @@ function makeRobot(x,z,phase,i,accent){
 function makeBuilding(x,z,width,height,accent,i){
   const depth=width*(.7+(i%3)*.14),grp=new THREE.Group();grp.position.set(x,0,z);
   const slab=pbrLibrary.materialFor('buildings');
-  const tower=addMesh(tileBoxGeometry(THREE,width,height,depth,3),slab,grp);tower.position.y=height/2;
+  const tower=addMesh(tileBoxGeometry(THREE,width,height,depth,3),slab,grp);tower.position.y=height/2;tower.userData.surfaceType='buildings';
   const cap=addMesh(new THREE.BoxGeometry(width+.35,.25,depth+.35),material(accent,{emissive:accent,emissiveIntensity:.9}),grp);cap.position.y=height;
   const edge=material(accent,{emissive:accent,emissiveIntensity:.9});
   for(const side of [-1,1]){const strip=addMesh(new THREE.BoxGeometry(.09,height*.78,.09),edge,grp);strip.position.set(side*(width/2-.15),height*.5,-depth/2-.018);}
@@ -107,9 +109,9 @@ function rebuild(){
   light.color.set(night?0xa3b7ff:0xffedc9);light.intensity=night?1.5:3.0;
   light.position.set(-30,night?18:48,-15);
   const base=pbrLibrary.materialFor('ground');
-  ground=addMesh(tilePlaneGeometry(THREE,150,150,3),base);ground.rotation.x=-Math.PI/2;objects.push(ground);
+  ground=addMesh(tilePlaneGeometry(THREE,150,150,3),base);ground.rotation.x=-Math.PI/2;ground.userData.surfaceType='ground';objects.push(ground);
   const grid=new THREE.GridHelper(150,75,accent,night?0x1a3042:0x688a96);grid.position.y=.026;scene.add(grid);objects.push(grid);
-  for(let i=0;i<8;i++){const road=addMesh(tileBoxGeometry(THREE,i%2?150:1.3,.03,i%2?1.3:150,3),pbrLibrary.materialFor('roads'));road.position.set(i%2?0:(i-4)*17,.037,i%2?(i-4)*17:0);objects.push(road);}
+  for(let i=0;i<8;i++){const road=addMesh(tileBoxGeometry(THREE,i%2?150:1.3,.03,i%2?1.3:150,3),pbrLibrary.materialFor('roads'));road.position.set(i%2?0:(i-4)*17,.037,i%2?(i-4)*17:0);road.userData.surfaceType='roads';objects.push(road);}
   world=playableLayout(spec); quest=questPlan(spec,world);
   progress=loadProgress(spec,quest,readProgress());
   beaconPos.set(world.gate.x,0,world.gate.z);
@@ -290,7 +292,7 @@ function updateMaterial(target,preset){
  try{
   pbrLibrary.update(target,preset);
   if(target==='robots')for(const m of robotBodyMaterials){const glow=m.emissive?.clone();pbrLibrary.applyTo(target,m);if(glow)m.emissive.copy(glow);}
-  authoredFiles.delete(target);materialProfiles[target]=preset;persistMaterials();syncMaterialUI();
+  authoredFiles.delete(target);catalogSelections.delete(target);materialProfiles[target]=preset;persistMaterials();syncMaterialUI();
  }catch(e){pbrLibrary.update(target,previous);throw e;}
 }
 function applyPrompt(text){
@@ -301,7 +303,7 @@ function applyPrompt(text){
   if(worldEdit.applied.length){
    playableLayout(worldEdit.spec);
    spec=worldEdit.spec;materialProfiles=materialEdit.profiles;
-   for(const target of TARGETS)if(oldMaterials[target]!==materialProfiles[target])authoredFiles.delete(target);
+   for(const target of TARGETS)if(oldMaterials[target]!==materialProfiles[target]){authoredFiles.delete(target);catalogSelections.delete(target);}
    clearProgress();rebuild();persist();persistMaterials();
   }else for(const target of TARGETS){if(oldMaterials[target]!==materialEdit.profiles[target])updateMaterial(target,materialEdit.profiles[target]);}
   setStatus([...worldEdit.applied,...materialEdit.applied].join(' · '));$('prompt').value='';
@@ -323,6 +325,9 @@ async function ensureKTX2Adapter(files){
  }
  return ktx2Adapter;
 }
+function retileSurface(target,meters){
+ for(const object of objects)object.traverse?.(mesh=>{if(mesh.userData?.surfaceType===target)retileGeometry(mesh.geometry,meters);});
+}
 async function applyAuthoredFiles(target,files,library,{restoring=false,fallbacks={}}={}){
  const transcoder=await ensureKTX2Adapter(files);
  const set=await loadCompressedAuthoredSet(THREE,files,{transcoder,fallbacks});
@@ -330,7 +335,8 @@ async function applyAuthoredFiles(target,files,library,{restoring=false,fallback
  try{
   library.installAuthored(target,set);
   if(target==='robots')for(const mat of robotBodyMaterials){const glow=mat.emissive?.clone();library.applyTo(target,mat);if(glow)mat.emissive.copy(glow);}
-  authoredFiles.set(target,{files,fallbacks});syncMaterialUI();
+  authoredFiles.set(target,{files,fallbacks});const catalog=catalogSelections.get(target);if(catalog)retileSurface(target,catalog.metersPerTile);
+    syncMaterialUI();
   if(!restoring)setStatus('Imported '+set.budget.maps+' authored PBR map(s) for '+target+' · '+set.budget.ktx2Slots+' KTX2 ('+set.budget.compressedSlots+' GPU compressed) · '+(set.budget.gpuEstimatedBytes/1048576).toFixed(2)+' MiB estimated texture payload · physics and quest preserved.');
   return true;
  }catch(e){set.dispose();throw e;}
@@ -342,9 +348,27 @@ async function importAuthoredImages(){
  if(!files.albedo){setStatus('Select a color/albedo image first.',true);return;}
  for(const slot of ['normal','orm'])if(!files[slot])delete files[slot];
  $('pbrImport').disabled=true;
- try{await applyAuthoredFiles(target,files,pbrLibrary,{fallbacks});}catch(e){setStatus('PBR import rejected: '+e.message,true);}
+ try{catalogSelections.delete(target);await applyAuthoredFiles(target,files,pbrLibrary,{fallbacks});}catch(e){setStatus('PBR import rejected: '+e.message,true);}
  finally{$('pbrImport').disabled=false;}
 }
+// Prepared, locally hosted CC0 assets are fetched only from this site's /library/ path.
+// No player-device requests to Poly Haven; production ships the offline asset pack.
+const cc0Select=$('cc0Material');
+for(const asset of CC0_CATALOG){const option=document.createElement('option');option.value=asset.id;option.textContent=asset.name+' · '+asset.category;cc0Select.append(option);}
+$('cc0Apply').onclick=async()=>{
+ const id=cc0Select.value,target=$('materialTarget').value;
+ const button=$('cc0Apply');button.disabled=true;
+ try{
+  const {entry,files}=await readPreparedMaterial(id);
+  const existing=catalogSelections.get(target);
+  catalogSelections.set(target,entry);
+  try{
+   const applied=await applyAuthoredFiles(target,files,pbrLibrary);
+   if(applied){retileSurface(target,entry.metersPerTile);setStatus('Applied Poly Haven CC0 '+entry.name+' to '+target+' (tile '+entry.metersPerTile+' m); physics and quest preserved.');}
+  }catch(e){if(existing)catalogSelections.set(target,existing);else catalogSelections.delete(target);throw e;}
+ }catch(e){setStatus('CC0 material unavailable: '+e.message,true);}
+ finally{button.disabled=false;}
+};
 $('pbrImport').onclick=importAuthoredImages;
 $('materialTarget').onchange=syncMaterialUI;
 $('materialApply').onclick=()=>{try{const target=$('materialTarget').value,preset=$('materialPreset').value;updateMaterial(target,preset);setStatus('Applied '+preset+' texture to '+target+'; quest and physics preserved.');}catch(e){setStatus('Material edit failed: '+e.message,true);}};

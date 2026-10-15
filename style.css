@@ -36,3 +36,10 @@
 .authored-inputs input{font-size:10px;max-width:138px;color:#c7d9ed}
 .authored-inputs button{background:#d4e8ff}
 @media(max-width:680px){.authored-inputs{display:grid;grid-template-columns:1fr;gap:10px}.authored-inputs label{justify-content:space-between}.authored-inputs input{max-width:60%}.authored-inputs button{width:100%}}
+
+/* Optional, locally packaged CC0 authored material assets */
+.curated-library{display:flex;flex-wrap:wrap;align-items:center;gap:8px;border-top:1px solid #344158;margin-top:9px;padding:10px 0 0}
+.curated-library select{max-width:230px;min-width:140px;background:#162235;color:#e5ecf7;border:1px solid #43516c;border-radius:6px;padding:6px}
+.curated-library button{padding:7px 10px;background:#304b5d;color:#f0f7ff;border-radius:6px}
+.curated-library small{flex-basis:100%;font-size:11px;color:#aab9ce}
+.curated-library a{color:#91daf7}
