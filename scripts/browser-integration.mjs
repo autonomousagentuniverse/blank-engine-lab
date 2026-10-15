@@ -1,69 +1,89 @@
-/** Headless Chrome integration: actual Three.js, Rapier WASM and gameplay UI. */
+/** Alpha 0.6 browser integration: real Chrome, Three.js, Rapier WASM, procedural IK. */
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
 import {readFile,mkdir} from 'node:fs/promises';
 import {resolve,join,extname,sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {chromium} from 'playwright';
+import {makeCalibrationGlb} from './generate-avatar-fixtures.mjs';
 const root=fileURLToPath(new URL('../',import.meta.url));
 const mime={'.html':'text/html','.css':'text/css','.mjs':'text/javascript','.js':'text/javascript','.json':'application/json','.wasm':'application/wasm'};
-const server=createServer(async(req,res)=>{
- try{
-  const url=new URL(req.url,'http://127.0.0.1');
-  const dest=resolve(root,'.'+(url.pathname==='/'?'/index.html':decodeURIComponent(url.pathname)));
-  if(dest!==resolve(root,'index.html')&&!dest.startsWith(resolve(root)+sep))throw Error('Not found');
-  const body=await readFile(dest);
-  res.writeHead(200,{'content-type':mime[extname(dest)]||'application/octet-stream','cache-control':'no-store'});
-  res.end(body);
- }catch{res.writeHead(404);res.end('Not found')}
-});
-let browser;
-try{
- await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
- browser=await chromium.launch({channel:'chrome',headless:true,args:['--no-sandbox','--enable-unsafe-swiftshader','--disable-gpu-sandbox']});
- const page=await browser.newPage({viewport:{width:1300,height:840},deviceScaleFactor:1});
- // Serve version-pinned, installed dependencies without relying on CDN availability.
- await page.route('https://cdn.jsdelivr.net/npm/**',async route=>{
-  const url=new URL(route.request().url());
-  const m=url.pathname.match(/^\/npm\/(three@0\.186\.1|@dimforge\/rapier3d-compat@0\.18\.0)\/(.+)$/);
-  if(!m||m[2].includes('..')||m[2].includes('\\'))return route.abort();
-  const pkg=m[1].startsWith('three')?'three':'@dimforge/rapier3d-compat';
-  const dest=join(root,'node_modules',pkg,m[2]);
+const serve=async(req,res)=>{
   try{
-   const bytes=await readFile(dest);
-   await route.fulfill({status:200,body:bytes,headers:{
-    'content-type':mime[extname(dest)]||'application/octet-stream',
-    'access-control-allow-origin':'*','cross-origin-resource-policy':'cross-origin'
-   }});
-  }catch(e){console.error('Unmapped dependency',url.pathname,e.code);await route.abort();}
- });
- const errors=[];
- page.on('pageerror',e=>errors.push(e.message));
- page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
- page.on('requestfailed',r=>errors.push('Request failed: '+r.url()));
- await page.goto('http://127.0.0.1:'+server.address().port+'/',{waitUntil:'domcontentloaded'});
- await page.waitForFunction(()=>document.querySelector('#physicsState')?.textContent==='PHYSICS: RAPIER',null,{timeout:30000});
- await page.waitForFunction(()=>document.querySelector('#worldLiveSummary')?.textContent.includes('4 robots'),null,{timeout:15000});
- assert.equal(await page.locator('#viewport canvas').count(),1);
- assert.equal(await page.locator('#webglError').isVisible(),false);
- await page.locator('#dayBtn').click();
- await page.waitForFunction(()=>document.querySelector('#worldLiveSummary')?.textContent.includes('Daytime'));
- await page.locator('#prompt').fill('Add 5 robots and make it nighttime');
- await page.locator('#runBtn').click();
- await page.waitForFunction(()=>document.querySelector('#worldLiveSummary')?.textContent.includes('9 robots')&&document.querySelector('#worldLiveSummary')?.textContent.includes('Nighttime'));
- await page.waitForFunction(()=>document.querySelector('#physicsState')?.textContent==='PHYSICS: RAPIER',null,{timeout:30000});
- const initialSkin=await page.locator('#skinName').innerText();
- await page.locator('#skinBtn').click();
- assert.notEqual(await page.locator('#skinName').innerText(),initialSkin);
- await page.keyboard.down('w');await page.waitForTimeout(240);await page.keyboard.up('w');
- await page.keyboard.down('Space');await page.waitForTimeout(100);await page.keyboard.up('Space');
- await page.waitForTimeout(400);
- await page.waitForFunction(()=>Number.parseInt(document.querySelector('#fps').textContent)>0,null,{timeout:10000});
- assert.deepEqual(errors,[]);
- await mkdir(join(root,'artifacts'),{recursive:true});
- await page.screenshot({path:join(root,'artifacts/alpha06-ik-browser.png'),fullPage:true});
- console.log('ALPHA06 CHROME: PASS; WebGL, Rapier, scene edits, skin switching, keyboard movement');
-}finally{
- await browser?.close();
- await new Promise(resolve=>server.close(resolve));
+    const clean=decodeURIComponent(new URL(req.url,'http://127.0.0.1').pathname);
+    const dest=resolve(root,'.'+(clean==='/'?'/index.html':clean));
+    if(dest!==resolve(root,'index.html')&&!dest.startsWith(resolve(root)+sep))throw Error('Forbidden path');
+    const body=await readFile(dest);
+    res.writeHead(200,{'content-type':mime[extname(dest)]||'application/octet-stream','cache-control':'no-store'});res.end(body);
+  }catch{res.writeHead(404);res.end('Not found')}
+};
+const server=createServer((req,res)=>void serve(req,res));
+let browser;
+try {
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  const port=server.address().port;
+  browser=await chromium.launch({channel:'chrome',headless:true,args:['--no-sandbox','--enable-unsafe-swiftshader','--disable-gpu-sandbox']});
+  const page=await browser.newPage({viewport:{width:1300,height:840},deviceScaleFactor:1});
+  const moduleRoute=async route=>{
+    const url=route.request().url();
+    const u=new URL(url);
+    const match=u.pathname.match(/^\/npm\/(three@0\.186\.1|@dimforge\/rapier3d-compat@0\.18\.0)\/(.+)$/);
+    if(!match)return route.abort('failed');
+    const pkg=match[1].startsWith('three')?'three':'@dimforge/rapier3d-compat';
+    const sub=match[2];
+    if(sub.includes('..')||sub.includes('\\'))return route.abort('failed');
+    const file=join(root,'node_modules',pkg,sub);
+    try {const body=await readFile(file);await route.fulfill({status:200,body,headers:{'content-type':mime[extname(file)]||'application/octet-stream','access-control-allow-origin':'*','cross-origin-resource-policy':'cross-origin'}})}
+    catch(err){console.error('Unmapped package asset:',u.pathname,String(err.code));await route.abort('failed');}
+  };
+  await page.route('https://cdn.jsdelivr.net/npm/**',moduleRoute);
+  const runtimeErrors=[];
+  page.on('pageerror',e=>runtimeErrors.push(e.message));
+  page.on('console',m=>{if(m.type()==='error')runtimeErrors.push(m.text())});
+  page.on('requestfailed',r=>runtimeErrors.push('REQUEST '+r.url()+' '+r.failure()?.errorText));
+  await page.goto(`http://127.0.0.1:${port}/`,{waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>document.querySelector('#physicsState')?.textContent==='PHYSICS: RAPIER',{timeout:30000});
+  await page.waitForFunction(()=>document.querySelector('#worldLiveSummary')?.textContent.includes('4 robots'),{timeout:15000});
+  assert.equal(await page.locator('#webglError').isVisible(),false,'WebGL renderer must initialize');
+  assert.equal(await page.locator('#viewport canvas').count(),1,'Three must render one canvas');
+  await page.locator('#dayBtn').click();
+  await page.waitForFunction(()=>document.querySelector('#worldLiveSummary')?.textContent.includes('Daytime'));
+  await page.locator('#prompt').fill('Add 5 robots and make it nighttime');
+  await page.locator('#runBtn').click();
+  await page.waitForFunction(()=>document.querySelector('#worldLiveSummary')?.textContent.includes('9 robots')&&document.querySelector('#worldLiveSummary')?.textContent.includes('Nighttime'));
+  await page.waitForFunction(()=>document.querySelector('#physicsState')?.textContent==='PHYSICS: RAPIER',{timeout:30000});
+  // Import two genuinely different binary GLB avatars via the same file input as players.
+  for(const variant of ['tall','compact']){
+    const bytes=Buffer.from(await makeCalibrationGlb(variant));
+    await page.locator('#avatarInput').setInputFiles({name:`${variant}.glb`,mimeType:'model/gltf-binary',buffer:bytes});
+    await page.waitForFunction(()=>document.querySelector('#avatarStatus')?.textContent.includes('calibrated feet'),{timeout:25000});
+    const imported=await page.locator('#avatarStatus').innerText();
+    assert.match(imported,/calibrated feet L=0\.\d+m R=0\.\d+m/);
+    await page.keyboard.down('KeyW');await page.waitForTimeout(200);await page.keyboard.up('KeyW');
+    await page.keyboard.down('Space');await page.waitForTimeout(100);await page.keyboard.up('Space');
+    assert.equal(await page.locator('#webglError').isVisible(),false);
+    await page.locator('#skinBtn').click();
+    await page.waitForFunction(()=>document.querySelector('#avatarStatus')?.textContent.includes('procedural rig restored'));
+  }
+  const skinBefore=await page.locator('#skinName').innerText();
+  await page.locator('#skinBtn').click();
+  const skinAfter=await page.locator('#skinName').innerText();
+  assert.notEqual(skinBefore,skinAfter,'skin switch must operate');
+  await page.keyboard.down('KeyW');
+  await page.waitForTimeout(240);
+  await page.keyboard.up('KeyW');
+  await page.keyboard.down('Space');
+  await page.waitForTimeout(100);
+  await page.keyboard.up('Space');
+  await page.waitForTimeout(500);
+  await page.waitForFunction(()=>Number.parseInt(document.querySelector('#fps').textContent)>0,{timeout:10000});
+  assert.deepEqual(runtimeErrors,[],'no browser runtime/module/network errors');
+  await mkdir(join(root,'artifacts'),{recursive:true});
+  const screenshot=join(root,'artifacts/alpha06-ik-browser.png');
+  await page.screenshot({path:screenshot,fullPage:true});
+  console.log('REAL CHROME ALPHA 0.6: PASS — Two imported GLB proportion fixtures, calibrated feet, Three.js, Rapier, WebGL, animation, physics and skin switching');
+  console.log('SCREENSHOT: '+screenshot);
+} finally {
+  await browser?.close();
+  await new Promise(resolve=>server.close(resolve));
 }

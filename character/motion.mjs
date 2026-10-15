@@ -20,13 +20,13 @@ export function fadeSeconds(from,to){
  return .23;
 }
 /** Weighted stance lock: stays in WORLD SPACE until swing/overstretch, never chases the animated ankle. */
-export function updateFootLock(previous,{stance,foot,hip,contact,dt,maxReach=1.13}){
- if(!xyz(foot)||!xyz(hip)||!(dt>=0&&dt<=.1)||!(maxReach>0))throw Error('Invalid planted-foot sample');
+export function updateFootLock(previous,{stance,foot,hip,contact,dt,maxReach=1.13,soleOffset=0}){
+ if(!xyz(foot)||!xyz(hip)||!(dt>=0&&dt<=.1)||!(maxReach>0)||!Number.isFinite(soleOffset)||soleOffset<0||soleOffset>.4)throw Error('Invalid planted-foot sample');
  const current=previous??{point:null,normal:null,weight:0,blocked:false};
  let {point,normal,weight,blocked}=current;
  if(!stance){blocked=false;}
  if(stance&&!point&&!blocked&&contact&&Number.isFinite(contact.y)&&xyz(contact.normal)){
-  point={x:foot.x,y:contact.y+.035,z:foot.z};normal={...contact.normal};
+  point={x:foot.x,y:contact.y+.035+soleOffset,z:foot.z};normal={...contact.normal};
  }
  if(point && stance && Math.hypot(hip.x-point.x,hip.y-point.y,hip.z-point.z)>maxReach){
   blocked=true;

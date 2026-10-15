@@ -4,7 +4,7 @@ import { playableLayout, isWalkable, questPlan, startQuest, questEvent, nearestT
 import {createActor,stepActor,stepAccumulator,createFallbackMover} from './physics/locomotion.mjs';
 import {initializeRapier,makePhysicsWorld} from './physics/rapier.mjs';
 import {createCharacterRig,SKIN_NAMES} from './character/rig.mjs';
-import {loadGlbAvatar,loadMotionGlb,disposeMotionGlb,MAX_AVATAR_BYTES} from './character/gltf.mjs';
+import {loadGlbAvatar,MAX_AVATAR_BYTES} from './character/gltf.mjs';
 import {createPoseController} from './character/ik.mjs';
 const $=(id)=>document.getElementById(id);
 const holder=$('viewport');
@@ -18,7 +18,7 @@ let playerPos=new THREE.Vector3(0,0.95,0), beaconPos=new THREE.Vector3(27,0,25);
 const progressKey='blankbox-playstate-v1';
 const skinKey='blankbox-player-skin-v1';
 let selectedSkin=SKIN_NAMES.includes(localStorage.getItem(skinKey))?localStorage.getItem(skinKey):SKIN_NAMES[0];
-let avatarBytes=null,avatarMotionBytes=null,avatarGeneration=0,poseController=null,poseReach=0,poseReachTarget=null,poseReachRadius=0;
+let avatarBytes=null,avatarGeneration=0,poseController=null,poseReach=0,poseReachTarget=null,poseReachRadius=0;
 let autoDemoRequested=false;
 function material(color, extra={}) { const m=new THREE.MeshStandardMaterial({color,roughness:.62,metalness:.26,...extra}); materials.push(m); return m; }
 function addMesh(geo,mat,parent=scene){ const mesh=new THREE.Mesh(geo,mat); parent.add(mesh); return mesh; }
@@ -127,13 +127,13 @@ function rebuild(){
     if(generation!==physicsToken){engine.dispose();return;}
     physicsWorld=engine;
     engine.teleport(actor.x,actor.y,actor.z);
-    // Match slope visuals exactly to the Rapier contact geometry.
+    // Visual ramps are generated from exactly the colliders used for contact probes.
     for(const ramp of engine.getTerrain()){
-      const mesh=addMesh(new THREE.BoxGeometry(ramp.size.x,ramp.size.y,ramp.size.z),
+      const rampMesh=addMesh(new THREE.BoxGeometry(ramp.size.x,ramp.size.y,ramp.size.z),
         material(spec.time==='night'?0x2a5365:0x7b9e9d,{roughness:.93,metalness:.05}));
-      mesh.position.set(ramp.position.x,ramp.position.y,ramp.position.z);
-      mesh.quaternion.set(ramp.rotation.x,ramp.rotation.y,ramp.rotation.z,ramp.rotation.w);
-      mesh.userData.calibrationRamp=true;objects.push(mesh);
+      rampMesh.position.set(ramp.position.x,ramp.position.y,ramp.position.z);
+      rampMesh.quaternion.set(ramp.rotation.x,ramp.rotation.y,ramp.rotation.z,ramp.rotation.w);
+      rampMesh.userData.calibrationRamp=true;objects.push(rampMesh);
     }
     crateMeshes=engine.getCrates().map(crate=>{
       const mesh=addMesh(new THREE.BoxGeometry(1.1,1.1,1.1),material(0xe5a15b,{metalness:.3,roughness:.7}));
@@ -191,7 +191,9 @@ function update(dt){
   if(Math.hypot(actor.vx,actor.vz)>0.2)player.rotation.y=Math.atan2(actor.vx,actor.vz);
   characterRig.update(actor,dt);
   if(poseController){
-    poseController.update({actor,dt,groundProbe:(x,z,fromY)=>physicsWorld?.probeGround(x,z,fromY)??{y:0,normal:{x:0,y:1,z:0}},handTarget:poseReachTarget,handRadius:poseReachRadius,reach:poseReach});
+    // IK overlays the current animation pose, without moving the physics capsule.
+    poseController.update({actor,dt,groundProbe:(x,z,fromY)=>physicsWorld?.probeGround(x,z,fromY)??
+      {y:0,normal:{x:0,y:1,z:0}},handTarget:poseReachTarget,handRadius:poseReachRadius,reach:poseReach});
     poseReach=Math.max(0,poseReach-dt*2.4);
   }
   if(physicsWorld){
@@ -322,14 +324,9 @@ async function loadAvatarBytes(buffer,{restoring=false}={}){
     candidate=await loadGlbAvatar(THREE,GLTFLoader,buffer);
     if(current!==avatarGeneration){candidate.dispose();return;}
     // Preserve existing scene and physics if loading or validation fails.
-    if(!restoring)avatarMotionBytes=null;
     avatarBytes=buffer;
     replaceAvatarRig(candidate);
-    if(avatarMotionBytes){
-      try{await loadMotionBytes(avatarMotionBytes,{restoring:true});}
-      catch{avatarMotionBytes=null;$('avatarStatus').textContent='Avatar: imported GLB · saved donor clip unavailable (fallback animations active)';}
-    }
-    $('avatarStatus').textContent=`Avatar: rigged GLB (${candidate.boneCount} mapped bones, ${candidate.skinnedCount} skinned meshes) · animation blended to physics`;
+    $('avatarStatus').textContent=`Avatar: rigged GLB (${candidate.boneCount} bones, ${candidate.skinnedCount} skinned meshes) · calibrated feet L=${(candidate.soleOffsets.left??0).toFixed(2)}m R=${(candidate.soleOffsets.right??0).toFixed(2)}m`;
     if(!restoring)setStatus('Imported rigged GLB. Walk, run or jump to test skeletal animation.');
   }catch(e){
     if(current!==avatarGeneration)return;
@@ -337,27 +334,6 @@ async function loadAvatarBytes(buffer,{restoring=false}={}){
     else {$('avatarStatus').textContent='Avatar import rejected: '+e.message;setStatus('Avatar import rejected: '+e.message,true);}
   }
 }
-async function loadMotionBytes(buffer,{restoring=false}={}){
-  if(!avatarBytes||!characterRig?.installRetargetedClips)throw Error('Import a rigged character GLB before adding motion clips');
-  const generation=avatarGeneration,rig=characterRig;
-  let donor;
-  try{
-    const {GLTFLoader}=await import('three/addons/loaders/GLTFLoader.js');
-    donor=await loadMotionGlb(THREE,GLTFLoader,buffer);
-    if(generation!==avatarGeneration||rig!==characterRig)return;
-    const count=characterRig.installRetargetedClips(donor);
-    avatarMotionBytes=buffer;
-    $('avatarStatus').textContent=`Avatar: imported GLB · ${count} donor motion states retargeted`;
-    if(!restoring)setStatus(`Transferred ${count} locomotion animations onto the current avatar skeleton.`);
-  }finally{disposeMotionGlb(donor);}
-}
-$('motionBtn').onclick=()=>$('motionInput').click();
-$('motionInput').onchange=async event=>{
-  const file=event.target.files?.[0];
-  try {if(!file)return;if(file.size>MAX_AVATAR_BYTES)throw Error('GLB must be under 8 MB');await loadMotionBytes(await file.arrayBuffer());}
-  catch(e){setStatus('Motion import rejected: '+e.message,true);}
-  finally{event.target.value='';}
-};
 $('avatarBtn').onclick=()=>$('avatarInput').click();
 $('avatarInput').onchange=async event=>{
   const file=event.target.files?.[0];
@@ -366,7 +342,7 @@ $('avatarInput').onchange=async event=>{
   finally{event.target.value='';}
 };
 $('skinBtn').onclick=()=>{
-  if(avatarBytes){avatarBytes=null;avatarMotionBytes=null;avatarGeneration++;replaceAvatarRig(createCharacterRig(THREE,{skin:selectedSkin,makeMaterial:material}));$('avatarStatus').textContent='Avatar: procedural rig restored';setStatus('Imported GLB unloaded; procedural avatar restored.');return;}
+  if(avatarBytes){avatarBytes=null;avatarGeneration++;replaceAvatarRig(createCharacterRig(THREE,{skin:selectedSkin,makeMaterial:material}));$('avatarStatus').textContent='Avatar: procedural rig restored';setStatus('Imported GLB unloaded; procedural avatar restored.');return;}
   selectedSkin=SKIN_NAMES[(SKIN_NAMES.indexOf(selectedSkin)+1)%SKIN_NAMES.length];characterRig.setSkin(selectedSkin);$('skinName').textContent=selectedSkin;
   try{localStorage.setItem(skinKey,selectedSkin);}catch{}
   setStatus('Changed skinned character appearance: '+selectedSkin);

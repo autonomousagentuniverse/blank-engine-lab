@@ -85,23 +85,29 @@ export function makeMappedChains(THREE,bones){
   return out;
 }
 
-/** Apply bounded ground-normal compensation to an imported humanoid ankle. */
-export function alignFootToGround(THREE,foot,normal,blend=.35){
- if(!foot?.isBone||!foot.parent||!finite(normal)||normal.y<.8||!(blend>0))return false;
- foot.updateWorldMatrix(true,true);
- const worldQ=foot.getWorldQuaternion(new THREE.Quaternion());
- const up=new THREE.Vector3(0,1,0).applyQuaternion(worldQ).normalize();
- const targetUp=new THREE.Vector3(normal.x,normal.y,normal.z).normalize();
- const angle=Math.acos(clamp(up.dot(targetUp),-1,1));
- if(angle<.003)return true;
- const capped=up.clone().lerp(targetUp,Math.min(1,.28/angle)).normalize();
- const delta=new THREE.Quaternion().setFromUnitVectors(up,capped);
- const parentQ=foot.parent.getWorldQuaternion(new THREE.Quaternion());
- const desired=parentQ.invert().multiply(delta.multiply(worldQ));
- foot.quaternion.slerp(desired,clamp(blend,0,.75));
- foot.updateWorldMatrix(true,true);
- return true;
+
+/** Apply a bounded ground normal to the ankle bone without rotating the physics capsule.
+ * Uses the current animated pose as its source; imported rest axes remain authoritative.
+ */
+export function alignFootToGround(THREE,foot,normal,blend=0.35){
+  if(!foot?.isBone||!foot.parent||!finite(normal)||normal.y<.8||!(blend>0)) return false;
+  foot.updateWorldMatrix(true,true);
+  const worldQ=foot.getWorldQuaternion(new THREE.Quaternion());
+  const currentUp=new THREE.Vector3(0,1,0).applyQuaternion(worldQ).normalize();
+  const targetUp=new THREE.Vector3(normal.x,normal.y,normal.z).normalize();
+  // Limit compensation to gently sloped surfaces; avoid extreme ankle twisting.
+  const currentToTarget=Math.acos(clamp(currentUp.dot(targetUp),-1,1));
+  if(currentToTarget<.003) return true;
+  const alpha=Math.min(1,.28/currentToTarget);
+  const capped=currentUp.clone().lerp(targetUp,alpha).normalize();
+  const delta=new THREE.Quaternion().setFromUnitVectors(currentUp,capped);
+  const parentWorld=foot.parent.getWorldQuaternion(new THREE.Quaternion());
+  const localTarget=parentWorld.invert().multiply(delta.multiply(worldQ));
+  foot.quaternion.slerp(localTarget,clamp(blend,0,.75));
+  foot.updateWorldMatrix(true,true);
+  return true;
 }
+
 /** World-space stance lock with budgeted stretch. In air, release all locks. */
 export function createPoseController(THREE,rig){
   const chains=rig?.poseChains||{};
@@ -132,12 +138,14 @@ export function createPoseController(THREE,rig){
         const probePoint=locks[side]?.point??foot;
         const sample=stance?groundContact(groundProbe(probePoint.x,probePoint.z,actor.y+1.2),actor.y):null;
         const knee=chain.lower.getWorldPosition(new THREE.Vector3());
-        // Allow standing foot-floor clearance without stretching anatomical bones.
+        // Bind-pose leg geometry sits slightly above the physics floor. Allow
+        // a small contact calibration margin; IK itself clamps exact bone lengths.
         const maxReach=(hip.distanceTo(knee)+knee.distanceTo(foot))*1.12;
         // Neither foot follows moving ankles once planted. Stance ends on gait phase
         // change, jumping, invalid contact, or a reach limit (never stretch the leg).
         locks[side]=updateFootLock(locks[side],{stance:stance&&!!sample,foot,hip,
-          contact:sample,dt:Math.min(dt,.05),maxReach:Math.max(.15,maxReach)});
+          contact:sample,dt:Math.min(dt,.05),maxReach:Math.max(.15,maxReach),
+          soleOffset:chain.soleOffset??0});
         const lock=locks[side];
         if(!lock.point||lock.weight<.025)continue;
         const pole={x:hip.x,y:hip.y+.15,z:hip.z-1};
