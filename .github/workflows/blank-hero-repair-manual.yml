@@ -1,9 +1,5 @@
-name: Blank Engine - one-time corrected CC0 hero test
+name: Blank Engine - manual corrected CC0 hero test
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/blank-hero-repair-once.yml'
   workflow_dispatch:
 permissions:
   contents: read
