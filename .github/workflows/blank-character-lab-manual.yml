@@ -1,9 +1,5 @@
-name: Blank Engine - one-time licensed hero character lab browser QA
+name: Blank Engine - manual licensed hero character lab browser QA
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/blank-character-lab-once.yml'
   workflow_dispatch:
 permissions:
   contents: read
