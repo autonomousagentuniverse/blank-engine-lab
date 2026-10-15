@@ -1,11 +1,6 @@
-# One-time only regression workflow; remove immediately after run. NO DEPLOY.
-name: Blank Engine - one-time KTX2 GPU texture QA
+# Manual-only Alpha 0.6 GPU texture regression. Never deploys to Vercel.
+name: Blank Engine - manual KTX2 GPU texture QA
 on:
-  push:
-    paths:
-      - materials/compression.mjs
-      - .github/workflows/blank-ktx2-once.yml
-      - scripts/ktx2-browser-smoke.mjs
   workflow_dispatch:
 permissions:
   contents: read
