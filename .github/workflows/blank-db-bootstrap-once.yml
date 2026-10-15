@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   migrate-once:
-    if: github.event.head_commit.message == 'chore(db): approved one-time Blank Engine database bootstrap'
+    if: github.event.head_commit.message == 'db-bootstrap-authorized-20261015'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -34,13 +34,4 @@ jobs:
       - name: Verify all six Blank Engine tables
         env:
           BLANK_PG_URL: ${{ secrets.BLANK_PG_URL }}
-        run: |
-          node --input-type=module -e "
-          import {openStore} from './db/store.mjs';
-          const db=await openStore();
-          try {
-            const q=await db.query(`SELECT to_regclass('public.blank_schema_migrations') AS migrations, to_regclass('public.blank_projects') AS projects, to_regclass('public.blank_spec_revisions') AS revisions, to_regclass('public.blank_agent_runs') AS runs, to_regclass('public.blank_agent_tasks') AS tasks, to_regclass('public.blank_agent_events') AS events`);
-            if (!Object.values(q.rows[0]).every(Boolean)) throw new Error('Required Blank Engine tables missing');
-            console.log('Blank Engine schema verification: PASS (6 tables)');
-          } finally {await db.end();}
-          "
+        run: node scripts/verify-schema.mjs
