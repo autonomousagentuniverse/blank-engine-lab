@@ -1,0 +1,45 @@
+name: Blank Engine - NVIDIA manual test
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: One request smoke test or six-agent demo
+        required: true
+        type: choice
+        default: smoke
+        options:
+          - smoke
+          - agents
+
+permissions:
+  contents: read
+concurrency:
+  group: blank-engine-nvidia-manual
+  cancel-in-progress: false
+
+jobs:
+  inference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Run unit tests
+        run: npm test
+      - name: Execute requested NVIDIA test
+        env:
+          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+          BLANK_AI_TEST_MODE: ${{ inputs.mode }}
+        run: |
+          if [ "$BLANK_AI_TEST_MODE" = "smoke" ]; then
+            node scripts/nvidia-smoke.mjs
+          elif [ "$BLANK_AI_TEST_MODE" = "agents" ]; then
+            node scripts/ai-demo.mjs
+          else
+            echo 'Unknown test mode' >&2
+            exit 2
+          fi
