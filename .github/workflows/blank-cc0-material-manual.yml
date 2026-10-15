@@ -1,9 +1,5 @@
-name: Blank Engine - one-time independently authored CC0 material check
+name: Blank Engine - manual independently authored CC0 material check
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/blank-cc0-material-once.yml'
   workflow_dispatch:
 permissions:
   contents: read
