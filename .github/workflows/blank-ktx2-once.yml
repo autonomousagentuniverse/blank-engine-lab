@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - materials/compression.mjs
+      - .github/workflows/blank-ktx2-once.yml
   workflow_dispatch:
 permissions:
   contents: read
@@ -25,7 +26,7 @@ jobs:
         run: |
           mkdir -p .ci-assets
           curl --fail --location --retry 3 --silent --show-error \
-            https://raw.githubusercontent.com/mrdoob/three.js/r186/examples/textures/compressed/sample_uastc.ktx2 \
+            https://raw.githubusercontent.com/mrdoob/three.js/r186/examples/textures/ktx2/2d_uastc.ktx2 \
             -o .ci-assets/sample_uastc.ktx2
           test "$(wc -c < .ci-assets/sample_uastc.ktx2)" -gt 128
       - name: All regression tests and offline conversion CLI contract
