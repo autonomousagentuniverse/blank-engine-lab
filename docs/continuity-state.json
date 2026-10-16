@@ -15,7 +15,8 @@
     "one visually excellent isolated hero before scaling",
     "universal close-up inspection across builders",
     "versioned reversible Geometry Artifacts with measured constraints",
-    "no Vercel deployment for minor fixes"
+    "no Vercel deployment for minor fixes",
+    "Continuity document is updated with every proposed change and every code/documentation commit, with dated ledger entry."
   ],
   "builders": {
     "character": {
@@ -88,5 +89,15 @@
     "project GitHub development equals live Vercel deployment",
     "older GitHub Actions artifact downloads remain available",
     "general Geometry Artifact v1 already retopologizes meshes"
-  ]
+  ],
+  "continuity_governance": {
+    "path": "docs/CONTINUITY.md",
+    "policy": "update_same_commit_and_each_proposal",
+    "ledger": "dated PROPOSED or COMMITTED entry",
+    "hook": ".githooks/pre-commit",
+    "validator": "scripts/check-continuity.mjs",
+    "pr_template": ".github/pull_request_template.md",
+    "server_side_enforced": false,
+    "caveat": "GitHub web/API writes bypass optional local hooks; manual-only workflow policy preserved"
+  }
 }

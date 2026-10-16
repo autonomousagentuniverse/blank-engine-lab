@@ -167,4 +167,29 @@ Geometry artifacts are **data**, not merely screenshots or untracked instruction
 - CC0 material catalogue QA: https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38801721687
 - AI GameSpec + DB run: https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38743314124
 
-**Last updated at snapshot:** Baseline geometry eye-fit technically verified; appearance still blocked. Update this document and docs/continuity-state.json at each *substantial* milestone rather than adding unrelated diary entries.
+**Last updated at snapshot:** Baseline geometry eye-fit technically verified; appearance still blocked. Update this document with each proposal and repository commit; refresh docs/continuity-state.json at substantial milestones.
+
+## 10. Mandatory continuity updates for proposals and commits
+
+**Owner decision (2026-10-15):** `docs/CONTINUITY.md` MUST change with **every commit that changes any other project file**, and with **every proposed change**, not just major milestones. This document is the canonical filename (the owner's “Continuity.mf” refers to `CONTINUITY.md`).
+
+### How to record changes
+
+1. **When proposing** work: append a dated entry in the ledger below using `- YYYY-MM-DD [PROPOSED] ...`. Document motivation, intended files/scope, uncertainties, planned tests, and next action **before starting code modifications**. For a PR, include it in the proposed diff.
+2. **At each commit:** update this same document in the same commit with `- YYYY-MM-DD [COMMITTED] ...`, recording actual changes, PASS / FAIL / NOT RUN evidence, any unresolved issue, and what's next. A proposal entry may remain for auditability; don't silently rewrite past failures.
+3. **For an unmerged PR:** run `node scripts/check-continuity.mjs --base origin/main` and complete the PR template. If multiple source commits are made, keep this document updated with each commit, not just one change somewhere in the overall PR.
+4. **When using connected GitHub API tools or web UI:** atomically include the continuity file in the same commit. Local Git hooks **do not run** during API-based writes.
+5. **At meaningful technical milestones:** also update `docs/continuity-state.json` with status, verified evidence, priority and remaining blockers. Update `AGENTS.md` if operating rules change.
+6. **Honesty:** a proposed fix is not a verified fix; don't claim successful tests or photorealism acceptance without evidence. Nothing here authorizes a Vercel deployment or exposes server-side secrets.
+
+### Validation and limitations
+
+- Enable the local pre-commit hook in a developer checkout: `git config core.hooksPath .githooks` (or `npm run continuity:enable-hook`). This runs the staged-diff guard in `scripts/check-continuity.mjs`.
+- For proposed branch changes, run `node scripts/check-continuity.mjs --base origin/main`. Any source/documentation diff lacking an accompanying dated `[PROPOSED]` or `[COMMITTED]` entry fails the local validator. A change consisting solely of `docs/CONTINUITY.md` is allowed for administrative maintenance.
+- `.github/pull_request_template.md` specifies the same rule for code review.
+- **Enforcement boundary:** These are programmatic **local** guards and agent operating rules, not an always-on GitHub branch rule. GitHub's web editor and connector API can bypass local hooks; mandatory remote prevention would require a required GitHub status check / branch ruleset. That is not enabled here because the prior instruction keeps permanent GitHub Actions workflows manual-only. Do not claim it is impossible to push a noncompliant commit remotely.
+
+### Change ledger
+
+- 2026-10-15 [PROPOSED] Require explicit continuity updates for all proposed work and every project commit. Add a dated engineering ledger, agent requirements, staged-Git guard, PR checklist and tests without enabling automatic deployment or workflows. Remote API bypass remains a known risk.
+- 2026-10-15 [COMMITTED] Implemented continuity-update policy, local pre-commit validator, PR template, npm helper commands and validator tests. Eight focused unit tests and a real Git-staging rejection/acceptance test passed locally; full game-engine suite NOT RUN for this policy-only change. GitHub-hosted remote enforcement remains unconfigured and must not be implied.

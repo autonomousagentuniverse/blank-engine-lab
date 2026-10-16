@@ -13,7 +13,9 @@
     "ai:create": "node scripts/create-game.mjs",
     "physics:smoke": "node scripts/physics-real-smoke.mjs",
     "avatar:smoke": "node scripts/avatar-real-smoke.mjs",
-    "character:smoke": "node scripts/character-lab-browser.mjs"
+    "character:smoke": "node scripts/character-lab-browser.mjs",
+    "continuity:check": "node scripts/check-continuity.mjs --staged",
+    "continuity:enable-hook": "git config core.hooksPath .githooks"
   },
   "dependencies": {
     "pg": "8.16.3"

@@ -1,0 +1,4 @@
+#!/bin/sh
+# Local-only guard; GitHub API and web edits bypass local hooks.
+# Enable once: git config core.hooksPath .githooks
+exec node scripts/check-continuity.mjs --staged

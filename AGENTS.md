@@ -22,4 +22,4 @@ Before substantial work read [docs/CONTINUITY.md](docs/CONTINUITY.md) and [docs/
 - Run all tests: npm test; use the manual eye-fit workflow for real GLB + Chrome checks.
 - Handoff/roadmap: docs/CONTINUITY.md (includes past work, limitations, plan, acceptance gates, evidence).
 
-At every meaningful milestone, update docs/CONTINUITY.md and docs/continuity-state.json with verified SHA, run URL, status and next blocker.
+**MANDATORY ON EVERY COMMIT OR PROPOSED CHANGE:** Update docs/CONTINUITY.md within the same commit/PR diff and add a dated `[PROPOSED]` or `[COMMITTED]` entry explaining scope, intent, tests (PASS/FAIL/NOT RUN), blockers and next step. For git CLI checkouts, enable the hook with `git config core.hooksPath .githooks`; for PRs run `node scripts/check-continuity.mjs --base origin/main`. GitHub API/web edits bypass local hooks, so agents MUST include the continuity update atomically in their GitHub commit. At substantial milestones refresh docs/continuity-state.json too. The full rule and limitations are in docs/CONTINUITY.md section 10.
