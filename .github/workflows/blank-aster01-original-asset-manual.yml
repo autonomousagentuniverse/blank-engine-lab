@@ -8,9 +8,6 @@ on:
         type: choice
         options:
           - aster-01
-  push:
-    branches:
-      - experiment/aster01-generated-character # one-shot branch QA only; remove on verified test
 permissions:
   contents: read
 jobs:

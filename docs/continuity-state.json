@@ -9,7 +9,7 @@
   "automatic_deployment_enabled": false,
   "source_of_truth": "GitHub main",
   "priority": "P0",
-  "priority_task": "Generate a genuinely original character asset beyond Einar from a parameterized Blender script and prove NEW GLB + NEW Blank Engine WebGL screenshot + head motion automatically. Then choose human-realism geometry/texture generative adapter, pending quality validation. No auto-deploy.",
+  "priority_task": "NEW independent ASTER-01 procedural android generated end-to-end in Blender and rendered by Blank Engine WebGL (107 meshes, original animation). This resolves reused Einar asset problem only; next automate truly original organic/photorealistic human assets, with material/lighting QA. No deployment without approval.",
   "owner_decisions": [
     "hardest problems first",
     "one visually excellent isolated hero before scaling",
@@ -361,14 +361,26 @@
     "branch": "experiment/aster01-generated-character",
     "profile": "assets/specs/aster-01.json",
     "generator": "experiments/aster-01/build_aster.py",
-    "actual_generated_glb_hash": null,
+    "actual_generated_glb_hash": "7b480eb8a7699a5a096f5ad7686429993ca74e8cb4d15e69044f3d030bf710e2",
     "source": "code-authored original Blender procedural mesh",
     "einar_reused": false,
     "original_texture_photos_reused": false,
     "renderer": "Blank Engine experimental Three.js Chrome WebGL",
-    "animation": "authored head turn pivot, verification pending",
+    "animation": "one original Blender-authored head pivot clip, tested by two distinct real WebGL frames",
     "human_photorealism_approved": false,
     "production_release": false,
-    "status": "CI_visual_and_GLTF_verification_pending"
+    "status": "new_original_procedural_blender_character_generated_and_webgl_verified",
+    "glb_bytes": 1235180,
+    "mesh_objects": 107,
+    "material_count": 7,
+    "real_webgl_triangles": 47504,
+    "head_animation_clip_count": 1,
+    "webgl_screenshots": 5,
+    "head_motion_changed_pixels_gt10": 51251,
+    "source_external_assets": 0,
+    "verified_github_run": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38975653912",
+    "artifact_id": 12078398432,
+    "workflow_manual_only": true,
+    "next": "Build distinct automated organic human character recipe, then benchmark skin/eyes/hair vs user's photo target."
   }
 }
