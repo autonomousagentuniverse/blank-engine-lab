@@ -9,7 +9,7 @@
   "automatic_deployment_enabled": false,
   "source_of_truth": "GitHub main",
   "priority": "P0",
-  "priority_task": "P0: Retopologize or replace original eyelid geometry with skin-tone/UV continuity and correct eyeball depth; v3 overlay visual acceptance BLOCKED",
+  "priority_task": "Geometry v4: visually verify original skinned face primitive socket reconstruction in Chrome and assess pink rim and depth defects",
   "owner_decisions": [
     "hardest problems first",
     "one visually excellent isolated hero before scaling",
@@ -59,7 +59,11 @@
       "opening_height_m_approx": 0.00801,
       "minimum_projected_clearance_m": 0.00035,
       "original_face_topology_unchanged": true,
-      "3d_depth_clearance_certified": false
+      "3d_depth_clearance_certified": false,
+      "experimental_v4": "geometry/eye-socket-remesh.mjs",
+      "local_real_fixture_tests": "9/9 pass",
+      "chrome": "pending",
+      "visual_approval": "blocked"
     },
     "open_visual_defects": [
       "pink eyelid rims",
@@ -86,12 +90,10 @@
     }
   },
   "next_steps": [
-    "Source-pinned full anatomical eyelid/eye volume 3D intersection audit (front and side)",
-    "Retopologize or source authored eyelids rather than adding more rigid overlap sheets",
-    "Match facial skin UV and PBR response; retain source licensing and rig",
-    "Add gaze and blink controls only with valid mesh deformation/rig",
-    "Run repeatable universal inspector closeups, real Chrome and physical device when available; require human signoff",
-    "Every change includes dated CONTINUITY.md entry; no deployment without explicit authorization"
+    "Run scoped real-GLB GitHub Chrome test, capture face/macro/profile/mobile comparisons",
+    "Review eye protrusion and pink seams with original skin material; accept/reject honestly",
+    "Update continuity in same commit as changes, remove temporary trigger and leave manual workflow",
+    "No Vercel deployment until major release approved"
   ],
   "other_open_blockers": [
     "actual Android device frame-rate/thermal test",

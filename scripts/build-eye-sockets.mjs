@@ -1,0 +1,11 @@
+import {readFile,writeFile,mkdir} from 'node:fs/promises';
+import {dirname} from 'node:path';
+import {createHash} from 'node:crypto';
+import {remeshEyeSockets} from '../geometry/eye-socket-remesh.mjs';
+const [source,out,artifact]=process.argv.slice(2);
+if(!source||!out||!artifact)throw Error('Usage: node scripts/build-eye-sockets.mjs <fitted-hero.glb> <output.glb> <artifact.json>');
+const raw=await readFile(source),sha=createHash('sha256').update(raw).digest('hex');
+const result=remeshEyeSockets(raw,{sourceSha256:sha});
+await Promise.all([mkdir(dirname(out),{recursive:true}),mkdir(dirname(artifact),{recursive:true})]);
+await writeFile(out,new Uint8Array(result.buffer));await writeFile(artifact,JSON.stringify(result.artifact,null,2)+'\n');
+console.log(JSON.stringify({inputSha256:sha,output:out,artifact,measurement:result.artifact.measurement,outputGeometry:result.artifact.operations,visualReview:result.artifact.review.status}));

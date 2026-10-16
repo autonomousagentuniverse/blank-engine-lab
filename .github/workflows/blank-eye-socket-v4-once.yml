@@ -1,0 +1,47 @@
+name: Blank Engine - one-time skinned face eye-socket QA
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/blank-eye-socket-v4-once.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Install pinned browser libraries
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm install --no-save --ignore-scripts --no-audit --no-fund three@0.186.1 playwright@1.56.1
+      - name: Prepare source-verified hero and measured eye fit
+        run: |
+          mkdir -p .ci-assets artifacts
+          curl --fail --location --retry 3 --silent --show-error 'https://raw.githubusercontent.com/kunalkushwaha/vsim/3f97faf85e46d2f9a122b0a8b8d3ccc0af598f91/packages/assets/library/suited.glb' -o .ci-assets/suited.glb
+          node scripts/hero-eyes-build.mjs .ci-assets/suited.glb .ci-assets/hero-v22.glb
+          node scripts/fit-hero-eyes.mjs .ci-assets/hero-v22.glb .ci-assets/hero-eye-fit-v2.glb artifacts/hero-eye-fit-v2.geometry.json
+      - name: Engine regression and actual skinned-face reconstruction tests
+        run: |
+          npm test
+          BLANK_EYE_V4_FIXTURE=.ci-assets/hero-eye-fit-v2.glb node --test test/eye-socket-remesh.test.mjs
+      - name: Build non-destructive skinned-face candidate and measured sidecar
+        run: node scripts/build-eye-sockets.mjs .ci-assets/hero-eye-fit-v2.glb .ci-assets/hero-eye-sockets-v4.glb artifacts/hero-eye-sockets-v4.geometry.json
+      - name: Real Three.js and Chrome close-up review
+        run: node scripts/eye-socket-v4-browser-smoke.mjs
+      - name: Archive candidate and actual images for human visual review
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: blank-eye-socket-v4-review
+          path: |
+            artifacts/hero-v4-*.png
+            artifacts/hero-eye-sockets-v4.geometry.json
+            .ci-assets/hero-eye-sockets-v4.glb
+          retention-days: 7
+          if-no-files-found: ignore
