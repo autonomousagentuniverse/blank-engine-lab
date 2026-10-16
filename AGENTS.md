@@ -15,7 +15,7 @@ Before substantial work read [docs/CONTINUITY.md](docs/CONTINUITY.md) and [docs/
 
 ## Fast entry points
 
-- Current experimental focus: docs/hero-v2-source-evaluation.md and experiments/hero-v2/; old Geometry v1–v10 eye revisions are historical diagnostics, not the active baseline
+- Current experimental focus: docs/hero-v2-source-evaluation.md, docs/hero-v2-findings.md, experiments/hero-v2/. Blender CC0 head is VERIFIED as a source base but REJECTED as the photorealistic game hero (no skin texture/eye rig). Next source candidate: Blender Studio CHARGE/Einar CC-BY, pending authentic asset acquisition and acceptance. Old geometry v1–v10 eye revisions are historical diagnostics.
 - Saved measurement: geometry/artifacts/hero-eye-assembly.geometry.json
 - Universal schema: geometry/artifact.mjs and docs/geometry-artifact.md
 - Hero preview: character-lab/index.html; controller: character-lab/lab.mjs

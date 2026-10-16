@@ -1,9 +1,6 @@
 name: Blank Engine - licensed photorealistic head baseline source audit
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - experiment/hero-v2-licensed-baseline # ONE-SHOT test only; remove after run
 permissions:
   contents: read
 jobs:
