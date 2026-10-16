@@ -47,8 +47,9 @@ function describe(root){
   for(const m of Array.isArray(o.material)?o.material:[o.material]){
    if(!m)continue;materials.add(m);
    const uses=!!m.map;
-   if(o.name.includes('GEO-einar_head')&&uses)result.face_textured=true;
-   if((o.name.includes('GEO-eye.L')||o.name.includes('GEO-eye.R'))&&uses)result.eye_textured=true;
+   const normalized=String(o.name||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+   if(normalized.includes('einarhead')&&uses)result.face_textured=true;
+   if((normalized.includes('geoeyel')||normalized.includes('geoeyer'))&&uses)result.eye_textured=true;
   }
  });
  result.materials=[...materials].map(m=>({name:m.name,type:m.type,has_map:!!m.map,
