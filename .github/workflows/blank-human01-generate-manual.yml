@@ -1,0 +1,72 @@
+name: Blank Engine - ORIGINAL automated human example via MakeHuman
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - experiment/human01-mpfb-generated # temporary single experiment run; remove after QA
+permissions:
+  contents: read
+jobs:
+  generate-new-human:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Install Blender and Three.js rendering dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y unzip libegl1 libgl1-mesa-dri libglx-mesa0 xvfb
+          python3 -m pip install --disable-pip-version-check --no-cache-dir bpy==4.5.3 Pillow==11.3.0
+          npm install --ignore-scripts --no-audit --no-fund
+          npm install --no-save --ignore-scripts --no-audit --no-fund three@0.186.1 playwright@1.56.1
+      - name: Fetch official pinned GPLv3 MPFB software and CC0 human basemesh
+        run: |
+          mkdir -p .ci-human artifacts/human-01
+          curl --fail --location --retry 3 --connect-timeout 30 --max-time 240 --silent --show-error \
+            'https://codeload.github.com/makehumancommunity/mpfb2/zip/3af0cd5a2ffba072e93a34e5f6f494fdc4813ddf' \
+            -o .ci-human/mpfb2-source.zip
+          unzip -q .ci-human/mpfb2-source.zip -d .ci-human
+          mv .ci-human/mpfb2-3af0cd5a2ffba072e93a34e5f6f494fdc4813ddf .ci-human/mpfb2
+          sha256sum .ci-human/mpfb2-source.zip > artifacts/human-01/source-mpfb.sha256.txt
+          test -s .ci-human/mpfb2/src/mpfb/data/3dobjs/base.obj
+      - name: Fetch official CC0 eyes hair skin and clothing source pack
+        run: |
+          curl --fail --location --retry 3 --connect-timeout 30 --max-time 720 --silent --show-error \
+            'https://files2.makehumancommunity.org/asset_packs/makehuman_system_assets/makehuman_system_assets_cc0.zip' \
+            -o .ci-human/makehuman-system-cc0.zip
+          mkdir -p .ci-human/makehuman-assets
+          unzip -q .ci-human/makehuman-system-cc0.zip -d .ci-human/makehuman-assets
+          sha256sum .ci-human/makehuman-system-cc0.zip > artifacts/human-01/source-system-assets.sha256.txt
+          find .ci-human/makehuman-assets -name young_caucasian_female.mhmat -print -quit | grep -q .
+          find .ci-human/makehuman-assets -name high-poly.mhclo -print -quit | grep -q .
+      - name: Create new HUMAN using headless Blender and MPFB macro targets
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+          OMP_NUM_THREADS: '4'
+        run: |
+          python3 -m py_compile experiments/human-01/build_mpfb_human.py
+          timeout -k 12s 540s xvfb-run -a python3 -u experiments/human-01/build_mpfb_human.py
+          test -s artifacts/human-01/human-01.glb
+      - name: Verify genuine new human eyes hair rig and geometry
+        run: python3 experiments/human-01/validate_human_glb.py
+      - name: Unchanged Blank Engine regression
+        run: npm test
+      - name: Render FIVE genuine human WebGL views in Chrome
+        run: |
+          node --check experiments/human-01/chrome_test.mjs
+          node experiments/human-01/chrome_test.mjs
+          python3 experiments/human-01/montage.py
+      - name: Archive generated HUMAN GLB and actual Chrome captures only
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: blank-human01-new-individually-generated-character
+          path: artifacts/human-01/
+          retention-days: 7
+          if-no-files-found: warn

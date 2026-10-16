@@ -1,0 +1,39 @@
+{
+  "schema": "blank.generated-human.profile.v1",
+  "asset": {
+    "id": "human-01",
+    "kind": "human",
+    "description": "New individually parameterized adult human from MPFB CC0 model and target system"
+  },
+  "generator_source": {
+    "repo": "makehumancommunity/mpfb2",
+    "commit": "3af0cd5a2ffba072e93a34e5f6f494fdc4813ddf",
+    "license_code": "GPLv3",
+    "license_bundled_assets": "CC0"
+  },
+  "phenotype": {
+    "gender": 0.85,
+    "age": 0.48,
+    "muscle": 0.28,
+    "weight": 0.46,
+    "height": 0.58,
+    "proportions": 0.53
+  },
+  "system_assets": {
+    "license": "CC0",
+    "publisher": "MakeHuman Community",
+    "url": "https://files2.makehumancommunity.org/asset_packs/makehuman_system_assets/makehuman_system_assets_cc0.zip",
+    "skin": "skins/young_caucasian_female.mhmat",
+    "parts": {
+      "Eyes": "eyes/high-poly.mhclo",
+      "Eyebrows": "eyebrows/eyebrow001.mhclo",
+      "Eyelashes": "eyelashes/eyelashes01.mhclo",
+      "Hair": "hair/bob01.mhclo",
+      "Teeth": "teeth/teeth_base.mhclo",
+      "Clothes": "clothes/female_casualsuit01.mhclo"
+    }
+  },
+  "target": "artifacts/human-01/human-01.glb",
+  "publish": false,
+  "visual_approval_required": true
+}
