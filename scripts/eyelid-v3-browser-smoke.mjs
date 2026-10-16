@@ -8,7 +8,7 @@ import {chromium} from 'playwright';
 const root=fileURLToPath(new URL('../',import.meta.url));
 const mime={'.html':'text/html','.css':'text/css','.mjs':'text/javascript','.js':'text/javascript','.json':'application/json','.glb':'model/gltf-binary'};
 const server=createServer(async(req,res)=>{try{
- const url=new URL(req.url,'http://127.0.0.1'),path=resolve(root,'.'+(url.pathname==='/'?'/character-lab/index.html':decodeURIComponent(url.pathname)));
+ const url=new URL(req.url,'http://127.0.0.1'),route=decodeURIComponent(url.pathname),path=resolve(root,'.'+(route.endsWith('/')?route+'index.html':route));
  if(!path.startsWith(resolve(root)+sep))throw Error('Forbidden');
  const body=await readFile(path);res.writeHead(200,{'content-type':mime[extname(path)]||'application/octet-stream'});res.end(body);
 }catch{if(!res.headersSent){res.writeHead(404);res.end('Not found');}else res.destroy();}});
@@ -23,7 +23,7 @@ try{
   if(!m||m[1].includes('..'))return route.abort('failed');
   try{await route.fulfill({status:200,body:await readFile(join(root,'node_modules','three',m[1])),headers:{'content-type':'text/javascript','access-control-allow-origin':'*'}});}catch{return route.abort('failed');}
  });
- await page.goto(`http://127.0.0.1:${server.address().port}/character-lab/`,{waitUntil:'domcontentloaded'});
+ const entry=await page.goto(`http://127.0.0.1:${server.address().port}/character-lab/`,{waitUntil:'domcontentloaded'});assert.equal(entry.status(),200,'Character Lab entry must serve index.html');
  async function load(path){
   await page.locator('#avatarFile').setInputFiles(join(root,path));
   await page.waitForFunction(()=>document.querySelector('#status')?.textContent.startsWith('Loaded'),{timeout:30000});

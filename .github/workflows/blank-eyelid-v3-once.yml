@@ -45,3 +45,4 @@ jobs:
           if-no-files-found: ignore
 # Real fixture pinned by the source GLB SHA recorded in geometry/eyelid-reconstruction.mjs; do not relax the provenance gate.
 # One-time browser rerun after safe local-server header/write sequencing.
+# Browser route fixed: /character-lab/ maps to index.html, and load status checked.
