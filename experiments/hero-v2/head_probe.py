@@ -91,6 +91,12 @@ def main():
         out["export_glb"]={"path":str(glb),"bytes":glb.stat().st_size}
     except Exception as e:
         out["export_error"]=repr(e)
+    # Save actual audit BEFORE optional preview rendering so a graphics crash
+    # cannot lose the selected source mesh's genuine technical metadata.
+    out['gate']='EVALUATION_ONLY_NOT_PHOTOREALISM'
+    out['separate_eye_anatomy_verified']=False
+    out['skin_textured_verified']=bool(any(m['image_nodes'] for m in props['materials']))
+    (AUDIT/'head-audit.json').write_text(json.dumps(out,indent=2)+'\n')
     # Honest clay geometry views (no simulated skin/photo), four axes.
     scene=bpy.context.scene
     scene.render.engine='BLENDER_WORKBENCH'
