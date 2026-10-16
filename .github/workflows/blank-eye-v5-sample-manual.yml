@@ -1,9 +1,6 @@
 name: Blank Engine - experimental v7 front-facing eyelid sample
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - experiment/eye-v5-github-sample # one-shot CI for v7 only; remove after run
 permissions:
   contents: read
 jobs:
