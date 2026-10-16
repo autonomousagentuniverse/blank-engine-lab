@@ -9,7 +9,7 @@
   "automatic_deployment_enabled": false,
   "source_of_truth": "GitHub main",
   "priority": "P0",
-  "priority_task": "Einar's original source skin+eye Blender Cycles renders now proven with five views. Next neutral pose/style cleanup and copy-only head/eye glTF/Three.js material/blink test; human approval and Android testing remain BLOCKED. Main/deployed Alpha 0.5 unchanged.",
+  "priority_task": "Real Blank Engine experimental Three.js/WebGL screenshot of genuine Einar head/eyes and licensed skin/eye textures, then blink/runtime material fidelity and human photo standard. Do not claim Blender Cycles source images are Blank Engine renders; main and Alpha0.5 untouched.",
   "owner_decisions": [
     "hardest problems first",
     "one visually excellent isolated hero before scaling",
@@ -273,5 +273,19 @@
       "detached strap",
       "no verified real-time Three.js materials/blink"
     ]
+  },
+  "experimental_hero_v5": {
+    "branch": "experiment/hero-v5-blank-webgl",
+    "status": "source_to_static_glb_real_webgl_test_pending",
+    "source_zip_sha256": "3cbb5a1dd9ffd3ca39edab420a83ea7f7db337b435a78ef27a0c87ff3e6977f7",
+    "source_license": "CC-BY, Einar Rig (CC-BY) Blender Foundation | studio.blender.org",
+    "actual_runtime_webgl_verified": false,
+    "static_source_geometry": true,
+    "original_skin_eye_albedo_used": true,
+    "runtime_blink_implemented": false,
+    "original_cycles_hair_shader_transferred": false,
+    "android_performance_verified": false,
+    "human_photorealism_approved": false,
+    "production_release": false
   }
 }
