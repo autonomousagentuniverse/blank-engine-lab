@@ -31,12 +31,26 @@ try{
   await page.waitForTimeout(250);
  }
  await mkdir(join(root,'artifacts'),{recursive:true});
+ async function macro(file){
+  // Fixed geometric selection, not an arbitrary screenshot crop. The universal
+  // focus inspector targets the same central eye/nose region in both assets.
+  await page.locator('#detailPick').click();
+  const canvas=page.locator('#viewport canvas'),rect=await canvas.boundingBox();
+  assert.ok(rect?.width>100&&rect?.height>100);
+  await canvas.click({position:{x:rect.width*.50,y:rect.height*.39}});
+  await page.waitForFunction(()=>document.querySelector('#detailDistance')?.disabled===false,{timeout:8000});
+  await page.locator('#detailDistance').evaluate(el=>{el.value='0.34';el.dispatchEvent(new Event('input',{bubbles:true}));});
+  await page.waitForTimeout(180);
+  await page.locator('#viewport').screenshot({path:join(root,'artifacts',file)});
+ }
  await load('.ci-assets/hero-v22.glb');
  await page.locator('#viewport').screenshot({path:join(root,'artifacts','hero-v3-before-chrome.png')});
+ await macro('hero-v3-before-macro.png');
  await load('.ci-assets/hero-lid-v3.glb');
  assert.match(await page.locator('#animationPill').innerText(),/4 AUTHORED CLIPS/i);
  assert.match(await page.locator('#status').innerText(),/Neutral idle pose frozen/);
  await page.locator('#viewport').screenshot({path:join(root,'artifacts','hero-v3-after-chrome.png')});
+ await macro('hero-v3-after-macro.png');
  for(const [view,name] of [['side','profile'],['threeQuarter','three-quarter']]){
   await page.locator('#reviewView').selectOption(view);await page.waitForTimeout(150);
   await page.locator('#viewport').screenshot({path:join(root,'artifacts',`hero-v3-${name}-chrome.png`)});
