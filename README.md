@@ -97,3 +97,8 @@ The procedural Night Market buildings now include deterministic windows batched 
 Open `/character-lab/` for a standalone realistic, rigged humanoid test lab. The lab previews a license-verified MakeHuman/MPFB suited human GLB (CC0), with authored animations, UV/PBR material inspection, studio lighting, bones/wireframe diagnostics, model statistics, SHA-256 CharacterSpec export, and mobile responsive layout. Asset files are prepared locally or at CI time; see [full build / acceptance documentation](docs/character-builder-v1.md).
 
 A high-quality realtime preview is not a certification of photorealism; visual acceptance and optional Blender/Cycles still rendering remain separate gates. No Vercel deployment or backend secrets.
+
+
+### Character Builder v2.1 — isolated static hero review
+
+Character Lab adds reproducible PBR finishing of the corrected CC0 suited reference (skin/cloth/shoes roughness only), a frozen authored idle pose, full-body front/three-quarter/side/rear and face portrait framing, studio/neutral/daylight lighting, and user-exported review PNG captures. It never auto-certifies photorealism. See `docs/character-v21-static-review.md`. A standalone offline GLB finisher is `scripts/finish-hero.mjs`. No automatic Vercel deploy.

@@ -5,6 +5,8 @@ import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {HERO_REFERENCE,MAX_CHARACTER_BYTES,inspectLabGlb,auditLoadedCharacter,createCharacterPackage} from './character-spec.mjs';
 import {mapHumanoidBones,REQUIRED_HUMANOID} from '../character/retarget.mjs';
 import {repairSuitedMaterials} from './repair.mjs';
+import {finishHeroPBR} from './hero-finish.mjs';
+import {REVIEW_VIEWS,LIGHT_PRESETS,auditStaticReview} from './hero-review.mjs';
 const $=id=>document.getElementById(id);
 const viewport=$('viewport'),renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.outputColorSpace=THREE.SRGBColorSpace;
@@ -21,7 +23,7 @@ const fill=new THREE.DirectionalLight(0xc3deff,.9);fill.position.set(3,2,5);scen
 const floor=new THREE.Mesh(new THREE.PlaneGeometry(40,40),new THREE.MeshStandardMaterial({color:0x5d6877,roughness:.88,metalness:0}));floor.rotateX(-Math.PI/2);floor.receiveShadow=true;scene.add(floor);
 const ring=new THREE.Mesh(new THREE.TorusGeometry(1.05,.018,8,128),new THREE.MeshBasicMaterial({color:0x80abbc,transparent:true,opacity:.6}));ring.rotateX(-Math.PI/2);ring.position.y=.018;scene.add(ring);
 const grid=new THREE.GridHelper(40,40,0x51647a,0x30465b);grid.position.y=.013;grid.material.transparent=true;grid.material.opacity=.26;scene.add(grid);
-let sourceRoot=null,sourceGltf=null,stageRoot=null,mixer=null,actions=[],activeAction=null,assetBytes=null,assetName='',assetOrigin='',assetLicense='',audit=null,paused=false,turntable=false,skeletonHelper=null,skeletonVisible=false,wireframe=false,currentMaterial=null;
+let reviewView='front',reviewLight='portrait',capturedViews=new Set(),sourceRoot=null,sourceGltf=null,stageRoot=null,mixer=null,actions=[],activeAction=null,assetBytes=null,assetName='',assetOrigin='',assetLicense='',audit=null,paused=false,turntable=false,skeletonHelper=null,skeletonVisible=false,wireframe=false,currentMaterial=null;
 const originalMaterials=new Map();let sunMode=false,latestRun=performance.now(),frames=0,elapsed=0,loadTicket=0;
 const setStatus=(text,error=false)=>{$('status').textContent=text;$('status').classList.toggle('error',error);};
 function updateMaterialSelection(){
@@ -49,7 +51,7 @@ async function loadGLB(buffer,{name,origin,license}){
  const report=auditLoadedCharacter(gltf.scene,gltf.animations,{THREE});
  if(report.skinnedMeshes<1)throw Error('Character Lab requires real GPU-skinned meshes');
  const boneMap=mapHumanoidBones(gltf.scene),missing=REQUIRED_HUMANOID.filter(n=>!boneMap[n]);
- cleanModel();sourceRoot=gltf.scene;sourceGltf=gltf;assetBytes=buffer;assetName=name;assetOrigin=origin;assetLicense=license;
+ cleanModel();capturedViews.clear();refreshReview();sourceRoot=gltf.scene;sourceGltf=gltf;assetBytes=buffer;assetName=name;assetOrigin=origin;assetLicense=license;
  const bbox=new THREE.Box3().setFromObject(sourceRoot),height=bbox.getSize(new THREE.Vector3()).y;
  if(!Number.isFinite(height)||height<.2)throw Error('Character geometry has invalid height');
  const scale=1.82/height,root=new THREE.Group();sourceRoot.scale.setScalar(scale);sourceRoot.position.set(-bbox.getCenter(new THREE.Vector3()).x*scale,-bbox.min.y*scale,-bbox.getCenter(new THREE.Vector3()).z*scale);
@@ -60,11 +62,11 @@ async function loadGLB(buffer,{name,origin,license}){
  const cs=$('clipSelect');cs.innerHTML='';cs.disabled=actions.length===0;
  if(actions.length){gltf.animations.forEach((clip,i)=>{const opt=document.createElement('option');opt.value=String(i);opt.textContent=clip.name||`Clip ${i+1}`;cs.add(opt)});const idle=gltf.animations.findIndex(c=>/idle|stand/i.test(c.name));cs.value=String(Math.max(0,idle));playClip(Number(cs.value));}
  else {const opt=document.createElement('option');opt.textContent='No authored animations';cs.add(opt);}
- $('pauseBtn').disabled=$('resetPoseBtn').disabled=!actions.length;
+ $('pauseBtn').disabled=$('resetPoseBtn').disabled=!actions.length;$('neutralPoseBtn').disabled=!actions.length;$('captureBtn').disabled=false;
  const names=new Map();let k=0;sourceRoot.traverse(o=>{for(const mat of (Array.isArray(o.material)?o.material:o.material?[o.material]:[]))if(!names.has(mat))names.set(mat,k++);});
  const ms=$('materialSelect');ms.innerHTML='';for(const [m,i] of names){originalMaterials.set(i,{material:m,roughness:m.roughness??1,metalness:m.metalness??0});const opt=document.createElement('option');opt.value=String(i);opt.textContent=m.name||`Material ${i+1}`;ms.add(opt);}ms.disabled=!names.size;ms.value='0';updateMaterialSelection();
  $('emptyState').hidden=true;$('modelTitle').textContent=name;$('runtimeState').textContent='RIGGED 3D ASSET · ACTIVE';$('animationPill').textContent=actions.length?`${actions.length} AUTHORED CLIPS`:'RIGGED · NO CLIPS';
- controls.target.set(0,1.03,0);camera.position.set(2.35,1.8,3.55);controls.update();
+ applyReviewView(reviewView);
  const stats={vertices:report.vertices.toLocaleString(),triangles:report.triangles.toLocaleString(),bones:String(report.bones),skinnedMeshes:String(report.skinnedMeshes),textures:String(report.textures),materials:String(report.materials),animations:String(gltf.animations.length),decoded:`${(report.decodedTextureBytes/1048576).toFixed(1)} MiB`};
  $('audit').innerHTML='';for(const [key,value] of Object.entries(stats)){$('audit').append(Object.assign(document.createElement('dt'),{textContent:key.replace(/([A-Z])/g,' $1')}),Object.assign(document.createElement('dd'),{textContent:value}));}
  const problems=[...report.warnings,...missing.map(n=>`Missing canonical rig role: ${n}`)];
@@ -73,24 +75,60 @@ async function loadGLB(buffer,{name,origin,license}){
  $('exportBtn').disabled=false;setStatus(`Loaded ${name} · ${report.skinnedMeshes} skinned meshes · ${report.textures} image textures · ${actions.length} authored clips${missing.length?' · skeleton-mapping review required':''}.`);
 }
 function playClip(i){if(!mixer||!actions[i])return;const next=actions[i];next.reset();next.enabled=true;next.play();if(activeAction&&activeAction!==next)next.crossFadeFrom(activeAction,.23,false);activeAction=next;paused=false;$('pauseBtn').textContent='Pause';}
+/** Static gate: take all screenshots from an authored idle pose rather than
+ * an arbitrary frame from the walking animation. It does NOT change the GLB. */
+function freezeNeutralPose(){
+ if(!actions.length||!mixer)return;
+ const idx=sourceGltf.animations.findIndex(x=>/^idle$/i.test(x.name));
+ const chosen=idx>=0?idx:0;
+ actions.forEach(a=>a.stop());activeAction=actions[chosen];activeAction.reset().play();
+ mixer.setTime(Math.min(.10,activeAction.getClip().duration*.15));
+ paused=true;turntable=false;$('pauseBtn').textContent='Resume';$('turntableBtn').textContent='Orbit: off';$('clipSelect').value=String(chosen);
+ setStatus('Neutral idle pose frozen for static appearance review. No motion-quality claim.');
+}
+function applyReviewView(name){
+ if(!Object.hasOwn(REVIEW_VIEWS,name))throw Error('Invalid review camera');reviewView=name;
+ const v=REVIEW_VIEWS[name];camera.position.set(...v.position);controls.target.set(...v.target);controls.update();
+ $('reviewView').value=name;
+}
+function applyReviewLight(name){
+ if(!Object.hasOwn(LIGHT_PRESETS,name))throw Error('Invalid studio lighting');reviewLight=name;
+ const p=LIGHT_PRESETS[name];scene.background.setHex(p.bg);ambient.intensity=p.ambient;key.intensity=p.key;rim.intensity=p.rim;fill.intensity=p.fill;renderer.toneMappingExposure=p.exposure;
+ $('lightBtn').textContent='Lighting: '+name;$('reviewLighting').value=name;
+}
+function refreshReview(){const review=auditStaticReview({captures:[...capturedViews]});$('reviewStatus').textContent=`Review captures: ${capturedViews.size}/5. Missing ${review.missingViews.join(', ')||'none'}. Photorealism not certified.`;}
+$('neutralPoseBtn').onclick=freezeNeutralPose;
+$('reviewView').onchange=e=>{freezeNeutralPose();applyReviewView(e.target.value)};
+$('reviewLighting').onchange=e=>applyReviewLight(e.target.value);
+$('captureBtn').onclick=()=>{
+ if(!sourceRoot)return;
+ freezeNeutralPose();renderer.render(scene,camera);
+ renderer.domElement.toBlob(blob=>{
+  if(!blob){setStatus('Capture failed: canvas unavailable',true);return;}
+  const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`hero-v21-${reviewView}.png`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  capturedViews.add(reviewView);refreshReview();setStatus('Saved '+reviewView+' still. Review face, hair, clothing and silhouette manually.');
+ },'image/png');
+};
+applyReviewLight('portrait');refreshReview();
 async function openReference(){
  $('referenceBtn').disabled=true;setStatus('Fetching CC0 MakeHuman reference (6.7 MB)…');
  try{let response=await fetch(HERO_REFERENCE.localUrl,{cache:'no-store'});if(!response.ok)response=await fetch(HERO_REFERENCE.download,{cache:'force-cache'});
   if(!response.ok)throw Error(`Reference not reachable (HTTP ${response.status}); use Import GLB instead`);
   const raw=await response.arrayBuffer();if(raw.byteLength!==HERO_REFERENCE.bytes)throw Error('Reference size differs from pinned upstream asset');
   if(await assetDigest(raw)!==HERO_REFERENCE.sha256)throw Error('Reference SHA-256 integrity check failed');
-  await loadGLB(repairSuitedMaterials(raw),{name:'Suited Human — corrected CC0 reference',origin:HERO_REFERENCE.source,license:HERO_REFERENCE.license});
-  $('downloadRepairedBtn').disabled=false;
-  setStatus('Repaired reference loaded: 3 skinned meshes, opaque face, shirt and shoes; face/chest transparency artifacts corrected.');
+  const finished=finishHeroPBR(repairSuitedMaterials(raw));
+  await loadGLB(finished,{name:'Suited Human — PBR-finished CC0 reference',origin:HERO_REFERENCE.source,license:HERO_REFERENCE.license});
+  $('downloadRepairedBtn').disabled=false;freezeNeutralPose();applyReviewView('front');capturedViews.clear();refreshReview();
+  setStatus('Repaired reference loaded: opaque face/chest and tuned PBR skin/fabric/leather. Static review still required.');
  }catch(e){setStatus('Reference loading failed: '+e.message,true)}finally{$('referenceBtn').disabled=false;}
 }
 $('referenceBtn').onclick=openReference;
-$('downloadRepairedBtn').onclick=()=>{if(!assetBytes||assetName!=='Suited Human — corrected CC0 reference')return;const b=new Blob([assetBytes],{type:'model/gltf-binary'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download='blank-hero-suited-repaired.glb';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);};
+$('downloadRepairedBtn').onclick=()=>{if(!assetBytes||assetName!=='Suited Human — PBR-finished CC0 reference')return;const b=new Blob([assetBytes],{type:'model/gltf-binary'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download='blank-hero-suited-v21.glb';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);};
 $('avatarFile').onchange=async event=>{const file=event.target.files?.[0];try{if(file){if(file.size>MAX_CHARACTER_BYTES)throw Error('GLB is larger than 32 MiB');await loadGLB(await file.arrayBuffer(),{name:file.name,origin:'local-file',license:'user-supplied'});}}catch(e){setStatus('Import rejected: '+e.message,true)}finally{event.target.value='';}};
 $('clipSelect').onchange=e=>playClip(Number(e.target.value));$('pauseBtn').onclick=()=>{paused=!paused;$('pauseBtn').textContent=paused?'Resume':'Pause';};
 $('resetPoseBtn').onclick=()=>{actions.forEach(a=>a.stop());mixer?.setTime(0);if(actions.length)playClip(Number($('clipSelect').value));};
 $('turntableBtn').onclick=()=>{turntable=!turntable;$('turntableBtn').textContent=`Orbit: ${turntable?'on':'off'}`;};
-$('lightBtn').onclick=()=>{sunMode=!sunMode;ambient.intensity=sunMode?1.65:1.25;key.intensity=sunMode?3.2:2.6;rim.intensity=sunMode?.5:1.55;scene.background.setHex(sunMode?0xa9b9cc:0x131f31);$('lightBtn').textContent=`Lighting: ${sunMode?'daylight':'studio'}`;};
+$('lightBtn').onclick=()=>applyReviewLight(reviewLight==='portrait'?'daylight':reviewLight==='daylight'?'neutral':'portrait');
 $('skeletonBtn').onclick=()=>{skeletonVisible=!skeletonVisible;if(!sourceRoot){skeletonVisible=false;return;}if(skeletonHelper){scene.remove(skeletonHelper);skeletonHelper.geometry.dispose();skeletonHelper.material.dispose();skeletonHelper=null;}if(skeletonVisible){skeletonHelper=new THREE.SkeletonHelper(sourceRoot);scene.add(skeletonHelper)}$('skeletonBtn').textContent=`Skeleton: ${skeletonVisible?'on':'off'}`;};
 $('wireBtn').onclick=()=>{wireframe=!wireframe;for(const {material} of originalMaterials.values())material.wireframe=wireframe;$('wireBtn').textContent=`Wireframe: ${wireframe?'on':'off'}`;};
 $('materialSelect').onchange=updateMaterialSelection;

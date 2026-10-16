@@ -1,0 +1,43 @@
+name: Blank Engine - one-time Character Builder v2.1 real Chrome QA
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/blank-hero-v21-once.yml'
+permissions:
+  contents: read
+jobs:
+  hero-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Install testing dependencies
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm install --no-save --ignore-scripts --no-audit --no-fund three@0.186.1 playwright@1.56.1
+          npx playwright install chrome
+      - name: Download pinned CC0 reference into isolated lab
+        run: |
+          mkdir -p character-lab/assets .ci-assets
+          curl --fail --silent --show-error --location --retry 3 'https://raw.githubusercontent.com/kunalkushwaha/vsim/3f97faf85e46d2f9a122b0a8b8d3ccc0af598f91/packages/assets/library/suited.glb' -o character-lab/assets/hero.glb
+      - name: Run full regression suite and build finished PBR GLB
+        run: |
+          npm test
+          node scripts/finish-hero.mjs character-lab/assets/hero.glb artifacts/hero-v21.glb
+      - name: Real Chrome static hero appearance review
+        run: node scripts/hero-v21-browser.mjs
+      - name: Preserve actual hero files and front side face review screenshots
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: blank-hero-v21-review
+          path: |
+            artifacts/hero-v21.glb
+            artifacts/hero-v21-*.png
+          retention-days: 7
+          if-no-files-found: ignore
