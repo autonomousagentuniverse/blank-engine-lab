@@ -6,6 +6,7 @@ import {HERO_REFERENCE,MAX_CHARACTER_BYTES,inspectLabGlb,auditLoadedCharacter,cr
 import {mapHumanoidBones,REQUIRED_HUMANOID} from '../character/retarget.mjs';
 import {repairSuitedMaterials} from './repair.mjs';
 import {finishHeroPBR} from './hero-finish.mjs';
+import {repairHeroEyes,inspectHeroEyes} from './eyes.mjs';
 import {REVIEW_VIEWS,LIGHT_PRESETS,auditStaticReview} from './hero-review.mjs';
 const $=id=>document.getElementById(id);
 const viewport=$('viewport'),renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
@@ -116,14 +117,18 @@ async function openReference(){
   if(!response.ok)throw Error(`Reference not reachable (HTTP ${response.status}); use Import GLB instead`);
   const raw=await response.arrayBuffer();if(raw.byteLength!==HERO_REFERENCE.bytes)throw Error('Reference size differs from pinned upstream asset');
   if(await assetDigest(raw)!==HERO_REFERENCE.sha256)throw Error('Reference SHA-256 integrity check failed');
-  const finished=finishHeroPBR(repairSuitedMaterials(raw));
-  await loadGLB(finished,{name:'Suited Human — PBR-finished CC0 reference',origin:HERO_REFERENCE.source,license:HERO_REFERENCE.license});
+  // Reference contains pink sockets without eyeballs; new eye meshes are parented
+  // to the original animated head bone. Do not repair user-imported GLBs.
+  const finished=repairHeroEyes(finishHeroPBR(repairSuitedMaterials(raw)));
+  const eyeAudit=inspectHeroEyes(finished);
+  if(eyeAudit.nodes!==8||eyeAudit.joints!==53||eyeAudit.clips!==4)throw Error('Corrected eye geometry failed audit');
+  await loadGLB(finished,{name:'Suited Human — eye-corrected CC0 reference',origin:HERO_REFERENCE.source,license:HERO_REFERENCE.license});
   $('downloadRepairedBtn').disabled=false;freezeNeutralPose();applyReviewView('front');capturedViews.clear();refreshReview();
-  setStatus('Repaired reference loaded: opaque face/chest and tuned PBR skin/fabric/leather. Static review still required.');
+  setStatus('Repaired reference loaded: corrected head-bone eye geometry, opaque face/chest and PBR materials. Static review still required.');
  }catch(e){setStatus('Reference loading failed: '+e.message,true)}finally{$('referenceBtn').disabled=false;}
 }
 $('referenceBtn').onclick=openReference;
-$('downloadRepairedBtn').onclick=()=>{if(!assetBytes||assetName!=='Suited Human — PBR-finished CC0 reference')return;const b=new Blob([assetBytes],{type:'model/gltf-binary'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download='blank-hero-suited-v21.glb';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);};
+$('downloadRepairedBtn').onclick=()=>{if(!assetBytes||assetName!=='Suited Human — eye-corrected CC0 reference')return;const b=new Blob([assetBytes],{type:'model/gltf-binary'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download='blank-hero-suited-v22-eyes.glb';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);};
 $('avatarFile').onchange=async event=>{const file=event.target.files?.[0];try{if(file){if(file.size>MAX_CHARACTER_BYTES)throw Error('GLB is larger than 32 MiB');await loadGLB(await file.arrayBuffer(),{name:file.name,origin:'local-file',license:'user-supplied'});}}catch(e){setStatus('Import rejected: '+e.message,true)}finally{event.target.value='';}};
 $('clipSelect').onchange=e=>playClip(Number(e.target.value));$('pauseBtn').onclick=()=>{paused=!paused;$('pauseBtn').textContent=paused?'Resume':'Pause';};
 $('resetPoseBtn').onclick=()=>{actions.forEach(a=>a.stop());mixer?.setTime(0);if(actions.length)playClip(Number($('clipSelect').value));};

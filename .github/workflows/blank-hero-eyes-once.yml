@@ -1,0 +1,43 @@
+name: Blank Engine - one-time head-rigged eye QA
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/blank-hero-eyes-once.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  hero-eyes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Install pinned libraries and Chrome
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm install --no-save --ignore-scripts --no-audit --no-fund three@0.186.1 playwright@1.56.1
+          npx playwright install chrome
+      - name: Fetch pinned licensed MakeHuman reference
+        run: |
+          mkdir -p character-lab/assets artifacts
+          curl --fail --location --retry 3 --silent --show-error 'https://raw.githubusercontent.com/kunalkushwaha/vsim/3f97faf85e46d2f9a122b0a8b8d3ccc0af598f91/packages/assets/library/suited.glb' -o character-lab/assets/hero.glb
+      - name: Audit, repair GLB and run tests
+        run: |
+          node scripts/character-lab-audit.mjs character-lab/assets/hero.glb
+          node scripts/hero-eyes-build.mjs character-lab/assets/hero.glb artifacts/blank-hero-v22-eyes.glb
+          npm test
+      - name: Capture actual corrected face in Chrome
+        run: node scripts/hero-v22-eyes-browser.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: blank-character-hero-v22-eyes
+          path: |
+            artifacts/blank-hero-v22-eyes.glb
+            artifacts/hero-v22-eyes-*.png
+          retention-days: 7
+          if-no-files-found: ignore
