@@ -1,0 +1,10 @@
+import {readFile,writeFile,mkdir} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+import {reconstructHeroEyelids} from '../geometry/eyelid-reconstruction.mjs';
+const [src,out,artifact]=process.argv.slice(2);
+if(!src||!out||!artifact)throw Error('Usage: node scripts/build-eyelids.mjs <eye-corrected.glb> <candidate.glb> <artifact.json>');
+const raw=await readFile(src),hash=createHash('sha256').update(raw).digest('hex');
+const result=reconstructHeroEyelids(raw.buffer.slice(raw.byteOffset,raw.byteOffset+raw.byteLength),{assetSha256:hash});
+await Promise.all([mkdir((await import('node:path')).dirname(out),{recursive:true}),mkdir((await import('node:path')).dirname(artifact),{recursive:true})]);
+await writeFile(out,new Uint8Array(result.buffer));await writeFile(artifact,JSON.stringify(result.artifact,null,2)+'\n');
+console.log(JSON.stringify({sourceHash:hash,output:out,artifact,meshes:result.artifact.output.addedMeshes,triangles:result.artifact.output.addedTriangles,review:result.artifact.review.status}));

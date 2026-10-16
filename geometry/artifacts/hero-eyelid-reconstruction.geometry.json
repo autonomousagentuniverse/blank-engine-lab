@@ -1,0 +1,76 @@
+{
+  "schema": "blank.geometry.eyelid-reconstruction.v3",
+  "id": "hero-measured-lid-reconstruction-01",
+  "builder": "character",
+  "source": {
+    "sha256": "207ba42634bf144f3c43aa72e93673fb1607f39a7e0d259a5d9e4293213ef384",
+    "geometry": "original GLB face unchanged",
+    "sourceBytes": 6705116
+  },
+  "measurements": {
+    "L": {
+      "contourVertices": 28,
+      "depthRangeM": 0.010113582015037537,
+      "lipTriangles": 112,
+      "meshes": [
+        "Blank.Lid.L.upper",
+        "Blank.Lid.L.lower"
+      ],
+      "boundary": {
+        "signedArea": -0.00015567285460926783,
+        "clockwise": true,
+        "vertices": 28
+      }
+    },
+    "R": {
+      "contourVertices": 28,
+      "depthRangeM": 0.010113582015037537,
+      "lipTriangles": 112,
+      "meshes": [
+        "Blank.Lid.R.upper",
+        "Blank.Lid.R.lower"
+      ],
+      "boundary": {
+        "signedArea": -0.00015567285460926783,
+        "clockwise": true,
+        "vertices": 28
+      }
+    },
+    "method": "28-point actual indexed face boundary, 3D depth and profile"
+  },
+  "parameters": {
+    "outerFraction": 0.1,
+    "innerFractionUpper": 0.58,
+    "innerFractionLower": 0.25,
+    "roundoverM": 0.00165,
+    "recessM": 0.0003
+  },
+  "output": {
+    "addedMeshes": 4,
+    "addedNodes": 4,
+    "addedTriangles": 224,
+    "sourceBinaryPrefixBytes": 6563568,
+    "rigJoints": 53,
+    "animationClips": 4,
+    "originalFaceMeshUnchanged": true,
+    "headBoneRigidAttachment": true,
+    "blinking": false
+  },
+  "limitations": [
+    "A close-up preview candidate, not approved facial anatomy",
+    "A separate head-parented lip is not a watertight retopology of the skinned face",
+    "No eyelid opening/closing rig or 3D eye/surface intersection certification",
+    "New skin material may not perfectly match existing textured face and needs artist review"
+  ],
+  "review": {
+    "status": "requires-visual-approval",
+    "required": [
+      "front macro",
+      "left profile",
+      "right profile",
+      "three-quarter",
+      "animation/head turn",
+      "material tone compatibility"
+    ]
+  }
+}

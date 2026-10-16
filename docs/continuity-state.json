@@ -9,7 +9,7 @@
   "automatic_deployment_enabled": false,
   "source_of_truth": "GitHub main",
   "priority": "P0",
-  "priority_task": "Reconstruct eyelid topology around measured contours and validate in close-up",
+  "priority_task": "Review real Chrome Geometry Artifact v3 eyelid lip candidate; residual exposed rim and material mismatch remain BLOCKED",
   "owner_decisions": [
     "hardest problems first",
     "one visually excellent isolated hero before scaling",
@@ -67,15 +67,27 @@
       "no verified blinking/gaze",
       "bald scalp and limited facial fidelity"
     ],
-    "photorealism_approved": false
+    "photorealism_approved": false,
+    "current_eye_geometry_v3": {
+      "schema": "blank.geometry.eyelid-reconstruction.v3",
+      "artifact_path": "geometry/artifacts/hero-eyelid-reconstruction.geometry.json",
+      "source_sha256": "207ba42634bf144f3c43aa72e93673fb1607f39a7e0d259a5d9e4293213ef384",
+      "additional_head_attached_meshes": 4,
+      "additional_triangles": 224,
+      "original_hero_rig_preserved": true,
+      "source_face_unchanged": true,
+      "visual_approval": false,
+      "offline_red_proxy_pixels_before": 6179,
+      "offline_red_proxy_pixels_after": 2583,
+      "chrome_result": "pending"
+    }
   },
   "next_steps": [
-    "baseline source-hash and actual front/side/three-quarter closeups",
-    "measure 3D contour depth, tangent, normals, adjacent face weights/UVs",
-    "build topology-aware upper/lower eyelid proposal without damaging original GLB",
-    "write reversible Geometry Artifact v3 preserving source and constraints",
-    "test geometry, skinning, clip preservation and Chrome screenshots",
-    "obtain explicit visual acceptance or report remaining blockers"
+    "review actual Three.js/Chrome front and profile v3 evidence and compare with baseline",
+    "continue topology-level correction only if not cosmetically hiding defects",
+    "check eye-to-skin material continuity and 3D intersections",
+    "consider professionally authored facial retopology or asset replacement if overlay inadequate",
+    "keep continuity updated atomically in every commit"
   ],
   "other_open_blockers": [
     "actual Android device frame-rate/thermal test",
