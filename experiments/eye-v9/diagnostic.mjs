@@ -111,6 +111,9 @@ function setPass(pass){
  }else if(pass==='unlit-skin-atlas'){
   const source=face.userData.v8.material;
   face.material=new THREE.MeshBasicMaterial({map:source.map,color:source.color,side:source.side,depthTest:true,depthWrite:true,toneMapped:false});
+  }else if(pass==='v10-patch'){
+  if(!face.userData.v8.v10material)throw Error('V10 patch not prepared');
+  face.material=face.userData.v8.v10material;
  }else if(pass==='normals-only'){
   face.material=new THREE.MeshNormalMaterial({side:THREE.FrontSide,depthTest:true,depthWrite:true});
  }else if(pass!=='normal')throw Error('Unexpected pass '+pass);
@@ -308,4 +311,68 @@ window.eyeV8={
  views:Object.keys(rendered).map(attribution),
  caveats:['Pixel pinkish test is a color heuristic, not a source attribution by itself','ID pass uses depth-tested Basic material, not exact PBR alpha','UV pass encodes UV into RGB; sampling the texture atlas is a separate check','No source GLB mutation','No blink/gaze animation or photorealism acceptance']};
  }
+};
+
+/** Experimental V10: copy-on-write atlas test; never modify original GLB or geometry.
+ * Source-visible red screen pixels + depth-tested triangle-ID + quantized UV are required.
+ */
+window.eyeV8.applyV10=function(){
+ const mat=face.userData.v8.material,texture=mat.map,a=rendered.front_detail;
+ if(!texture?.image||texture.flipY!==false||!a?.id||!a?.uv||!a?.['unlit-skin-atlas'])throw Error('V10 requires source atlas and matched front-detail passes');
+ const canvas=document.createElement('canvas');canvas.width=texture.image.width;canvas.height=texture.image.height;
+ const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.drawImage(texture.image,0,0);
+ const pic=ctx.getImageData(0,0,canvas.width,canvas.height),original=pic.data,modified=new Uint8ClampedArray(original);
+ const aw=canvas.width,ah=canvas.height,red=(r,g,b)=>r>125&&r>g*1.55&&r>b*1.45;
+ const rois=[{eye:'left',x1:316,y1:342,x2:446,y2:403},{eye:'right',x1:515,y1:342,x2:644,y2:403}];
+ const selection=new Set(),screen={left:0,right:0};
+ for(const box of rois)for(let y=box.y1;y<box.y2;y++)for(let x=box.x1;x<box.x2;x++){
+  const at=off(x,y),id=(a.id[at]<<16)|(a.id[at+1]<<8)|a.id[at+2];
+  const rgb=a['unlit-skin-atlas'];
+  if(id<1||id>15948||!red(rgb[at],rgb[at+1],rgb[at+2]))continue;
+  screen[box.eye]++;
+  const ux=Math.round(a.uv[at]*aw/255),vy=Math.round(a.uv[at+1]*ah/255);
+  for(let dy=-3;dy<=3;dy++)for(let dx=-3;dx<=3;dx++){
+   const tx=ux+dx,ty=vy+dy;if(tx<0||tx>=aw||ty<0||ty>=ah)continue;
+   const p=4*(ty*aw+tx);if(red(original[p],original[p+1],original[p+2]))selection.add(ty*aw+tx);
+  }
+ }
+ if(screen.left<100||screen.right<100||selection.size<50||selection.size>18000)throw Error('Unsafe V10 selection '+JSON.stringify({screen,texels:selection.size}));
+ let replaced=0,noDonor=0;
+ for(const pixel of selection){
+  const x=pixel%aw,y=Math.floor(pixel/aw),p=4*pixel;let donor=-1;
+  for(let rad=2;rad<=24&&donor<0;rad+=2){
+   let score=Infinity;
+   for(let dy=-rad;dy<=rad;dy+=2)for(let dx=-rad;dx<=rad;dx+=2){
+    if(Math.max(Math.abs(dx),Math.abs(dy))!==rad)continue;
+    const xx=x+dx,yy=y+dy;if(xx<0||xx>=aw||yy<0||yy>=ah)continue;
+    const n=4*(yy*aw+xx),r=original[n],g=original[n+1],b=original[n+2];
+    if(red(r,g,b)||r<65||g<65||b<50||r>g*1.45)continue;
+    const s=dx*dx+dy*dy+Math.abs(r-original[p])*.08;
+    if(s<score){score=s;donor=n;}
+   }
+  }
+  if(donor<0){noDonor++;continue;}
+  for(let c=0;c<3;c++)modified[p+c]=Math.round(.87*original[donor+c]+.13*original[p+c]);
+  replaced++;
+ }
+ if(replaced<50)throw Error('Too few local texels safely repaired '+replaced);
+ pic.data.set(modified);ctx.putImageData(pic,0,0);
+ const patched=texture.clone();patched.image=canvas;patched.needsUpdate=true;
+ const newmat=mat.clone();newmat.map=patched;newmat.needsUpdate=true;face.userData.v8.v10material=newmat;
+ return {screenRedCandidates:screen,selectedAtlasTexels:selection.size,replacedAtlasTexels:replaced,noLocalDonor:noDonor,atlasDimensions:[aw,ah],sourceChanged:false,geometryChanged:false,review:'BLOCKED'};
+};
+window.eyeV8.auditV10=function(){
+ const base=rendered.front_detail?.normal,other=rendered.front_detail?.['v10-patch'];
+ if(!base||!other)throw Error('Matched V10 front-detail not rendered');
+ let inside=0,outside=0,pinkBefore=0,pinkAfter=0;
+ for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+  const p=off(x,y),inEye=(x>=316&&x<446||x>=515&&x<644)&&y>=342&&y<403;
+  const changed=Math.abs(base[p]-other[p])>8||Math.abs(base[p+1]-other[p+1])>8||Math.abs(base[p+2]-other[p+2])>8;
+  if(changed){if(inEye)inside++;else outside++;}
+  if(inEye){
+   if(base[p]>90&&base[p]>base[p+1]*1.45&&base[p]>base[p+2]*1.35)pinkBefore++;
+   if(other[p]>90&&other[p]>other[p+1]*1.45&&other[p]>other[p+2]*1.35)pinkAfter++;
+  }
+ }
+ return {eyeChangedPixels:inside,outsideEyeChangedPixels:outside,pinkHeuristicBefore:pinkBefore,pinkHeuristicAfter:pinkAfter,note:'Crop-based heuristic, NOT anatomical acceptance; brows and eyelid geometry unresolved'};
 };

@@ -1,0 +1,46 @@
+name: Blank Engine - eye v10 localized red atlas experimental patch
+on:
+  workflow_dispatch:
+  push:
+    branches: [experiment/eye-v10-atlas-pixel-repair]
+permissions:
+  contents: read
+jobs:
+  diagnostic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Install pinned browser and scientific packages
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm install --no-save --ignore-scripts --no-audit --no-fund three@0.186.1 playwright@1.56.1
+          python3 -m venv .ci-venv
+          .ci-venv/bin/pip install --disable-pip-version-check numpy==2.2.6
+      - name: Rebuild reference CC0 hero through v7
+        run: |
+          mkdir -p .ci-assets artifacts/eye-v9
+          curl --fail --location --retry 3 --silent --show-error 'https://raw.githubusercontent.com/kunalkushwaha/vsim/3f97faf85e46d2f9a122b0a8b8d3ccc0af598f91/packages/assets/library/suited.glb' -o .ci-assets/suited.glb
+          node scripts/hero-eyes-build.mjs .ci-assets/suited.glb .ci-assets/hero-v22.glb
+          node scripts/fit-hero-eyes.mjs .ci-assets/hero-v22.glb .ci-assets/hero-eye-fit-v2.glb artifacts/eye-fit-v2.json
+          node scripts/build-eye-sockets.mjs .ci-assets/hero-eye-fit-v2.glb .ci-assets/hero-eye-sockets-v4.glb artifacts/eye-socket-v4.json
+          .ci-venv/bin/python experiments/eye-v5/sample_fix.py .ci-assets/hero-eye-sockets-v4.glb .ci-assets/hero-eye-v5-sample.glb artifacts/eye-v5.json
+          .ci-venv/bin/python experiments/eye-v6/bridge_socket.py .ci-assets/hero-eye-v5-sample.glb .ci-assets/hero-eye-v6-transition.glb artifacts/eye-v6.json
+          .ci-venv/bin/python experiments/eye-v7/front_facing.py .ci-assets/hero-eye-v6-transition.glb .ci-assets/hero-eye-v7-facing.glb artifacts/eye-v7.json
+      - name: Engine regressions and real source-pinned GLB tests
+        run: |
+          npm test
+          BLANK_EYE_V4_FIXTURE=.ci-assets/hero-eye-fit-v2.glb node --test test/eye-socket-remesh.test.mjs
+      - name: Actual Three.js Chrome GPU visibility and UV passes
+        run: node experiments/eye-v9/browser-smoke.mjs
+      - name: Archive attribution JSON and real view images
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: blank-eye-v10-atlas-pixel-experiment
+          path: artifacts/eye-v9/
+          retention-days: 7
+          if-no-files-found: warn

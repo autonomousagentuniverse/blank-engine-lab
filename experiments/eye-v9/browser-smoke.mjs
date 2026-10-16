@@ -66,5 +66,16 @@ try{
 
  assert.deepEqual(errors,[]);
  await writeFile(join(folder,'attribution.json'),JSON.stringify(report,null,2)+'\n');
- console.log('EYE_V9_EXACT_CONTOUR_DIAGNOSTIC_PASS visual acceptance remains BLOCKED');
+
+ const v10=await page.evaluate(()=>window.eyeV8.applyV10());console.log('EYE_V10_PATCH',JSON.stringify(v10));
+ assert.equal(v10.geometryChanged,false);assert.ok(v10.replacedAtlasTexels>=50);
+ for(const view of views){
+  await page.evaluate(v=>window.eyeV8.render(v,'v10-patch'),view);
+  await page.locator('canvas').screenshot({path:join(folder,view+'-v10-atlas-patch.png')});
+ }
+ const v10Audit=await page.evaluate(()=>window.eyeV8.auditV10());console.log('EYE_V10_SCREEN_AUDIT',JSON.stringify(v10Audit));
+ assert.ok(v10Audit.eyeChangedPixels>25,'v10 patch not visible inside eye ROI');
+ assert.ok(v10Audit.outsideEyeChangedPixels<15000,'v10 patch bleeds outside eye ROI');
+ await writeFile(join(folder,'v10-patch-audit.json'),JSON.stringify({v10,v10Audit},null,2)+'\n');
+ console.log('EYE_V9_EXACT_CONTOUR_DIAGNOSTIC_PASS; EYE_V10_EXPERIMENT_PASS photorealism BLOCKED');
 }finally{await browser?.close();await new Promise(done=>server.close(done));}

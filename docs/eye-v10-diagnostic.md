@@ -1,0 +1,7 @@
+# Eye V10 — source-attributed, copy-only atlas candidate (NOT PRODUCTION)
+
+Experiment dated 2026-10-16. V9 proves saturated red skin-atlas texels appear on actual visible eyelid margins in depth-tested Chrome; material removal is not a repair. V10 constructs a cloned material/atlas using only original-face/generated-lid triangle-ID and unlit-red screen pixels inside two narrow front-detail eye ROIs. It selects nearby red source texels via quantized per-pixel UV and blends from the nearest non-red local donor, within 24 texels. It rejects missing attribution or an excessive (>18000) selection. The original source atlas, input GLB, rig, animation clips and geometry remain unchanged.
+
+Run a pinned v2→v7 build, engine regression and GLB checks, plus four cameras and eight baseline v9 passes. Then render the V10 candidate in each identical camera and archive paired images and screen audit. Reject <26 visibly changed eye pixels or >=15000 changed outside-eye pixels in the detail frame. These are safety gates, not realism scores. Background/non-eye changed pixels indicate texture UV overlap. The v9 UV debug is only 8-bit; a 3-texel envelope is used and may still be inaccurate. No cosmetic correction to the brow geometry, eyeball location, sclera, cornea, tearline, topology or motion is claimed. Human photorealism approval BLOCKED. No main merge or Vercel deployment.
+
+CI is temporarily allowed to run on push to this disposable experiment branch only, solely to verify V10. Restore workflow_dispatch-only immediately after QA.
