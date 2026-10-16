@@ -31,7 +31,7 @@ try{
   const file=join(root,'node_modules','three',m[2]);
   try{await route.fulfill({status:200,body:await readFile(file),headers:{'content-type':mime[extname(file)]||'application/octet-stream','access-control-allow-origin':'*'}});}catch{return route.abort('failed');}
  });
- await page.goto(`http://127.0.0.1:${server.address().port}/character-lab/`,{waitUntil:'domcontentloaded'});
+ await page.goto(`http://127.0.0.1:${server.address().port}/character-lab/index.html`,{waitUntil:'domcontentloaded'});
  // The pinned original 6.7 MB reference was downloaded by the workflow.
  await page.locator('#avatarFile').setInputFiles(join(root,'.ci-assets','hero-v22.glb'));
  await page.waitForFunction(()=>document.querySelector('#status')?.textContent.startsWith('Loaded'),{timeout:30000});

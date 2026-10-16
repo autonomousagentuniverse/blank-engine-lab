@@ -36,3 +36,5 @@ jobs:
           path: artifacts/geometry-artifact-character-lab.png
           if-no-files-found: ignore
           retention-days: 7
+
+# Scoped rerun: serve Character Lab index explicitly in local Chrome test.
