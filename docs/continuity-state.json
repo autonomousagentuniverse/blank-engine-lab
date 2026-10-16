@@ -9,7 +9,7 @@
   "automatic_deployment_enabled": false,
   "source_of_truth": "GitHub main",
   "priority": "P0",
-  "priority_task": "Einar real licensed source verified with cornea, eyelid, blink controls, high-end mesh/texture assets. Next restore 63 external texture assets, produce authentic Blender PBR closeups and independently run GLB/Three.js game-realism test, retaining main and Alpha 0.5.",
+  "priority_task": "Einar's original source skin+eye Blender Cycles renders now proven with five views. Next neutral pose/style cleanup and copy-only head/eye glTF/Three.js material/blink test; human approval and Android testing remain BLOCKED. Main/deployed Alpha 0.5 unchanged.",
   "owner_decisions": [
     "hardest problems first",
     "one visually excellent isolated hero before scaling",
@@ -223,13 +223,13 @@
   },
   "experimental_hero_v4": {
     "branch": "experiment/hero-v4-einar-shaded",
-    "status": "source_texture_and_cycles_preview_pending",
+    "status": "five_real_cycles_face_eye_views_pass_photorealism_still_blocked",
     "source_zip_sha256": "3cbb5a1dd9ffd3ca39edab420a83ea7f7db337b435a78ef27a0c87ff3e6977f7",
     "external_texture_files_expected": 63,
-    "texture_restoration_verified": false,
-    "critical_skin_albedo_loaded": false,
-    "critical_eye_albedo_loaded": false,
-    "cycles_shots_completed": 0,
+    "texture_restoration_verified": true,
+    "critical_skin_albedo_loaded": true,
+    "critical_eye_albedo_loaded": true,
+    "cycles_shots_completed": 5,
     "expected_shots": [
       "front",
       "three_quarter",
@@ -241,6 +241,37 @@
     "glb_threejs_approved": false,
     "android_approved": false,
     "source_license_credit": "Einar Rig (CC-BY) Blender Foundation | studio.blender.org",
-    "no_production_release": true
+    "no_production_release": true,
+    "images_referenced": 63,
+    "images_loaded": 58,
+    "missing_images": [
+      "pipe_wrench.normal",
+      "pipe_wrench.pointiness",
+      "tool_props.color",
+      "tool_props.metal_rough_spec",
+      "tool_props.normal"
+    ],
+    "render_engine": "Blender Cycles CPU",
+    "render_resolution": [
+      600,
+      600
+    ],
+    "render_samples": 12,
+    "rendered_pngs": [
+      "front.png",
+      "three_quarter.png",
+      "profile.png",
+      "eyes_macro.png",
+      "eyes_three_quarter.png"
+    ],
+    "blender_post_render_shutdown_timeout": true,
+    "full_run_tech_status": "success",
+    "workflow_run": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38947591860",
+    "visual_defects": [
+      "heavily weathered red skin / stern brows",
+      "receding/coarse hair",
+      "detached strap",
+      "no verified real-time Three.js materials/blink"
+    ]
   }
 }

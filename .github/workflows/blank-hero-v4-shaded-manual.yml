@@ -1,9 +1,6 @@
 name: Blank Engine - Einar verified source shaded face proof
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - experiment/hero-v4-einar-shaded # scoped one-shot test; remove after results
 permissions:
   contents: read
 jobs:

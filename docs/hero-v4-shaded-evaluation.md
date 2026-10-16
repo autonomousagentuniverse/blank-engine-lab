@@ -9,3 +9,7 @@ Render isolated original head, brows, lashes, eye/cornea/meniscus in Blender Cyc
 The original ZIP/Blend and texture files are not committed and not uploaded as artifacts. Preserve required CC-BY credit: Einar Rig (CC-BY) Blender Foundation | studio.blender.org. Source render and small audit may be shared for project review.
 
 If Blender cannot load/complete before runner limit, persist partial status and PNGs and report failure honestly. Visual human acceptance BLOCKED by default regardless of successful 171-regression. Experimental branch only; temporary branch-specific push CI trigger must be removed after run, leaving workflow_dispatch only. Production main and Alpha0.5 Vercel unchanged. Subsequent work only if source photo-quality closeups pass: preserve/bake original licensed maps and prove runtime Three.js eye geometry, blink and mobile performance.
+
+## Run outcome
+
+Successful real Cycles run https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38947591860. Five source-shaded views generated at 600px/12spp using actual external textures; 58/63 source referenced images loaded including both head and eye albedo, five unrelated tool-prop maps missing. See docs/hero-v4-findings.md. Blender exited 124 AFTER source-shaded image completion (slow shutdown), standalone gate and 171/2-skipped engine tests passed. Human photorealism BLOCKED. Manual-only workflow.
