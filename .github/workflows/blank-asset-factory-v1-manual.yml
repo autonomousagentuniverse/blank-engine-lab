@@ -1,9 +1,6 @@
 name: Blank Engine - automated Blender asset factory v1
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - experiment/asset-factory-v1 # single experimental self-test; remove afterward
 permissions:
   contents: read
 jobs:

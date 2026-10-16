@@ -41,3 +41,7 @@ The long-term planned chain is:
 - Independent human visual approval → optional explicitly authorized major release
 
 Do not pretend stages 2-4 are complete for every asset or that CLI orchestration alone creates missing anatomy.
+
+## First real CI run and acceptance (2026-10-16)
+
+https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38956247113 completed SUCCESS. Seven automatic build/check steps, all three genuine texture maps (skin albedo, iris albedo, authored skin roughness), source-derived 12-mesh GLB, full regression and five real WebGL screenshots archived. Deterministic manifest ID `4c7f728f4c6121b5`. This is an automated **conversion and validation** template, not general character generation. Visual reference **REJECT**: patchy overlapping face surfaces and no hair/blink or source SSS. Full files and next investigations: docs/asset-factory-v1-findings.md. CI now manual workflow_dispatch for job scheduling only; internal asset creation remains automatic. No production deployment.

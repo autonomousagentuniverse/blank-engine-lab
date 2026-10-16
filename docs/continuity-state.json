@@ -9,7 +9,7 @@
   "automatic_deployment_enabled": false,
   "source_of_truth": "GitHub main",
   "priority": "P0",
-  "priority_task": "Build automation of licensed Blender asset generation via a declarative spec and CI headless bpy/real WebGL gate. Einar v1 adds source-authored skin roughness to existing static copy. After actual test, add independent automatic hair cards, facial blink morph conversion and normal/SSS fidelity; no Vercel release.",
+  "priority_task": "Automated headless Blender asset pipeline v1 real CI PASS (7/7 stages, source roughness, GLB/WebGL), but visual FAIL due patchwork face geometry and absent hair/normal/blink. Next automate correct per-material/UV/normal source conversion and test camera-matched source vs browser, then hair cards and morph animation; no deployment.",
   "owner_decisions": [
     "hardest problems first",
     "one visually excellent isolated hero before scaling",
@@ -311,7 +311,7 @@
   },
   "asset_factory_v1": {
     "branch": "experiment/asset-factory-v1",
-    "phase": "automated_einar_head_factory_implementation_pending_actions_real_test",
+    "phase": "seven_stage_automated_einar_head_factory_real_ci_pass_photo_visual_failed",
     "entrypoint": "python3 experiments/asset-factory/build.py --spec asset-specs/einar-head-v1.json --execute",
     "spec": "asset-specs/einar-head-v1.json",
     "template": "einar-head-pbr-static",
@@ -329,6 +329,27 @@
     "android_perf_verified": false,
     "visual_photorealism_approved": false,
     "expected_output": "GLB + real WebGL front/profile/3-4/eye macros + deterministic stage build-manifest.json",
-    "no_production_release": true
+    "no_production_release": true,
+    "real_ci_run": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38956247113",
+    "build_id": "4c7f728f4c6121b5",
+    "stages_passed": 7,
+    "stages_failed": 0,
+    "original_skin_roughness_map_embedded": true,
+    "source_license_verified": true,
+    "glb_sha256": "5636bee1e558d903f342b939dd49e44dab5eb7cd6549bcaf834a25bfd3445e0d",
+    "glb_bytes": 9592876,
+    "real_webgl2_verified": true,
+    "webgl_views_rendered": 5,
+    "mesh_count": 12,
+    "embedded_texture_images": 3,
+    "runtime_triangles": 56572,
+    "engine_regression": "171 pass, 2 skipped, 0 fail",
+    "visual_defects": [
+      "visible overlapping/seamed disconnected face skin geometry at eyes/nose/mouth",
+      "bald without generated hair",
+      "skin shader lacks source normal/displacement/SSS",
+      "source scarred reddish complexion and static frown"
+    ],
+    "workflow_mode": "manual workflow_dispatch only"
   }
 }

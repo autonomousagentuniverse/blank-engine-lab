@@ -27,3 +27,5 @@ Before substantial work read [docs/CONTINUITY.md](docs/CONTINUITY.md) and [docs/
 ## Automated asset-authoring owner requirement (2026-10-16)
 - Blender use must be **fully headless and spec-driven**, not manual artist clicks per asset. Initial adapter: `asset-specs/einar-head-v1.json` and `experiments/asset-factory/build.py`, with separate deterministic artifacts and human visual acceptance. Hair/blink/runtime SSS stages are not yet validated; do not claim complete automation of photorealistic humans.
 - Never auto-deploy asset-factory outputs. Persistent workflows manual-only; scoped experiment push trigger only until initial proof and then remove.
+
+- Asset Factory v1 end-to-end source-to-Chrome automation PASS run 38956247113, deterministic artifact build id 4c7f728f4c6121b5; source-authored roughness map now ported. **Visual fail** from major seams around eyes/mouth, still bald and static. See docs/asset-factory-v1-findings.md. Next automated stage: source face material/UV boundary mapping and consistent layer export, then hair/blink. Manual workflow only.
