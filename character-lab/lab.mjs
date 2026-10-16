@@ -8,6 +8,7 @@ import {repairSuitedMaterials} from './repair.mjs';
 import {finishHeroPBR} from './hero-finish.mjs';
 import {repairHeroEyes,inspectHeroEyes} from './eyes.mjs';
 import {createUniversalInspector} from '../inspection/focus.mjs';
+import {applyEyeAssemblyFit} from '../geometry/eyelid-fit.mjs';
 import {artifactFromThreeMesh,createGeometrySession} from '../geometry/three-adapter.mjs';
 import {validateGeometryArtifact,serializeGeometryArtifact} from '../geometry/artifact.mjs';
 import {REVIEW_VIEWS,LIGHT_PRESETS,auditStaticReview} from './hero-review.mjs';
@@ -62,6 +63,9 @@ function updateMaterialSelection(){
  $('roughnessValue').textContent=Number($('roughness').value).toFixed(2);$('metalnessValue').textContent=Number($('metalness').value).toFixed(2);
 }
 function cleanModel(){
+ eyeFitUndoSource=null;eyeFitSidecar=null;
+ $('eyeFitUndo').disabled=$('eyeFitExport').disabled=true;
+ $('eyeFitMeasure').disabled=true;
  geometrySession?.revert();geometrySession=null;geometryArtifact=null;geometrySolution=null;
  $('geoPreview').disabled=$('geoUndo').disabled=$('geoExport').disabled=true;
  $('geoStatus').textContent='No Geometry Artifact. Source GLBs remain unchanged.';
@@ -105,6 +109,7 @@ async function loadGLB(buffer,{name,origin,license}){
  const problems=[...report.warnings,...missing.map(n=>`Missing canonical rig role: ${n}`)];
  $('quality').innerHTML='';
  for(const line of [...(problems.length?problems:['Rigged asset meets structural checks']),`Photorealism: NOT VERIFIED — inspect lighting, face, cloth and deformation visually`,`License: ${license}`]){$('quality').append(Object.assign(document.createElement('p'),{textContent:line}));}
+ $('eyeFitMeasure').disabled=false;
  $('exportBtn').disabled=false;setStatus(`Loaded ${name} · ${report.skinnedMeshes} skinned meshes · ${report.textures} image textures · ${actions.length} authored clips${missing.length?' · skeleton-mapping review required':''}.`);
 }
 function playClip(i){if(!mixer||!actions[i])return;const next=actions[i];next.reset();next.enabled=true;next.play();if(activeAction&&activeAction!==next)next.crossFadeFrom(activeAction,.23,false);activeAction=next;paused=false;$('pauseBtn').textContent='Pause';}
@@ -269,6 +274,44 @@ $('geoImport').onchange=async event=>{
  }catch(e){setGeometryStatus('Artifact import rejected: '+e.message,true);}
  finally{event.target.value='';}
 };
+
+/** Geometry Artifact v2: fit the eye assembly to *measured* open face-mesh
+ * boundaries. No texture guesses, no original-asset overwrite, and no silent
+ * "photorealism passed" status. This is pinned to the MakeHuman reference. */
+let eyeFitUndoSource=null,eyeFitSidecar=null;
+const eyeFitStatus=(text,error=false)=>{const el=$('eyeFitReport');el.textContent=text;el.classList.toggle('error',error);};
+$('eyeFitMeasure').onclick=async()=>{
+ const button=$('eyeFitMeasure');button.disabled=true;
+ const source={buffer:assetBytes,name:assetName,origin:assetOrigin,license:assetLicense};
+ try{
+  if(!source.buffer)throw Error('Load a rigged eye-corrected character first');
+  const hash=await assetDigest(source.buffer);
+  const {buffer,sidecar}=applyEyeAssemblyFit(source.buffer,{assetSha256:hash});
+  await loadGLB(buffer,{name:source.name+' — measured eye-fit preview',origin:source.origin,license:source.license});
+  eyeFitUndoSource=source;eyeFitSidecar=sidecar;
+  $('eyeFitUndo').disabled=$('eyeFitExport').disabled=false;button.disabled=true;
+  freezeNeutralPose();applyReviewView('face');
+  const e=sidecar.measurement.eyelids;
+  eyeFitStatus(`Measured ${e.L.vertices} vertices per aperture · widths ${(e.L.width*1000).toFixed(2)} mm / ${(e.R.width*1000).toFixed(2)} mm · fitted 8 eye components · visual review required.`);
+  setStatus('Measured eye fit PREVIEW. Inspect front/profile/three-quarter and undo if incorrect; original GLB unchanged.');
+ }catch(e){eyeFitStatus('Eye fit rejected: '+e.message,true);button.disabled=!assetBytes;}
+};
+$('eyeFitUndo').onclick=async()=>{
+ const original=eyeFitUndoSource;if(!original)return;
+ try{
+  await loadGLB(original.buffer,{name:original.name,origin:original.origin,license:original.license});
+  freezeNeutralPose();applyReviewView('face');
+  eyeFitStatus('Original hero restored. No source geometry was overwritten.');
+  setStatus('Original hero restored; geometry fit undone.');
+ }catch(e){eyeFitStatus('Undo failed: '+e.message,true);}
+};
+$('eyeFitExport').onclick=()=>{
+ if(!eyeFitSidecar)return;
+ const url=URL.createObjectURL(new Blob([JSON.stringify(eyeFitSidecar,null,2)],{type:'application/json'}));
+ const a=document.createElement('a');a.href=url;a.download='hero-measured-eyelid-fit.geometry.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+ eyeFitStatus('Exported measured eye assembly artifact. Visual approval remains blocked until inspected.');
+};
+
 const ro=new ResizeObserver(()=>{const w=Math.max(1,viewport.clientWidth),h=Math.max(1,viewport.clientHeight);camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false);});ro.observe(viewport);
 function frame(now){requestAnimationFrame(frame);const dt=Math.min(.05,Math.max(0,(now-latestRun)/1000));latestRun=now;if(mixer&&!paused)mixer.update(dt);if(turntable&&stageRoot)stageRoot.rotation.y+=dt*.32;controls.update();detailInspector.follow();renderer.render(scene,camera);frames++;elapsed+=dt;if(elapsed>=1){$('perfHud').textContent=`${Math.round(frames/elapsed)} FPS · ${renderer.info.render.calls} draw calls · ${renderer.info.render.triangles.toLocaleString()} triangles`;frames=0;elapsed=0;}}
 requestAnimationFrame(frame);

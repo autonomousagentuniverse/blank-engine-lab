@@ -36,7 +36,14 @@
 <label class="geo-mirror"><input type="checkbox" id="geoMirror" checked> Mirror L/R counterpart when present</label>
 <div class="buttons"><button id="geoExport" disabled>Export artifact JSON</button><label class="file-button" for="geoImport">Import artifact JSON<input type="file" id="geoImport" accept=".json,application/json" hidden></label></div>
 <div class="source" role="status" id="geoStatus">No Geometry Artifact. Source GLBs remain unchanged.</div>
-<div class="divider"></div><div class="eyebrow">07 / DIAGNOSTICS</div><div class="buttons"><button id="lightBtn">Lighting: portrait</button><button id="skeletonBtn">Skeleton: off</button><button id="wireBtn">Wireframe: off</button></div>
+
+<div class="divider"></div><div class="eyebrow">07 / MEASURED EYELID APERTURE</div>
+<p class="muted small">Fit both sclerae, irises, pupils and highlights to the actual face-mesh boundary loops. Proposals are reversible and require front/profile/three-quarter visual review.</p>
+<button id="eyeFitMeasure" disabled>Measure and preview eye assembly</button>
+<div class="buttons"><button id="eyeFitUndo" disabled>Undo eye fit</button><button id="eyeFitExport" disabled>Export measured Geometry Artifact</button></div>
+<div class="source" id="eyeFitReport" role="status">Load an eye-corrected suited GLB to measure its actual eyelid openings. Unrelated avatars are rejected.</div>
+
+<div class="divider"></div><div class="eyebrow">08 / DIAGNOSTICS</div><div class="buttons"><button id="lightBtn">Lighting: portrait</button><button id="skeletonBtn">Skeleton: off</button><button id="wireBtn">Wireframe: off</button></div>
 </aside>
 <section class="stage"><div class="stage-title"><div><span class="eyebrow">ISOLATED CHARACTER VIEWPORT</span><h2 id="modelTitle">Awaiting hero GLB</h2></div><span class="pill" id="animationPill">READY FOR ASSET</span></div><div class="viewport" id="viewport" aria-label="3D Character Lab viewer"><div class="overlay" id="emptyState"><strong>ONE CHARACTER. NO WORLD DISTRACTIONS.</strong><p>Load the licensed suited human or import your own rigged GLB.</p></div><div class="viewport-help">DRAG ORBIT · TAP PICK ANY DETAIL · PINCH / SCROLL ZOOM · CAPTURE CLOSE-UPS</div><div class="perf" id="perfHud">– FPS · – draw calls</div></div><div id="status" class="status" role="status">Ready. Import a self-contained rigged GLB. Your files stay in this browser.</div></section>
 <aside class="panel inspector"><div class="eyebrow">08 / CHARACTER AUDIT</div><h3>Asset diagnostics</h3><dl id="audit"><dt>Model</dt><dd>Not loaded</dd></dl><div class="divider"></div><h3>Quality gates</h3><div id="quality">A real asset is required before assessment.</div><div class="divider"></div><button id="exportBtn" class="primary" disabled>Export CharacterSpec JSON</button><p class="muted small">CharacterSpec references the GLB by filename and hash. It does not embed the binary or certify photorealism. The asset and exported JSON must travel together.</p></aside></main>

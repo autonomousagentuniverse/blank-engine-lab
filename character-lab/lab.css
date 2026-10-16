@@ -10,3 +10,8 @@
 .geo-fields input{width:100%;box-sizing:border-box;border-radius:7px;background:#101c2c;color:#eaf6ff;border:1px solid #50657b;padding:9px}
 .geo-mirror{display:flex!important;align-items:center;gap:7px!important;font-size:12px}
 #geoStatus{overflow-wrap:anywhere;line-height:1.5}
+
+/* Geometry Artifact v2: measured aperture review is not an approval badge. */
+#eyeFitMeasure{border-color:#6996b8;background:#203e59}
+#eyeFitReport{overflow-wrap:anywhere;line-height:1.55}
+#eyeFitReport.error{color:#f2a9a7}

@@ -1,0 +1,46 @@
+name: Blank Engine - one-time real eyelid geometry QA
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/blank-eye-fit-once.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Install browser and pinned Three.js
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm install --no-save --ignore-scripts --no-audit --no-fund three@0.186.1 playwright@1.56.1
+      - name: Prepare real pinned CC0 suited hero
+        run: |
+          mkdir -p .ci-assets artifacts
+          curl --fail --location --retry 3 --silent --show-error 'https://raw.githubusercontent.com/kunalkushwaha/vsim/3f97faf85e46d2f9a122b0a8b8d3ccc0af598f91/packages/assets/library/suited.glb' -o .ci-assets/suited.glb
+          node scripts/repair-hero-eyes.mjs .ci-assets/suited.glb .ci-assets/hero-v22.glb
+      - name: Run all regression tests and real topology tests
+        run: |
+          npm test
+          BLANK_EYE_GLTF_FIXTURE=.ci-assets/hero-v22.glb node --test test/eyelid-fit.test.mjs
+      - name: Write measured artifact and corrected GLB
+        run: node scripts/fit-hero-eyes.mjs .ci-assets/hero-v22.glb artifacts/hero-eyelid-fit.glb artifacts/hero-eyelid-fit.geometry.json
+      - name: Verify actual Three.js and Chrome with snapshots
+        run: node scripts/eyelid-fit-browser-smoke.mjs
+      - name: Archive review evidence, never mark visual gate passed automatically
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: blank-eye-fit-measured-qa
+          path: |
+            artifacts/hero-eyelid-fit*.png
+            artifacts/hero-eyelid-fit.glb
+            artifacts/hero-eyelid-fit.geometry.json
+          retention-days: 7
+          if-no-files-found: ignore
