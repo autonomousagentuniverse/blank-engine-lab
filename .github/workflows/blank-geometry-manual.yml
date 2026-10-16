@@ -1,5 +1,6 @@
 name: Blank Engine - manual Geometry Artifact browser QA
 on:
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
