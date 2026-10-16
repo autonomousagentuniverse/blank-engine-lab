@@ -1,9 +1,6 @@
 name: Blank Engine - eye v8 pixel attribution diagnostic
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - experiment/eye-v8-pixel-attribution # ONE-SHOT test only: remove after result
 permissions:
   contents: read
 jobs:

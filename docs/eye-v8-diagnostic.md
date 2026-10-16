@@ -22,3 +22,7 @@ Output includes actual **depth-tested winner** ID distributions at an eye-center
 **Why:** Previous v6 added 224 faces but changed zero measured Chrome pixels. v7 flipped camera-facing winding and changed ~3.95%, without eliminating pink rims. A render attribution test should identify whether source socket triangles or the new bridges win depth at defective pixels before editing UVs or modifying anatomy.
 
 All QA is experiment branch only. A temporary branch-only push trigger starts one real test, then is removed. Human photorealism remains BLOCKED even when structural Chrome tests pass. Original CC0 provenance, 53 joints and 4 clips are preserved. No production merge or automatic Vercel deployment.
+
+## Observed v8 result and scope correction
+
+Run https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38904733444 passed technically, including Chrome attribution. Original source face accounts for 90.44% of two eye close-up rectangles; the added v6 bridge contributes only one pixel. The initially broad source socket selector also removed much of the forehead and mouth, so it is NOT a valid eyelid-only mask. See docs/eye-v8-findings.md for exact evidence, atlas triangle IDs, crop coordinates and limitations. Human visual acceptance BLOCKED. Workflow restored to manual-only.
