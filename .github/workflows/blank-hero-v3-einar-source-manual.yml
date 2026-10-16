@@ -1,9 +1,6 @@
 name: Blank Engine - Einar official licensed source gate
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - experiment/hero-v3-einar-source # one-time experiment test only; remove afterward
 permissions:
   contents: read
 jobs:
@@ -67,9 +64,11 @@ jobs:
               d={}
           else:
             d={}
-          d.update({"schema":"blank.hero-v3.einar-model-audit.v1","status":"BLOCKED_FULL_MODEL_LOAD_TIMEOUT_OR_ERROR",
-                    "rig_and_blend_eyes_verified":False,"photorealism_approved":False,
-                    "note":"Full Einar Blender scene did not finish loading under strict CI resource bound; archive CRC/hash and file inventory remain independently valid."})
+          loaded=any(x.get('status')=='loaded' for x in d.get('source_files',[]))
+          d.update({"schema":"blank.hero-v3.einar-model-audit.v1",
+                    "status":"BLENDER_INVENTORY_CAPTURED_SHUTDOWN_TIMEOUT" if loaded else "BLOCKED_FULL_MODEL_LOAD_TIMEOUT_OR_ERROR",
+                    "rig_and_blend_eyes_verified":bool(loaded),"photorealism_approved":False,
+                    "note":"Blender scene inventory persisted with real mesh/rig contents before process shutdown timed out" if loaded else "Full scene load did not produce inventory within resource budget."})
           p.write_text(json.dumps(d,indent=2)+"\n")
           PY
           }

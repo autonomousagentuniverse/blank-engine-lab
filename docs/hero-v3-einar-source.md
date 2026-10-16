@@ -23,3 +23,8 @@ Only after receiving the authentic publisher file with an exact SHA-256, inspect
 Continue existing engine regression to ensure zero source/runtime changes. No MakeHuman eye patches, no new synthetic 2D portrait, no replacement of the playable hero and no Vercel deploy. The repository's continuity file and structured state must be updated with real outcomes; once initial experiment-branch QA is obtained, remove the temporary push trigger and keep workflow_dispatch only.
 
 Current source-gate acceptance is **BLOCKED** until a real Einar asset is retrieved, audited and visually reviewed. A passing GitHub job on the source-resolution script means only that the *audit ran*.
+## Real source result (2026-10-16)
+
+Verified publisher ZIP SHA-256 `3cbb5a1dd9ffd3ca39edab420a83ea7f7db337b435a78ef27a0c87ff3e6977f7`, 579,834,421 bytes, CRC PASS. Real Blender source v1 loaded. Separate corneas, menisci, upper/lower eyelid bones and blink head shape keys confirmed; 95 materials, 63 separately shipped external textures (no packed images), 799-bone animation control rig. See `docs/hero-v3-einar-findings.md` for measured evidence and renderer-risk caveats. No GLB conversion or visual human acceptance yet.
+
+The full-scene process timed out on shutdown AFTER writing a complete inventory; an initial fallback status incorrectly overwrote the successful source-load status. The workflow classification is corrected without claiming a clean exit. Temporary push trigger removed; workflow is manual-only.
