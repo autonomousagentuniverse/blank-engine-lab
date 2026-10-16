@@ -34,6 +34,27 @@ jobs:
           assert p['status'].startswith(('BLOCKED_','DIRECT_PUBLIC_BINARY_FOUND_'))
           print('EINAR_SOURCE_GATE_AUDITED',p['status'])
           PY
+      - name: Download verified official Einar archive (no credentials or mirrors)
+        run: |
+          mkdir -p .ci-einar
+          curl --fail --location --retry 2 --connect-timeout 30 --max-time 540 --silent --show-error \
+            'https://studio.blender.org/download-source/files/41/419e83fb75f30b989adf7920dec7a21c/419e83fb75f30b989adf7920dec7a21c.zip' \
+            -o .ci-einar/einar-official.zip
+      - name: Hash and verify the exact ZIP, embedded license, Blender sources and texture assets
+        run: |
+          python3 -m py_compile experiments/hero-v3/einar_archive_audit.py
+          python3 experiments/hero-v3/einar_archive_audit.py
+      - name: Install Blender for real rig/skin/eye/texture inventory
+        run: |
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y libegl1 libgl1-mesa-dri libglx-mesa0 xvfb
+          python3 -m pip install --disable-pip-version-check --no-cache-dir bpy==4.5.3
+      - name: Inspect Blender model structures without rendering or mutating source
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          python3 -m py_compile experiments/hero-v3/einar_blender_inspect.py
+          xvfb-run -a python3 experiments/hero-v3/einar_blender_inspect.py
       - name: Unchanged engine regression
         run: npm test
       - name: Archive only source resolution report

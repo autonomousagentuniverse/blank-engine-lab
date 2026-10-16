@@ -183,7 +183,7 @@
     "next_candidate": "Blender Studio Einar realistic character (CC-BY), source download/unpacking not yet verified"
   },
   "experimental_hero_v3": {
-    "status": "official_publisher_download_link_audit_pending",
+    "status": "publisher_direct_zip_http_200_verified_asset_download_and_blender_audit_pending",
     "branch": "experiment/hero-v3-einar-source",
     "official_page": "https://studio.blender.org/characters/einar/v1/",
     "candidate": "Blender Studio Charge/Einar v1 realistic rig",
@@ -197,6 +197,8 @@
     "glb_realtime_render_verified": false,
     "android_performance_verified": false,
     "human_photorealism_approved": false,
-    "note": "Only official source URL and published rights are established, not asset content; no production hero replacement."
+    "note": "Only official source URL and published rights are established, not asset content; no production hero replacement.",
+    "download_url_verified": "https://studio.blender.org/download-source/files/41/419e83fb75f30b989adf7920dec7a21c/419e83fb75f30b989adf7920dec7a21c.zip",
+    "source_gate_run": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38944466501"
   }
 }
