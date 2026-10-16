@@ -6,7 +6,7 @@ import {join,resolve,extname,sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {chromium} from 'playwright';
 const root=fileURLToPath(new URL('../../',import.meta.url));
-const folder=join(root,'artifacts','eye-v8');
+const folder=join(root,'artifacts','eye-v9');
 const mime={'.html':'text/html','.mjs':'text/javascript','.js':'text/javascript','.glb':'model/gltf-binary','.json':'application/json'};
 const server=createServer(async(req,res)=>{try{
  const route=decodeURIComponent(new URL(req.url,'http://localhost').pathname);
@@ -46,7 +46,7 @@ try{
    if(true)
     await page.locator('canvas').screenshot({path:join(folder,view+'-'+pass+'.png')});
   }
-  console.log('EYE_V8_CAPTURED '+view);
+  console.log('EYE_V9_CAPTURED '+view);
  }
  const report=await page.evaluate(()=>window.eyeV8.reportV9());
  assert.equal(report.measurements.length,8);
