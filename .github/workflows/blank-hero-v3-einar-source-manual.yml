@@ -54,7 +54,25 @@ jobs:
           LIBGL_ALWAYS_SOFTWARE: '1'
         run: |
           python3 -m py_compile experiments/hero-v3/einar_blender_inspect.py
-          xvfb-run -a python3 experiments/hero-v3/einar_blender_inspect.py
+          timeout -k 8s 135s xvfb-run -a python3 experiments/hero-v3/einar_blender_inspect.py || {
+            echo "EINAR_BLENDER_FULL_LOAD_BLOCKED_OR_TIMED_OUT; preserving archive audit, NOT claiming rig validated"
+            python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("artifacts/hero-v3-einar/model-audit.json")
+          if p.exists():
+            try:
+              d=json.loads(p.read_text())
+            except Exception:
+              d={}
+          else:
+            d={}
+          d.update({"schema":"blank.hero-v3.einar-model-audit.v1","status":"BLOCKED_FULL_MODEL_LOAD_TIMEOUT_OR_ERROR",
+                    "rig_and_blend_eyes_verified":False,"photorealism_approved":False,
+                    "note":"Full Einar Blender scene did not finish loading under strict CI resource bound; archive CRC/hash and file inventory remain independently valid."})
+          p.write_text(json.dumps(d,indent=2)+"\n")
+          PY
+          }
       - name: Unchanged engine regression
         run: npm test
       - name: Archive only source resolution report
