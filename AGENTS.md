@@ -13,7 +13,7 @@ Before substantial work read [docs/CONTINUITY.md](docs/CONTINUITY.md) and [docs/
 - All permanent workflows are manual workflow_dispatch. Tests and documentation accompany fixes. Never silently regress game editor/physics/quest.
 - Human reviewer approves subjective realism; an AI-only acceptance flag is insufficient.
 
-Automated asset generation priority: `scripts/asset_factory.py` and `assets/specs/einar-static-hero.json` now define a headless manifest-driven Blender → GLB → Blank Engine Chrome QA pipeline on experiment/automated-blender-factory-v1. This v1 adapter is Einar STATIC ONLY. Do not falsely claim fully generated new topology, automatic hair/blink, photorealism or production deployment. All output requires human visual acceptance.
+Automated asset generation priority: `scripts/asset_factory.py` and `assets/specs/einar-static-hero.json` now define a headless manifest-driven Blender → GLB → Blank Engine Chrome QA pipeline on experiment/automated-blender-factory-v1. This v1 adapter is Einar STATIC ONLY; its complete unattended CI chain passed run 38959953800, 13 safety tests pass and five real WebGL views archived. Do not falsely claim fully generated new topology, automatic hair/blink, photorealism or production deployment. Persistent factory workflow is manual-only. All output requires human visual acceptance.
 
 ## Fast entry points
 

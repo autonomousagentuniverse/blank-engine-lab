@@ -8,9 +8,6 @@ on:
         type: choice
         options:
           - einar-static-hero
-  push:
-    branches:
-      - experiment/automated-blender-factory-v1 # one-shot test; REMOVE after GitHub verification
 permissions:
   contents: read
 jobs:

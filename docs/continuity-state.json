@@ -9,7 +9,7 @@
   "automatic_deployment_enabled": false,
   "source_of_truth": "GitHub main",
   "priority": "P0",
-  "priority_task": "Automate Blender-to-Blank-Engine character assets end-to-end with asset specs, immutable licensed sources, tests and real WebGL evidence. First source-pinned Einar static adapter must pass; next separately add hair/skin PBR & rig blink. Human visual approval and Vercel remain blocked.",
+  "priority_task": "First headless spec-driven Blender asset factory PASS end-to-end in GitHub with source verification, source-copy GLB, Chrome WebGL and audit. Next automate skin normal/roughness and runtime hair assets, blink later. Human photorealism blocked and Vercel never auto-deploys.",
   "owner_decisions": [
     "hardest problems first",
     "one visually excellent isolated hero before scaling",
@@ -311,7 +311,7 @@
   },
   "automated_blender_asset_factory": {
     "branch": "experiment/automated-blender-factory-v1",
-    "status": "experimental_first_real_end_to_end_gitHub_test_pending",
+    "status": "end_to_end_verified_source_to_blender_to_real_webgl",
     "specification": "assets/specs/einar-static-hero.json",
     "driver": "scripts/asset_factory.py",
     "scope": "source-pinned licensed Einar STATIC character only, reusable interface; other adapters future",
@@ -332,6 +332,27 @@
     "auto_hair_cards": false,
     "auto_blendshape_blink": false,
     "human_photorealism_approved": false,
-    "complete_character_builder_integration": false
+    "complete_character_builder_integration": false,
+    "verified_run": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38959953800",
+    "workflow_file": ".github/workflows/blank-automated-asset-factory-manual.yml",
+    "tested_asset_id": "einar-hero-v1",
+    "source_sha256": "3cbb5a1dd9ffd3ca39edab420a83ea7f7db337b435a78ef27a0c87ff3e6977f7",
+    "runtime_glb_sha256": "658d56f0b9112963e2369154725de41a87aa7460135cf1e6db1291897825a1ac",
+    "stages_verified": [
+      "download",
+      "restore",
+      "blender",
+      "glb_integrity",
+      "engine_tests",
+      "webgl_capture",
+      "contact_sheet"
+    ],
+    "factory_safety_tests": "13 passed",
+    "existing_engine_regressions": "171 pass, 2 skipped, 0 fail",
+    "browser_screenshots": 5,
+    "artifact_id": 12072367075,
+    "permanent_workflow_dispatch_only": true,
+    "visual_approval": "BLOCKED; source real-time quality still below user examples",
+    "next": "Extend automatic skin normal and roughness PBR map baking/transfer, hair cards; then blink morph rig, Android performance."
   }
 }
