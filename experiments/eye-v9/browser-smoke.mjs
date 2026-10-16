@@ -30,7 +30,7 @@ try{
   try{await route.fulfill({status:200,body:await readFile(join(root,'node_modules','three',m[1])),headers:{'content-type':'text/javascript','access-control-allow-origin':'*'}});}
   catch{return route.abort('failed');}
  });
- const url='http://127.0.0.1:'+server.address().port+'/experiments/eye-v8/';
+ const url='http://127.0.0.1:'+server.address().port+'/experiments/eye-v9/';
  const p=await page.goto(url,{waitUntil:'domcontentloaded'});
  assert.equal(p.status(),200);
  try{await page.waitForFunction(()=>typeof window.eyeV8?.init==='function',null,{timeout:15000});}
@@ -38,7 +38,7 @@ try{
  const metadata=await page.evaluate(()=>window.eyeV8.init('/.ci-assets/hero-eye-v7-facing.glb'));
  assert.equal(metadata.faceTriangles,15948);
  assert.equal(metadata.joints,53);
- console.log('EYE_V8_SOURCE',JSON.stringify(metadata));
+ console.log('EYE_V9_SOURCE',JSON.stringify(metadata));
  const views=['front_macro','front_detail','profile','three_quarter'];
  for(const view of views){
   for(const pass of ['normal','id','uv','no-precise-contour','no-upper-seeds','no-skin-texture','unlit-skin-atlas','normals-only']){
