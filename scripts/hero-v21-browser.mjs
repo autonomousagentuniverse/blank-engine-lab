@@ -7,7 +7,7 @@ import {fileURLToPath} from 'node:url';
 import {chromium} from 'playwright';
 const root=fileURLToPath(new URL('../',import.meta.url));
 const mime={'.html':'text/html','.css':'text/css','.mjs':'text/javascript','.js':'text/javascript','.json':'application/json','.glb':'model/gltf-binary'};
-const server=createServer(async(req,res)=>{try{const path=decodeURIComponent(new URL(req.url,'http://localhost').pathname),file=resolve(root,'.'+(path==='/'?'/character-lab/index.html':path));if(!file.startsWith(resolve(root)+sep))throw Error('Invalid path');const bytes=await readFile(file);res.writeHead(200,{'content-type':mime[extname(file)]||'application/octet-stream','cache-control':'no-store'});res.end(bytes);}catch{res.writeHead(404);res.end('Not found');}});
+const server=createServer(async(req,res)=>{try{const pathname=decodeURIComponent(new URL(req.url,'http://localhost').pathname),path=pathname.endsWith('/')?pathname+'index.html':pathname,file=resolve(root,'.'+(path==='/index.html'?'/character-lab/index.html':path));if(!file.startsWith(resolve(root)+sep))throw Error('Invalid path');const bytes=await readFile(file);res.writeHead(200,{'content-type':mime[extname(file)]||'application/octet-stream','cache-control':'no-store'});res.end(bytes);}catch{res.writeHead(404);res.end('Not found');}});
 let browser;
 try{
  await new Promise(ok=>server.listen(0,'127.0.0.1',ok));

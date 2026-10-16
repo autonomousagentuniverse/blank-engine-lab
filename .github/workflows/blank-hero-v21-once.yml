@@ -41,3 +41,5 @@ jobs:
             artifacts/hero-v21-*.png
           retention-days: 7
           if-no-files-found: ignore
+
+# Rerun: directory index routing fixed for /character-lab/ static server.
