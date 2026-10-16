@@ -1,0 +1,51 @@
+name: Blank Engine - experimental v5 eye sample
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - experiment/eye-v5-github-sample # One-shot trigger: remove after sample run
+permissions:
+  contents: read
+jobs:
+  sample:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Install pinned real-browser libraries
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm install --no-save --ignore-scripts --no-audit --no-fund three@0.186.1 playwright@1.56.1
+      - name: Rebuild original licensed character through v4
+        run: |
+          mkdir -p .ci-assets artifacts
+          curl --fail --location --retry 3 --silent --show-error 'https://raw.githubusercontent.com/kunalkushwaha/vsim/3f97faf85e46d2f9a122b0a8b8d3ccc0af598f91/packages/assets/library/suited.glb' -o .ci-assets/suited.glb
+          node scripts/hero-eyes-build.mjs .ci-assets/suited.glb .ci-assets/hero-v22.glb
+          node scripts/fit-hero-eyes.mjs .ci-assets/hero-v22.glb .ci-assets/hero-eye-fit-v2.glb artifacts/hero-eye-fit-v2.geometry.json
+          node scripts/build-eye-sockets.mjs .ci-assets/hero-eye-fit-v2.glb .ci-assets/hero-eye-sockets-v4.glb artifacts/hero-eye-sockets-v4.geometry.json
+      - name: Experimental copy only and quantitative geometry audit
+        run: |
+          python3 -m venv .ci-venv
+          .ci-venv/bin/pip install --disable-pip-version-check numpy==2.2.6
+          .ci-venv/bin/python experiments/eye-v5/sample_fix.py .ci-assets/hero-eye-sockets-v4.glb .ci-assets/hero-eye-v5-sample.glb artifacts/hero-v5-sample-report.json
+          .ci-venv/bin/python -c "import json; d=json.load(open('artifacts/hero-v5-sample-report.json')); assert d['before']['zero_uv']==224 and d['before']['backwards']==224; assert d['after']['zero_uv']==0 and d['after']['backwards']==0; print('V5_GEOMETRY_QA_PASS')"
+      - name: Existing engine tests and pinned real GLB tests
+        run: |
+          npm test
+          BLANK_EYE_V4_FIXTURE=.ci-assets/hero-eye-fit-v2.glb node --test test/eye-socket-remesh.test.mjs
+      - name: Capture identical Three.js Chrome macro and profile
+        run: node scripts/eye-v5-sample-browser-smoke.mjs
+      - name: Archive A/B images and experimental GLB
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: blank-eye-v5-experimental-sample
+          path: |
+            artifacts/hero-v5-sample-*.png
+            artifacts/hero-v5-sample-report.json
+            .ci-assets/hero-eye-v5-sample.glb
+          retention-days: 7
+          if-no-files-found: ignore
