@@ -4,10 +4,10 @@
  * These measured socket coordinates MUST NOT be applied to unrelated avatars.
  */
 const specs=[
- ['sclera',[.0145,.0065,.010],[.84,.82,.78,1],.36,.156],
- ['iris',[.0046,.00455,.00145],[.20,.105,.055,1],.38,.1662],
- ['pupil',[.0019,.002,.00065],[.014,.013,.010,1],.12,.168],
- ['catchlight',[.00072,.00075,.00032],[.92,.94,.94,1],.06,.1688]
+ ['sclera',[.0138,.0042,.010],[.57,.53,.48,1],.36,.151],
+ ['iris',[.00375,.0033,.0014],[.20,.105,.055,1],.38,.1600],
+ ['pupil',[.0015,.00145,.00065],[.014,.013,.010,1],.12,.1618],
+ ['catchlight',[.00060,.00060,.00030],[.92,.94,.94,1],.06,.1623]
 ];
 function parse(input){
  if(!(input instanceof ArrayBuffer)||input.byteLength<28)throw Error('GLB required');

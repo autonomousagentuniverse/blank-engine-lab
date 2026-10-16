@@ -41,3 +41,5 @@ jobs:
             artifacts/hero-v22-eyes-*.png
           retention-days: 7
           if-no-files-found: ignore
+
+# Re-run scoped once after correcting overly exposed iris and sclera placement.

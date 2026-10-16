@@ -30,3 +30,10 @@ test('reject corrupt inputs and unrelated avatars',()=>{
  assert.throws(()=>repairHeroEyes(new ArrayBuffer(8)),/GLB/);
  assert.throws(()=>repairHeroEyes(repairHeroEyes(sample())),/pinned opaque/);
 });
+
+test('sclera is flatter and more recessed than the original round-eye prototype',()=>{
+ const result=repairHeroEyes(sample()),r=decode(result),eye=r.doc.meshes.find(x=>x.name==='Blank.Eye.sclera');
+ const a=r.doc.accessors[eye.primitives[0].attributes.POSITION];
+ assert.ok(a.max[1]<.005 && a.min[1]>-.005,'eye vertically bounded within lids');
+ assert.ok(a.max[2]<=.0101);
+});
