@@ -32,19 +32,28 @@ state={"schema":"blank.generated-human.v1","asset_id":"human-01",
        "visual_approval_required":True,"production_published":False}
 audit("STARTING")
 try:
-    import addon_utils
-    sys.path.insert(0,str(MPFB.resolve()))
-    import mpfb
-    # Enable via Blender so the preference system recognizes the package.
-    try:
-        addon_utils.enable("mpfb",default_set=False,persistent=False)
-    except Exception as e:
-        print("MPFB_ADDON_ENABLE_ERROR",repr(e),flush=True)
-    if "mpfb" not in bpy.context.preferences.addons:
-        mpfb.register()
-    audit("ADDON_ENABLED",mpfb_module=mpfb.__file__)
-    from mpfb.services.humanservice import HumanService
-    from mpfb.services.targetservice import TargetService
+    # MPFB 2.x must be loaded as a Blender EXTENSION. Importing src/mpfb
+    # directly as a legacy add-on makes extension_path_user() fail.
+    import zipfile
+    ext_zip=Path(".ci-human/mpfb2-extension.zip")
+    ext_src=MPFB/"mpfb"
+    with zipfile.ZipFile(ext_zip,"w",compression=zipfile.ZIP_DEFLATED,compresslevel=3) as z:
+        for file in ext_src.rglob("*"):
+            if file.is_file() and "__pycache__" not in file.parts:
+                z.write(file,arcname=str(file.relative_to(ext_src)))
+    print("HUMAN01_EXTENSION_INSTALLING",ext_zip.stat().st_size,flush=True)
+    result=bpy.ops.extensions.package_install_files(
+        filepath=str(ext_zip.resolve()),enable_on_install=True)
+    print("HUMAN01_EXTENSION_INSTALLED",result,flush=True)
+    installed=[key for key in bpy.context.preferences.addons.keys() if key.endswith(".mpfb")]
+    if not installed:raise RuntimeError("Blender did not register MPFB extension: "+str(result))
+    package_name=installed[0]
+    mpfb=importlib.import_module(package_name)
+    if not getattr(mpfb,"MPFB_CONTEXTUAL_INFORMATION",None):
+        raise RuntimeError("MPFB extension loaded but register() did not initialize services")
+    audit("EXTENSION_REGISTERED",mpfb_extension=package_name)
+    HumanService=importlib.import_module(package_name+".services.humanservice").HumanService
+    TargetService=importlib.import_module(package_name+".services.targetservice").TargetService
     bpy.ops.object.select_all(action="SELECT");bpy.ops.object.delete(use_global=False)
     macro=TargetService.get_default_macro_info_dict()
     for name,value in CFG_OBJ["phenotype"].items():
@@ -94,4 +103,4 @@ try:
 except Exception as e:
     audit("BLOCKED",error=type(e).__name__+": "+str(e))
     traceback.print_exc()
-    raise
+    sys.stdout.flush();sys.stderr.flush();os._exit(1)
