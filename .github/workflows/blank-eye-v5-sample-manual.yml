@@ -1,9 +1,6 @@
 name: Blank Engine - experimental v5 eye sample
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - experiment/eye-v5-github-sample # One-shot trigger: remove after sample run
 permissions:
   contents: read
 jobs:
