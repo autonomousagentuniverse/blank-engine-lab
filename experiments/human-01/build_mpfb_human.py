@@ -42,8 +42,20 @@ try:
             if file.is_file() and "__pycache__" not in file.parts:
                 z.write(file,arcname=str(file.relative_to(ext_src)))
     print("HUMAN01_EXTENSION_INSTALLING",ext_zip.stat().st_size,flush=True)
+    # The isolated bpy pip runner has NO default extension repository.
+    # Register an explicit LOCAL repo before calling package_install_files.
+    extensions_dir=Path(".ci-human/extension-repository").resolve()
+    extensions_dir.mkdir(parents=True,exist_ok=True)
+    bpy.ops.preferences.extension_repo_add(name="Blank Engine Human CI",type="LOCAL",
+        use_custom_directory=True,custom_directory=str(extensions_dir))
+    repositories=list(bpy.context.preferences.extensions.repos)
+    matching=[item for item in repositories if Path(item.directory).resolve()==extensions_dir]
+    if not matching:raise RuntimeError("Blender extension repository registration failed")
+    repo_id=matching[0].module
+    if not repo_id:raise RuntimeError("Blender extension repository has no registered module name")
+    print("HUMAN01_EXTENSION_REPOSITORY",repo_id,flush=True)
     result=bpy.ops.extensions.package_install_files(
-        filepath=str(ext_zip.resolve()),enable_on_install=True)
+        filepath=str(ext_zip.resolve()),repo=repo_id,enable_on_install=True)
     print("HUMAN01_EXTENSION_INSTALLED",result,flush=True)
     installed=[key for key in bpy.context.preferences.addons.keys() if key.endswith(".mpfb")]
     if not installed:raise RuntimeError("Blender did not register MPFB extension: "+str(result))
