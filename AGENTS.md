@@ -23,3 +23,7 @@ Before substantial work read [docs/CONTINUITY.md](docs/CONTINUITY.md) and [docs/
 - Handoff/roadmap: docs/CONTINUITY.md (includes past work, limitations, plan, acceptance gates, evidence).
 
 **MANDATORY ON EVERY COMMIT OR PROPOSED CHANGE:** Update docs/CONTINUITY.md within the same commit/PR diff and add a dated `[PROPOSED]` or `[COMMITTED]` entry explaining scope, intent, tests (PASS/FAIL/NOT RUN), blockers and next step. For git CLI checkouts, enable the hook with `git config core.hooksPath .githooks`; for PRs run `node scripts/check-continuity.mjs --base origin/main`. GitHub API/web edits bypass local hooks, so agents MUST include the continuity update atomically in their GitHub commit. At substantial milestones refresh docs/continuity-state.json too. The full rule and limitations are in docs/CONTINUITY.md section 10.
+
+## Automated asset-authoring owner requirement (2026-10-16)
+- Blender use must be **fully headless and spec-driven**, not manual artist clicks per asset. Initial adapter: `asset-specs/einar-head-v1.json` and `experiments/asset-factory/build.py`, with separate deterministic artifacts and human visual acceptance. Hair/blink/runtime SSS stages are not yet validated; do not claim complete automation of photorealistic humans.
+- Never auto-deploy asset-factory outputs. Persistent workflows manual-only; scoped experiment push trigger only until initial proof and then remove.

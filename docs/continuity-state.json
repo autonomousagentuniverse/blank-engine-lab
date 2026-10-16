@@ -9,7 +9,7 @@
   "automatic_deployment_enabled": false,
   "source_of_truth": "GitHub main",
   "priority": "P0",
-  "priority_task": "Einar rendered by experimental Blank Engine real WebGL2 with original source skin/eye texture and actual geometry; technical gate PASS but visual FAIL (bald hair, missing source skin normal/roughness/SSS, seams, no blink). Next transfer full PBR material/hair, then actual eyelid animation and mobile human approval. Do not deploy.",
+  "priority_task": "Build automation of licensed Blender asset generation via a declarative spec and CI headless bpy/real WebGL gate. Einar v1 adds source-authored skin roughness to existing static copy. After actual test, add independent automatic hair cards, facial blink morph conversion and normal/SSS fidelity; no Vercel release.",
   "owner_decisions": [
     "hardest problems first",
     "one visually excellent isolated hero before scaling",
@@ -308,5 +308,27 @@
     "true_browser_renderer": "Three.js WebGL2 in experimental Blank Engine Character Lab",
     "original_hair_and_film_skin_shading_missing": true,
     "animated_rig_ported": false
+  },
+  "asset_factory_v1": {
+    "branch": "experiment/asset-factory-v1",
+    "phase": "automated_einar_head_factory_implementation_pending_actions_real_test",
+    "entrypoint": "python3 experiments/asset-factory/build.py --spec asset-specs/einar-head-v1.json --execute",
+    "spec": "asset-specs/einar-head-v1.json",
+    "template": "einar-head-pbr-static",
+    "supported_templates": 1,
+    "stages": 7,
+    "stage_failure_stops_pipeline": true,
+    "source_sha256": "3cbb5a1dd9ffd3ca39edab420a83ea7f7db337b435a78ef27a0c87ff3e6977f7",
+    "genuine_skin_roughness_required": true,
+    "original_eye_and_skin_albedo_required": true,
+    "source_license": "CC-BY",
+    "human_visual_approval_required": true,
+    "auto_deploy": false,
+    "automatic_hair_generation_verified": false,
+    "automatic_blink_rig_verified": false,
+    "android_perf_verified": false,
+    "visual_photorealism_approved": false,
+    "expected_output": "GLB + real WebGL front/profile/3-4/eye macros + deterministic stage build-manifest.json",
+    "no_production_release": true
   }
 }

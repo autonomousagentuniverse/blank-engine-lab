@@ -1,0 +1,48 @@
+name: Blank Engine - automated Blender asset factory v1
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - experiment/asset-factory-v1 # single experimental self-test; remove afterward
+permissions:
+  contents: read
+jobs:
+  build-licensed-head:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Python spec schema and refusal tests
+        run: |
+          python3 -m compileall -q experiments/asset-factory test_asset_factory
+          python3 -m unittest discover -s test_asset_factory -v
+          python3 experiments/asset-factory/build.py --spec asset-specs/einar-head-v1.json --plan
+      - name: Prepare headless Blender and WebGL automation dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y libegl1 libgl1-mesa-dri libglx-mesa0 xvfb
+          python3 -m pip install --disable-pip-version-check --no-cache-dir bpy==4.5.3 Pillow==11.3.0
+          npm install --ignore-scripts --no-audit --no-fund
+          npm install --no-save --ignore-scripts --no-audit --no-fund three@0.186.1 playwright@1.56.1
+      - name: Fully automated pinned-source Blender to GLB to Blank Engine quality gate
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+          OMP_NUM_THREADS: '4'
+        run: |
+          python3 -u experiments/asset-factory/build.py --spec asset-specs/einar-head-v1.json --execute
+      - name: Preserve generated asset, WebGL screenshots, reports and stage logs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: blank-engine-automatic-asset-factory-v1
+          path: |
+            artifacts/asset-factory/
+            artifacts/hero-v5-einar/
+          retention-days: 7
+          if-no-files-found: warn

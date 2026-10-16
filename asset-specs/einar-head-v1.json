@@ -1,0 +1,36 @@
+{
+  "schema": "blank.asset-factory.v1",
+  "asset_id": "einar-head-automated-v1",
+  "template": "einar-head-pbr-static",
+  "source": {
+    "url": "https://studio.blender.org/download-source/files/41/419e83fb75f30b989adf7920dec7a21c/419e83fb75f30b989adf7920dec7a21c.zip",
+    "sha256": "3cbb5a1dd9ffd3ca39edab420a83ea7f7db337b435a78ef27a0c87ff3e6977f7",
+    "license": "CC-BY",
+    "credit": "Einar Rig (CC-BY) Blender Foundation | studio.blender.org"
+  },
+  "output": {
+    "format": "glb",
+    "texture_max_edge": 2048,
+    "components": [
+      "head",
+      "eyes",
+      "cornea",
+      "tearline",
+      "eyelashes"
+    ],
+    "publication": "human-approval-required"
+  },
+  "quality": {
+    "webgl_views": [
+      "front",
+      "three_quarter",
+      "profile",
+      "eyes_macro",
+      "eyes_three_quarter"
+    ],
+    "min_meshes": 7,
+    "require_skin_roughness": true,
+    "require_skin_eye_albedo": true,
+    "visual_approval": "human"
+  }
+}
