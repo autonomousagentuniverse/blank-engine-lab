@@ -6,7 +6,7 @@
  */
 import {measureAndSolveEyeAssembly,EYE_FIT_SCHEMA} from './eyelid-fit.mjs';
 export const LID_SCHEMA='blank.geometry.eyelid-reconstruction.v3';
-export const PINNED_HERO_SHA256='207ba42634bf144f3c43aa72e93673fb1607f39a7e0d259a5d9e4293213ef384';
+export const PINNED_HERO_SHA256='a968567c4c61f06de8d09601bbaeba721f79d3f06d91a433968cefc7f93efcb0';
 const add=(a,b)=>a.map((v,i)=>v+b[i]);
 const sub=(a,b)=>a.map((v,i)=>v-b[i]);
 const scale=(a,f)=>a.map(v=>v*f);

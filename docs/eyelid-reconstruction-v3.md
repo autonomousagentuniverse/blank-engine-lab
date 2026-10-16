@@ -10,7 +10,7 @@ The candidate uses an independent opaque skin-tone PBR material, deliberately no
 
 ## Source contract
 
-Pinned corrected CC0 MakeHuman hero input SHA-256: `207ba42634bf144f3c43aa72e93673fb1607f39a7e0d259a5d9e4293213ef384` (eye-corrected v2 source *before* the projected contour fitting). Other GLBs are rejected. Original 53 bone joints and 4 animation clips remain unmodified. The source is from the pinned CC0 reference documented in `docs/character-builder-v1.md`.
+Pinned corrected CC0 MakeHuman hero input SHA-256: `a968567c4c61f06de8d09601bbaeba721f79d3f06d91a433968cefc7f93efcb0` (eye-corrected v2 source *before* the projected contour fitting). Other GLBs are rejected. Original 53 bone joints and 4 animation clips remain unmodified. The source is from the pinned CC0 reference documented in `docs/character-builder-v1.md`.
 
 Build reproducibly:
 
@@ -25,7 +25,7 @@ Use **Import character GLB** in `/character-lab/` to examine the candidate, pres
 
 ## Honest before/after result
 
-On a fixed offline 720px VTK face crop using identical illumination (not Chrome or a physical Android GPU), strongly-red pixels in the eye region fell from **6179 to 2583 (~58% fewer)**. This is an image-analysis proxy, **not** an anatomy-quality score. The revised candidate still shows a residual red line, exposed rims and skin-tone mismatch. Status is `requires-visual-approval`.
+On a fixed offline 720px VTK face crop using identical illumination (not Chrome or a physical Android GPU), strongly-red pixels in the eye region fell from **6183 to 2593 (~58% fewer)**. This is an image-analysis proxy, **not** an anatomy-quality score. The revised candidate still shows a residual red line, exposed rims and skin-tone mismatch. Status is `requires-visual-approval`.
 
 Must review real Three.js/Chrome neutral face, two profiles, 3/4 and macro plus head motion; test normal direction, near-eye z-depth and UV/skin continuity. The base face is NOT retopologized; a future v4 may require direct source-geometry modification or a better authored facial asset if this overlay cannot pass. Do not quietly tune acceptance thresholds to force a pass.
 

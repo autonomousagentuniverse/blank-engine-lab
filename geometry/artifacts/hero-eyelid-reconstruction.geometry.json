@@ -3,9 +3,9 @@
   "id": "hero-measured-lid-reconstruction-01",
   "builder": "character",
   "source": {
-    "sha256": "207ba42634bf144f3c43aa72e93673fb1607f39a7e0d259a5d9e4293213ef384",
+    "sha256": "a968567c4c61f06de8d09601bbaeba721f79d3f06d91a433968cefc7f93efcb0",
     "geometry": "original GLB face unchanged",
-    "sourceBytes": 6705116
+    "sourceBytes": 6705004
   },
   "measurements": {
     "L": {

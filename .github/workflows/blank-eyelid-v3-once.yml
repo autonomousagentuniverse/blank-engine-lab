@@ -25,7 +25,6 @@ jobs:
           mkdir -p .ci-assets artifacts
           curl --fail --location --retry 3 --silent --show-error 'https://raw.githubusercontent.com/kunalkushwaha/vsim/3f97faf85e46d2f9a122b0a8b8d3ccc0af598f91/packages/assets/library/suited.glb' -o .ci-assets/suited.glb
           node scripts/hero-eyes-build.mjs .ci-assets/suited.glb .ci-assets/hero-v22.glb
-          sha256sum .ci-assets/suited.glb .ci-assets/hero-v22.glb
       - name: Full regression and v3 real fixture tests
         run: |
           npm test
@@ -44,3 +43,4 @@ jobs:
             artifacts/hero-lid-v3.geometry.json
           retention-days: 7
           if-no-files-found: ignore
+# Real fixture pinned by the source GLB SHA recorded in geometry/eyelid-reconstruction.mjs; do not relax the provenance gate.
