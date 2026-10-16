@@ -49,6 +49,7 @@ try{
  await page.locator('#geoUndo').click();assert.match(await page.locator('#geoStatus').innerText(),/restored/i);
  const download=page.waitForEvent('download');await page.locator('#geoExport').click();
  const saved=await download;assert.match(saved.suggestedFilename(),/\.geometry\.json$/);
+ assert.match(await page.locator('#geoStatus').innerText(),/Exported Geometry Artifact/);
  const file=await saved.path();const artifact=JSON.parse(await readFile(file,'utf8'));
  assert.equal(artifact.schema,'blank.geometry.v1');assert.equal(artifact.asset.sha256.length,64);
  await page.setViewportSize({width:390,height:844});assert.equal(await page.locator('#geoMake').isVisible(),true);

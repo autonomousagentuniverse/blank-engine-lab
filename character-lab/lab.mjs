@@ -251,8 +251,8 @@ $('geoExport').onclick=()=>{
  try{
   if(!geometryArtifact)throw Error('No geometry artifact');
   const request=geometrySolution?geometryArtifact.request:readGeoFields();
-  const document={...geometryArtifact,request,solution:geometrySolution,review:{...geometryArtifact.review,status:'requires-visual-approval'}};
-  const blob=new Blob([serializeGeometryArtifact(document)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+  const payload={...geometryArtifact,request,solution:geometrySolution,review:{...geometryArtifact.review,status:'requires-visual-approval'}};
+  const blob=new Blob([serializeGeometryArtifact(payload)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
   a.href=url;a.download=geometryArtifact.id+'.geometry.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
   setGeometryStatus('Exported Geometry Artifact sidecar. Keep the original GLB; preview edits are NOT baked into it.');
  }catch(e){setGeometryStatus(e.message,true);}
