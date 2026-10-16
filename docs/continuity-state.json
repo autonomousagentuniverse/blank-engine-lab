@@ -1,0 +1,92 @@
+{
+  "schema": "blank.engine.continuity.v1",
+  "snapshot_utc": "2026-10-16",
+  "repository": "autonomousagentuniverse/blank-engine-lab",
+  "base_commit": "92c4588a99c4b22661a05197b8585da8334b806f",
+  "current_deployed_major": "Alpha 0.5",
+  "in_development_major": "Alpha 0.6",
+  "deployment_policy": "explicit_manual_authorization_only_for_major_release",
+  "automatic_deployment_enabled": false,
+  "source_of_truth": "GitHub main",
+  "priority": "P0",
+  "priority_task": "Reconstruct eyelid topology around measured contours and validate in close-up",
+  "owner_decisions": [
+    "hardest problems first",
+    "one visually excellent isolated hero before scaling",
+    "universal close-up inspection across builders",
+    "versioned reversible Geometry Artifacts with measured constraints",
+    "no Vercel deployment for minor fixes"
+  ],
+  "builders": {
+    "character": {
+      "status": "active",
+      "visual_acceptance": "blocked"
+    },
+    "object": {
+      "status": "planned_independent_builder"
+    },
+    "scene": {
+      "status": "planned_independent_builder"
+    },
+    "world_composer": {
+      "status": "planned"
+    }
+  },
+  "recent_technical_verification": {
+    "workflow_id": 38842660754,
+    "workflow_url": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38842660754",
+    "full_regression_pass": 152,
+    "full_regression_fail": 0,
+    "real_glb_fit_pass": 6,
+    "chrome_integration": "pass",
+    "human_visual_review": "blocked",
+    "note": "Projected contour fit with 0.35mm clearance is not 3D eyelid sealing or photorealistic approval"
+  },
+  "hero": {
+    "source": "CC0 MakeHuman/MPFB suited GLB from kunalkushwaha/vsim at pinned commit 3f97faf85e46d2f9a122b0a8b8d3ccc0af598f91",
+    "source_bytes": 6675064,
+    "original_joints": 53,
+    "original_skinned_meshes": 3,
+    "original_texture_maps": 5,
+    "original_authored_animation_clips": 4,
+    "current_eye_geometry": {
+      "schema": "blank.geometry.eye-fit.v2",
+      "artifact_path": "geometry/artifacts/hero-eye-assembly.geometry.json",
+      "boundary_vertices_per_eye": 28,
+      "opening_width_m_approx": 0.02461,
+      "opening_height_m_approx": 0.00801,
+      "minimum_projected_clearance_m": 0.00035,
+      "original_face_topology_unchanged": true,
+      "3d_depth_clearance_certified": false
+    },
+    "open_visual_defects": [
+      "pink eyelid rims",
+      "artificial eye appearance",
+      "no reconstructed upper/lower lid surfaces",
+      "no verified blinking/gaze",
+      "bald scalp and limited facial fidelity"
+    ],
+    "photorealism_approved": false
+  },
+  "next_steps": [
+    "baseline source-hash and actual front/side/three-quarter closeups",
+    "measure 3D contour depth, tangent, normals, adjacent face weights/UVs",
+    "build topology-aware upper/lower eyelid proposal without damaging original GLB",
+    "write reversible Geometry Artifact v3 preserving source and constraints",
+    "test geometry, skinning, clip preservation and Chrome screenshots",
+    "obtain explicit visual acceptance or report remaining blockers"
+  ],
+  "other_open_blockers": [
+    "actual Android device frame-rate/thermal test",
+    "full simultaneous authored-material memory strategy",
+    "professionally authored hair/face and natural animation quality",
+    "live authenticated AI-to-browser editing and production native renderer unimplemented"
+  ],
+  "do_not_assume": [
+    "unit or Chrome tests mean photorealism",
+    "software WebGL frame rate is phone GPU frame rate",
+    "project GitHub development equals live Vercel deployment",
+    "older GitHub Actions artifact downloads remain available",
+    "general Geometry Artifact v1 already retopologizes meshes"
+  ]
+}
