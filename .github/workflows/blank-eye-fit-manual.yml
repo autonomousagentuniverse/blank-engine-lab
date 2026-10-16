@@ -1,9 +1,5 @@
-name: Blank Engine - one-time real eyelid geometry QA
+name: Blank Engine - manual real eyelid geometry QA
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/blank-eye-fit-once.yml'
   workflow_dispatch:
 permissions:
   contents: read
