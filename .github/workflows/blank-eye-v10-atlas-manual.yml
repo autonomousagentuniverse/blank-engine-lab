@@ -1,9 +1,6 @@
 name: Blank Engine - eye v10 localized atlas A/B sample
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - experiment/eye-v10-local-atlas # one-shot experiment only; remove after test
 permissions:
   contents: read
 jobs:

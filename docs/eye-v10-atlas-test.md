@@ -25,3 +25,6 @@ GitHub one-shot experiment-branch workflow rebuilds v7; verifies source hash and
 - Any change still requires human realism acceptance; no anatomy, cornea optics or blink solved by color balancing.
 
 Initial auto-trigger exists **only for a single test on experiment/eye-v10-local-atlas** because the GitHub connector does not dispatch workflows. Remove trigger after inspecting run and record precise PASS/FAIL in docs/CONTINUITY.md. Permanent workflow is manual-only. No merge to main, no Vercel deployment.
+## Observed GitHub result
+
+Workflow https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38931272873 **PASS technically**. The bounded atlas edit modified 167 texels; matched Chrome macro changed only 64 pixels above the >8 threshold at the left eye and zero at the right eye, with zero above threshold outside two eye rectangles. Visual improvement is insufficient; humans should reject it as a complete repair. See docs/eye-v10-findings.md for immutable source hashes, screenshots, exact metrics and new next step. A previous attempt failed HTTP 404 due to browser script root; that was corrected and verified on the subsequent run. The experiment workflow is now manual-only.
