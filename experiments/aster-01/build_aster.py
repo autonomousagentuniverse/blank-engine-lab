@@ -43,9 +43,11 @@ def finish(obj,name,mat,parent=None,bevel=0):
         m=obj.modifiers.new("ControlledSoftEdges","BEVEL");m.width=bevel;m.segments=3
         n=obj.modifiers.new("WeightedHardFaceNormals","WEIGHTED_NORMAL")
     if parent:
-        world=obj.matrix_world.copy()
+        # Preserve the actual local object scale as well as translation. The
+        # previous matrix_world reassignment silently lost ellipsoid scaling
+        # under parented empties during evaluated glTF export.
         obj.parent=parent
-        obj.matrix_world=world
+        obj.matrix_parent_inverse=parent.matrix_world.inverted()
     return obj
 
 def ellipsoid(name,xyz,scale,mat,parent=None,segments=32,rings=20):
