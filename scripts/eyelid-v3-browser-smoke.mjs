@@ -35,7 +35,7 @@ try{
  await page.locator('#viewport').screenshot({path:join(root,'artifacts','hero-v3-before-chrome.png')});
  await load('.ci-assets/hero-lid-v3.glb');
  assert.match(await page.locator('#animationPill').innerText(),/4 AUTHORED CLIPS/i);
- assert.match(await page.locator('#status').innerText(),/Loaded/);
+ assert.match(await page.locator('#status').innerText(),/Neutral idle pose frozen/);
  await page.locator('#viewport').screenshot({path:join(root,'artifacts','hero-v3-after-chrome.png')});
  for(const [view,name] of [['side','profile'],['threeQuarter','three-quarter']]){
   await page.locator('#reviewView').selectOption(view);await page.waitForTimeout(150);
