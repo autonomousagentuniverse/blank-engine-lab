@@ -34,15 +34,21 @@
     }
   },
   "recent_technical_verification": {
-    "workflow_id": 38847010619,
-    "workflow_url": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38847010619",
-    "full_regression_pass": 162,
+    "milestone": "eye_socket_v4",
+    "engineering_commit": "98fd300a29879ee03fb26afb16aabded0584d2c4",
+    "qa_archival_commit": "f6acba64ab7ea5c12d85129bcebe7c44154bb660",
+    "workflow_id": 38879560781,
+    "workflow_url": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38879560781",
+    "workflow_status": "completed",
+    "workflow_conclusion": "success",
+    "full_regression_pass": 171,
     "full_regression_fail": 0,
     "full_regression_skipped": 2,
-    "real_glb_fit_pass": 4,
-    "chrome_integration": "pass",
+    "real_glb_fit_pass": 9,
+    "real_glb_fit_fail": 0,
+    "chrome_integration": "pass_software_WebGL",
     "human_visual_review": "blocked",
-    "note": "Rigid head-parented eyelid surface candidate improves red visual proxy but is not a watertight/skinned anatomical repair."
+    "note": "v4 edits a copy of the skinned face primitive and recesses coupled eye parts. Chrome/structural PASS is not photorealism or physical Android GPU QA."
   },
   "hero": {
     "source": "CC0 MakeHuman/MPFB suited GLB from kunalkushwaha/vsim at pinned commit 3f97faf85e46d2f9a122b0a8b8d3ccc0af598f91",
@@ -52,37 +58,46 @@
     "original_texture_maps": 5,
     "original_authored_animation_clips": 4,
     "current_eye_geometry": {
-      "schema": "blank.geometry.eye-fit.v2",
-      "artifact_path": "geometry/artifacts/hero-eye-assembly.geometry.json",
+      "schema": "blank.geometry.eye-socket.v4",
+      "stage": "experimental_latest_verified",
+      "implementation": "geometry/eye-socket-remesh.mjs",
+      "generation_script": "scripts/build-eye-sockets.mjs",
+      "artifact_path": null,
+      "artifact_note": "v4 candidate sidecar is generated at user-provided path; no checked-in v4 .geometry.json in geometry/artifacts",
+      "source_fitted_hero_sha256": "a968567c4c61f06de8d09601bbaeba721f79d3f06d91a433968cefc7f93efcb0",
+      "upstream_eye_fit_schema": "blank.geometry.eye-fit.v2",
+      "upstream_eye_fit_artifact": "geometry/artifacts/hero-eye-assembly.geometry.json",
       "boundary_vertices_per_eye": 28,
-      "opening_width_m_approx": 0.02461,
-      "opening_height_m_approx": 0.00801,
-      "minimum_projected_clearance_m": 0.00035,
-      "original_face_topology_unchanged": true,
-      "3d_depth_clearance_certified": false,
-      "experimental_v4": "geometry/eye-socket-remesh.mjs",
-      "local_real_fixture_tests": "9/9 pass",
-      "chrome": "pending",
-      "visual_approval": "blocked",
-      "v4_real_chrome_workflow": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38879560781",
-      "v4_regression": "171 passed, 2 skipped, 0 failed",
-      "v4_pinned_GLb_tests": "9/9 passed",
-      "v4_chrome": "pass",
-      "v4_visual_approval": "blocked",
-      "v4_report": "pink rims, artificial sclera-lid edge; modest improvement only"
+      "duplicated_uv_contours_per_eye": 2,
+      "additional_skinned_face_vertices": 112,
+      "additional_bridging_triangles": 224,
+      "inner_socket_vertices_recessed_per_eye": 348,
+      "maximum_inner_socket_recess_m": 0.0027,
+      "paired_eye_nodes_recessed": 8,
+      "paired_eye_node_recess_m": 0.0012,
+      "original_source_immutable": true,
+      "original_face_primitive_in_candidate_modified": true,
+      "original_joints_preserved": 53,
+      "original_authored_animation_clips_preserved": 4,
+      "three_dimensional_anatomical_clearance_certified": false,
+      "regression": "171 passed, 2 skipped, 0 failed",
+      "real_glb_tests": "9/9 passed",
+      "chrome": "passed in headless software-WebGL Chrome, not physical Android",
+      "chrome_workflow_url": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38879560781",
+      "visual_approval": "blocked"
     },
     "open_visual_defects": [
-      "pink eyelid rims",
-      "artificial eye appearance",
-      "no reconstructed upper/lower lid surfaces",
-      "no verified blinking/gaze",
+      "exposed pink eyelid texels near split UV socket boundaries",
+      "artificial eye and upper/lower eyelid-to-skin transition",
+      "incomplete natural socket silhouette and shader/material continuity",
+      "no verified blinking or gaze",
       "bald scalp and limited facial fidelity"
     ],
     "photorealism_approved": false,
-    "current_eye_geometry_v3": {
+    "historical_eye_geometry_v3": {
       "schema": "blank.geometry.eyelid-reconstruction.v3",
       "artifact_path": "geometry/artifacts/hero-eyelid-reconstruction.geometry.json",
-      "source_sha256": "207ba42634bf144f3c43aa72e93673fb1607f39a7e0d259a5d9e4293213ef384",
+      "source_sha256": "a968567c4c61f06de8d09601bbaeba721f79d3f06d91a433968cefc7f93efcb0",
       "additional_head_attached_meshes": 4,
       "additional_triangles": 224,
       "original_hero_rig_preserved": true,
@@ -92,14 +107,17 @@
       "offline_red_proxy_pixels_after": 2583,
       "chrome_result": "PASS: real Three.js source and candidate, universal inspector before-after macro, profile, three-quarter, mobile; run 38847010619",
       "visual_review": "BLOCKED: protruding eyeballs, artificial eyelid transition, remaining pink exposure and unmatched skin material",
-      "chrome_run_url": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38847010619"
+      "chrome_run_url": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38847010619",
+      "historical_archived_source_sha256_superseded": "207ba42634bf144f3c43aa72e93673fb1607f39a7e0d259a5d9e4293213ef384",
+      "stage": "superseded_experimental_overlay"
     }
   },
   "next_steps": [
-    "Inspect the original skin atlas UV islands for both measured eye seams and correct exposed pink texels/material continuity",
-    "Keep revisions on original skinned face, compare before/after eye macros and profiles in Chrome",
-    "Human review must explicitly approve/decline anatomy and asset quality",
-    "Record every proposed change and commit in docs/CONTINUITY.md; no automatic or minor Vercel deploys"
+    "Confirm the v4 source hash, UV island ownership and sampled eye-rim texels against identical eye-macro and profile captures",
+    "Repair v4 skin/material/UV and surface continuity only in a reversible copy; preserve rig, four clips and source provenance",
+    "Run pinned GLB and manually dispatched Three.js/Chrome browser tests; do not infer physical phone GPU performance",
+    "Require explicit human review of anatomy and skin realism, retaining BLOCKED on insufficient evidence",
+    "Update docs/CONTINUITY.md in every proposal and commit, update structured state at milestone, and do not deploy Vercel without major-release approval"
   ],
   "other_open_blockers": [
     "actual Android device frame-rate/thermal test",
@@ -122,6 +140,24 @@
     "validator": "scripts/check-continuity.mjs",
     "pr_template": ".github/pull_request_template.md",
     "server_side_enforced": false,
-    "caveat": "GitHub web/API writes bypass optional local hooks; manual-only workflow policy preserved"
+    "caveat": "GitHub web/API writes bypass optional local hooks; manual-only workflow policy preserved",
+    "remote_status": "not_enforced_main_unprotected_as_observed_2026-10-16"
+  },
+  "base_commit_role": "historical_v2_baseline_not_current_head",
+  "last_verified_engineering_commit_before_docs_sync": "f6acba64ab7ea5c12d85129bcebe7c44154bb660",
+  "latest_verified_engineering_milestone": "experimental skinned face socket v4, human visual acceptance blocked",
+  "historical_technical_verification": {
+    "eye_fit_v2": {
+      "regression_pass": 152,
+      "real_glb_pass": 6,
+      "workflow_url": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38842660754"
+    },
+    "eyelid_v3": {
+      "regression_pass": 162,
+      "regression_skipped": 2,
+      "real_glb_pass": 4,
+      "workflow_url": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38847010619",
+      "human_visual_review": "blocked"
+    }
   }
 }

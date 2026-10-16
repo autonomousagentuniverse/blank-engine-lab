@@ -2,11 +2,14 @@
 
 **Snapshot:** 2026-10-16 UTC (2026-10-15 US evening)
 **Repository:** https://github.com/autonomousagentuniverse/blank-engine-lab
-**Baseline commit:** 92c4588a99c4b22661a05197b8585da8334b806f
+**Historical v2 baseline commit:** 92c4588a99c4b22661a05197b8585da8334b806f
+**Latest engineering HEAD verified for this reconciliation:** f6acba64ab7ea5c12d85129bcebe7c44154bb660 (2026-10-16)
+**Latest successful real-asset QA:** https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38879560781 (v4, Chrome/Three.js; 171 passed, 2 skipped, 0 failed; 9/9 pinned-GLB tests)
+**Visual gate:** BLOCKED; no human photorealism approval
 **Release:** Alpha 0.6 development on GitHub; Vercel remains on manually deployed Alpha 0.5
 **Purpose:** Authoritative handoff for a new engineer or AI agent. Read this before making changes.
 
-> **State of the project:** The systems are technically advancing, but the one hero character has **not** passed photorealism review. The next job is topology-aware eyelid reconstruction on the actual measured face, not another invented eye-size guess, lighting-only change, or premature game-wide rebuild.
+> **State of the project (current):** Geometry v3 overlay and v4 source-pinned skinned socket remesh have been implemented and technically exercised, but the isolated hero has **not** passed human photorealism review. Current P0 is to diagnose and correct residual pink eyelid texture/UV islands and eye-to-face surface/shading continuity on the v4 candidate, with exact before/after macro review. Do not repeat the completed v3 work as though it were the next job.
 
 ## 1. Concept and product vision
 
@@ -30,7 +33,7 @@ Key ideas established with the owner:
 | Physical runtime | Rapier capsule, gravity, jumps, collisions, dynamic crates, fixed-step logic, IK and imported GLB motion | Alpha 0.6-dev; real-library/Chrome tests passed for defined cases |
 | Character Builder | Isolated Character Lab, real CC0 MakeHuman suited hero, rig/material/animation audit, static-review camera presets, repair tools | Active focused development; hero visual approval BLOCKED |
 | Feature inspection | Shared inspection/focus.mjs; click/tap any surface, focus, orbit, bookmark, capture | Used in Character Lab and World editor; future builders reuse |
-| Geometry Artifact | General bounded translation/scale sidecar v1; measured paired-eye contour solver v2 | Both implemented/tested; **not** a topology-reconstruction engine |
+| Geometry Artifact | General v1 and measured eye-fit v2; experimental head-parented eyelid overlays v3; skinned facial socket remesh candidate v4 | v4 structural/Chrome PASS, human visual approval BLOCKED. The v1 generic artifact is **not** a general-purpose retopology engine |
 | Materials | Procedural PBR; authored PNG/JPEG/WebP/KTX2 import; CC0 Poly Haven offline library; texture limits | Five material sets individually tested; combined budget and phone QA pending |
 | Object Builder / Scene Builder | Intended specialized interfaces using shared 3D/geometry/material contracts | Not separately completed |
 | Native graphics engine | Future C++/Vulkan/runtime ambition | NOT implemented; present runtime is Three.js/WebGL |
@@ -43,10 +46,10 @@ Key ideas established with the owner:
 - Standalone hero work: character-lab/, character-lab/index.html
 - General inspection: inspection/focus.mjs
 - General geometry: geometry/artifact.mjs, geometry/three-adapter.mjs
-- Real eye-fit pipeline: geometry/eyelid-fit.mjs, scripts/fit-hero-eyes.mjs, scripts/eyelid-fit-browser-smoke.mjs
+- Eye geometry pipeline: geometry/eyelid-fit.mjs (v2), geometry/eyelid-reconstruction.mjs (v3), geometry/eye-socket-remesh.mjs (v4); scripts/fit-hero-eyes.mjs, scripts/build-eye-sockets.mjs, scripts/eye-socket-v4-browser-smoke.mjs
 - Texture system: materials/, scripts/prepare-material-library.mjs
 - Tests: test/, test.mjs
-- Current supporting documentation: docs/ (especially eye-aperture-solver-v2.md, geometry-artifact.md, universal-inspection.md, character-builder-v1.md and character-v21-static-review.md)
+- Current supporting documentation: docs/ (especially eye-socket-remesh-v4.md, eye-aperture-solver-v2.md, geometry-artifact.md, universal-inspection.md, character-builder-v1.md and character-v21-static-review.md)
 
 ## 3. Milestones — verified versus unfinished
 
@@ -74,12 +77,12 @@ Implemented and verified across separate tests:
 - Original asset about 6.675 MB, 53-joint skeleton, three source skinned meshes, five texture maps, four authored idle/walk/run/wave clips. Do not equate generated eye nodes with additional joints.
 - Fixed falsely transparent materials causing torn shirt/chest and facial artifacts. Preserved rig, original texture payload, animations.
 - Added static hero review (neutral pose, 5 camera angles, lighting), material finishing; still bald, visually synthetic.
-- Found original skin face had pink socket area and lacked separate eye geometry. Added head-bone-linked sclera, iris, pupil and catchlight meshes. Original facial topology remains.
+- Found the original skin face had a pink socket area and lacked separate eye geometry. Added head-bone-linked sclera, iris, pupil and catchlight meshes. The **immutable source** facial geometry is preserved; the **v4 output candidate** modifies a copy of the skinned face primitive.
 - Built Universal Inspector for any 3D detail, with inspect/bookmark/close-up controls in Character Lab and game editor.
 - Built general Geometry Artifact v1 for reversible measured local transforms with optional mirrored correction.
 - Built **Geometry Artifact v2 eye aperture solver** using real source facial mesh boundary loops, not inferred image pixels. Tested in Chrome, but **still NOT visually approved**.
 
-### Latest verified milestone (baseline commit 92c4588)
+### Historical eye-fit v2 milestone (baseline commit 92c4588)
 
 - **152/152 regression tests passed**, including **6/6 real-GLB fitting tests**, plus Chrome interaction test.
 - Successful workflow: https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38842660754
@@ -90,6 +93,22 @@ Implemented and verified across separate tests:
 - Known failure: pink exposed eyelid rims and artificial eye appearance remain in actual Chrome close-ups; three-quarter/profile/gaze/blink approval is blocked.
 - Chrome files from runs are time-limited Actions artifacts: regenerate using scripts and manual workflow, rather than assuming an old ZIP still exists.
 
+### Eyelid reconstruction v3 — historical technical milestone
+
+- Commit lineage culminated in passing run https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38847010619: 162 engine tests passed, 2 fixture-gated skips; 4/4 real GLB tests passed; Chrome/Three.js universal-inspector face macros, profile, three-quarter and mobile captures passed.
+- Added four **rigid head-parented** upper/lower lid surface meshes (224 triangles), keeping source face untouched. This was an experimental overlay, not skinned/watertight facial retopology.
+- Correct reproducible fitted hero SHA-256: `a968567c4c61f06de8d09601bbaeba721f79d3f06d91a433968cefc7f93efcb0`. An older archived `207ba426...` source hash was superseded and must not be used as the current build input.
+- Visual review **BLOCKED**: residual pink seams, protruding/artifical eyes, separate lid-to-face material transition, no blinking/gaze. v3 is superseded as the primary P0 experiment by v4.
+
+### Eye-socket remesh v4 — latest verified technical milestone (2026-10-16)
+
+- Engineering commit https://github.com/autonomousagentuniverse/blank-engine-lab/commit/98fd300a29879ee03fb26afb16aabded0584d2c4; verification https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38879560781 **SUCCESS**; subsequent QA archiving/manual-workflow cleanup commit https://github.com/autonomousagentuniverse/blank-engine-lab/commit/f6acba64ab7ea5c12d85129bcebe7c44154bb660.
+- Full regression **171 PASS / 2 SKIPPED / 0 FAIL**; actual fitted-GLB tests **9/9 PASS**; real Three.js headless-Chrome neutral macros, profile, three-quarter and mobile captures completed. This is **software WebGL** evidence, not an Android hardware FPS measurement.
+- Experimental `geometry/eye-socket-remesh.mjs` edits a **copy** of the original skin-weighted `base` GLB primitive: 112 extra inherited-weight vertices, 224 new bridging triangles, 348 front-facing inner-socket vertices recessed **per eye** by up to 2.7 mm, and eight paired eye components recessed 1.2 mm. Original input bytes, 53 joints and four authored animation clips remain preserved.
+- `scripts/build-eye-sockets.mjs` produces a **source-SHA-pinned generated v4 geometry artifact and GLB**, rather than a checked-in v4 JSON under `geometry/artifacts/`. v2 and v3 sidecars remain in that folder. No claim of generic automatic remeshing or complete eyelid anatomy.
+- **Human photorealism review BLOCKED:** sclera seating improves modestly, but pink eyelid rims, UV/material mismatch, unnatural eye/surface transitions and absent blink/gaze remain. Vercel is still on Alpha 0.5. QA is manual `workflow_dispatch` only.
+
+
 ## 4. Geometry Artifact design — evergreen contract
 
 Geometry artifacts are **data**, not merely screenshots or untracked instructions.
@@ -98,25 +117,27 @@ Geometry artifacts are **data**, not merely screenshots or untracked instruction
 
 **Measured eye-fit v2:** schema blank.geometry.eye-fit.v2; pinned corrected source GLB; raw contour coordinates and duplicate-UV-loop accounting from actual mesh boundary topology; symmetry checks; face/head coordinate transforms; grouped left/right eye component transforms and projected fit constraints; review still required. It deliberately rejects unrelated GLBs rather than applying the pinned hero's anthropometric measurements to arbitrary characters.
 
+**Historical eyelid v3:** `blank.geometry.eyelid-reconstruction.v3`; four rigid head-attached candidate surfaces, with a checked-in reproducible sidecar. This reduces some visible socket exposure but does not repair the original face topology or material transitions.
+
+**Experimental socket v4:** `blank.geometry.eye-socket.v4`; modifies a copy of the original skinned `base` mesh with inherited weights and additional connecting triangles. The builder emits a source-hashed GLB and artifact at user-specified output paths. It does **not** guarantee texture continuity, anatomical completeness, watertightness or human-approved photorealism; tests and review stay distinct.
+
 **Long-term generalized pipeline:** inspect selected feature → measure real geometry/topology → define constraints and target → compute candidate(s) → non-destructive preview → compare repeatable close-ups and silhouette → physics/rig/UV validation → approve/reject → export asset and machine-readable artifact. Any automated authoring agent should log measurement source, assumptions, failures and changes.
 
-## 5. Next job (P0): reconstruct the eyelid surfaces, not another eyeball-only tweak
+## 5. Next job (P0): fix v4 eye-to-skin UV/material continuity and facial transitions
 
-**Technical problem:** The current solver fits eye components *inside a projected contour* but does not generate correct eyelid surfaces around the eyeball. It cannot solve exposed pink rim, side-view gaps, proper upper/lower lid overlap, corneal shape or blinking by changing eye transforms alone.
+**Verified starting point:** v4 has already passed source-pinned real-GLB, full regression and Chrome technical QA (run 38879560781), but the human visual gate is BLOCKED. The v3 overlay and v4 skinned socket reconstruction are **completed experiments**; do not start over with another unmeasured eyeball-size adjustment or treat structural test success as realism.
 
-**Proposed implementation sequence:**
+**Remaining technical problem:** The source head has two UV-split 28-vertex eye boundaries per side. The v4 bridges inherit source UV/material data, leaving red/pink texels around the seam, mismatched normals/color at the eyelid-to-face transition, and an artificial eye/socket silhouette. Blinking and gaze remain unimplemented. Inspect whether continuity can be repaired with safe UV remapping, normal/tangent continuity and physically plausible local topology; do not cosmetically hide the problem with a flat overlay.
 
-1. **Baseline and source lock.** Checkout main at this snapshot or later; check current revision before modifications. Rebuild the pinned hero via scripts/hero-eyes-build.mjs and fit with scripts/fit-hero-eyes.mjs. Record source hashes, eye component transforms, face vertex/index/UV/skin accessor ranges, and neutral pose. Capture front, side, three-quarter and eye macro at consistent camera coordinates. Preserve before images.
-2. **Real 3D lid profiling.** For both 28-point eyelid contours, measure not only XY opening but Z-depth, surface normals, depth relative to fitted sclera and local tangent. Audit triangles, winding, UV seam duplication, eyelid boundary adjacency and skin weights. Check mirrored and asymmetric cases instead of assuming simple ellipses.
-3. **Construct a reversible topology-aware proposal.** Under a new geometry module (e.g. geometry/eyelid-reconstruction.mjs), generate controlled upper/lower eyelid lip/inner transition surfaces or carefully reshape existing boundary vertices. Keep 3D profile rounded, ensure contact/occlusion over sclera without z-fighting, and prevent self-intersections. Prefer separate non-destructive overlay geometry as an initial candidate if direct base-face retopology risks UV/weights. Include normals, skin weights to head/appropriate facial joints, material continuity and a visual debug overlay. **Never conceal the issue with a flat skin-colored decal or shift the entire eye without measurement.**
-4. **Geometry Artifact v3.** Store source hash, contour vertex IDs, reconstructed geometry or reversible vertex deltas, derived normal/UV/weight data, symmetry choices, tolerances, deterministic generation parameters, validation stats, before/after bounds and unresolved edge cases. Preserve v1/v2 compatibility.
-5. **Real neutral-pose Chrome comparison.** Capture both eyes at macro scale, neutral face, side profile, three-quarter and harsh grazing light. Check exposed pink lip, eyelid overlap, iris occlusion, eye alignment, corneal shape, translucency and shading. Add consistent screenshots and machine-readable geometry audit to CI. A successful unit suite does **not** mean visual PASS.
-6. **Motion compatibility.** Verify four original animation clips are unchanged; head-bound eye/lid geometry follows animated head; test extreme look angles where supported. **Blink/gaze is not yet provided by this model:** implement separately only if supporting joints/geometry are authored and validated. Do not invent gaze animation on an asset with no such rig.
-7. **Acceptance/review.** Require actual human visual approval at front/profile/three-quarter/macros, no obvious intersections, preserved UV/material/rig behavior, safe undo, bound draw-call/texture cost. If topology is irreparably impoverished, flag an art-authoring escalation and source/build a better CC0/properly licensed facial asset; don't silently declare the procedural fix photorealistic.
+**Next execution plan:**
 
-**Specific immediate tests to write:** contour-fidelity under UV duplicates; non-manifold boundary rejection; screen-space and 3D depth tolerances (separate units); symmetry; normal winding; zero-area/degenerated triangle rejection; skin weight sum and joint range; hash/source mismatch; round-trip artifact validation; preview/undo; head rotation continuity; Chrome screenshots; corruption rejection.
+1. **Refresh evidence:** Verify live main HEAD, the pinned upstream CC0 source and all corrected-source SHA-256 values; read `docs/eye-socket-remesh-v4.md` and `geometry/eye-socket-remesh.mjs`. Run the manual v4 pipeline and preserve source-v4 before/after images with identical camera, pose, lighting, exposure and material setup.
+2. **Measure UV/material failure:** Trace outer/inner 28-point contours to actual material slots, UV islands, sampled atlas texels, normal directions, skinning attributes and adjacent triangle edges. Document which red/pink exposure is geometry, which is UV sampling, and which is shading/depth. Use front, left/right profile, three-quarter and true macro via the Universal Inspector.
+3. **Implement a bounded, reversible candidate:** Change only a copy of the original skinned face/eye interface; preserve source bytes, provenance, weight normalization, 53 joints, 4 clips, and v1–v4 artifact interoperability. Record exact source hash, modified faces/UVs/normals, tolerances, generation parameters and limitations in the output geometry artifact. Use actual materials; no screenshot-only correction or flat fake-skin patch.
+4. **Validate both data and pixels:** Reject source mismatches, invalid UVs, inverted/degenerate faces, broken joints/weights, self-intersections, visual gaps and undo failures. Run `npm test`, pinned-fixture GLB tests and manual real Three.js/Chrome captures at matched cameras; inspect remaining pink patches, socket rim, side silhouette and moving head. No claim that a headless software render benchmarks a physical Android device.
+5. **Review or escalate:** Submit comparable full-face, macro, profile and three-quarter evidence for **human** acceptance/rejection. If still synthetic, report **BLOCKED** and consider a better verified-licensed head/eyelid asset or artist-authored retopology instead of repeatedly shifting the eye assembly.
 
-**Definition of done for next milestone:** a source-pinned, reproducible eyelid-geometry artifact and a non-destructive fitted GLB with passing structural/browser tests **and** explicit visual status. If images still show pink eyelid exposure, report **BLOCKED** and state why; never force an acceptance pass.
+**Definition of done:** A source-pinned, reproducible, reversible material/topology correction with passing structural and browser checks, a documented human visual verdict, and a preserved unfixed baseline for comparison. Do not declare P0 complete, start mass NPC generation, or deploy Alpha 0.6 while photorealism review is blocked.
 
 ## 6. Subsequent roadmap / release gates
 
@@ -146,20 +167,23 @@ Geometry artifacts are **data**, not merely screenshots or untracked instruction
 
 ## 8. Resume checklist for the next session
 
-- [ ] Read AGENTS.md and this document; fetch actual current main SHA.
-- [ ] Inspect docs/eye-aperture-solver-v2.md, geometry/eyelid-fit.mjs and geometry/artifacts/hero-eye-assembly.geometry.json.
-- [ ] Check newest Actions run; latest passing baseline: https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38842660754 (152/152 tests).
-- [ ] Rebuild the reference eye-corrected GLB from pinned, licensed source and confirm SHA matches the artifact before applying any changes.
-- [ ] Inspect Chrome front/profile/three-quarter close-ups; document still-exposed rim.
-- [ ] Implement P0 geometry reconstruction with measured normals/depth, reversible v3 artifact and tests.
-- [ ] Re-run full tests + pinned real-library Chrome QA; inspect actual screenshots.
-- [ ] Commit docs, tests and corrected geometry; log remaining visual blockers.
-- [ ] Do **not** deploy Alpha 0.6 to Vercel without explicit authorization.
+- [ ] Read `AGENTS.md`, `docs/CONTINUITY.md`, `docs/continuity-state.json` and check the **current GitHub main HEAD**; the pre-reconciliation engineering HEAD was `f6acba64ab7ea5c12d85129bcebe7c44154bb660`.
+- [ ] Start with `docs/eye-socket-remesh-v4.md`, `geometry/eye-socket-remesh.mjs`, `scripts/build-eye-sockets.mjs` and `test/eye-socket-remesh.test.mjs`; use v2/v3 only as source/history.
+- [ ] Confirm run https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38879560781: v4 171 PASS, 2 SKIPPED, 0 FAIL; pinned GLB 9/9 PASS; Chrome success, **human review BLOCKED**.
+- [ ] Rebuild the licensed source, source-pinned eye-fit v2 and socket candidate v4; verify source hash before editing. A generated v4 sidecar is **not** checked into `geometry/artifacts/`.
+- [ ] Inspect actual skin atlas UV seams/texels, normals, eyelid depth and face-socket continuity using identical inspector macros, profile and three-quarter views.
+- [ ] Create only a reversible, measurable material/topology patch; validate structural/browser tests and actual comparative captures; preserve clips/rig.
+- [ ] Obtain explicit human visual acceptance or record **BLOCKED** with exact remaining defects; complete real physical Android measurements separately before major release acceptance.
+- [ ] **Before changing any project file**, add dated `[PROPOSED]` continuity entry; each commit must include updated `docs/CONTINUITY.md` and tests/status with `[COMMITTED]` entry. Update `docs/continuity-state.json` at milestones.
+- [ ] Retain only manual `workflow_dispatch` workflows; **no Vercel deployment** until explicit approval for a major release.
 
 ## 9. Key links and evidence
 
 - Project repo: https://github.com/autonomousagentuniverse/blank-engine-lab
-- Baseline at this handoff: https://github.com/autonomousagentuniverse/blank-engine-lab/commit/92c4588a99c4b22661a05197b8585da8334b806f
+- Historical v2 baseline: https://github.com/autonomousagentuniverse/blank-engine-lab/commit/92c4588a99c4b22661a05197b8585da8334b806f
+- Latest reviewed v4 engineering HEAD (before docs reconciliation): https://github.com/autonomousagentuniverse/blank-engine-lab/commit/f6acba64ab7ea5c12d85129bcebe7c44154bb660
+- v4 source-pinned Chrome/real-GLB verification: https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38879560781
+- v3 historical Chrome/real-GLB verification: https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38847010619
 - Successful eye-fit QA: https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38842660754
 - Geometry v1 QA: https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38840053847
 - Universal inspector QA: https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38837769431
@@ -167,7 +191,7 @@ Geometry artifacts are **data**, not merely screenshots or untracked instruction
 - CC0 material catalogue QA: https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38801721687
 - AI GameSpec + DB run: https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38743314124
 
-**Last updated at snapshot:** Baseline geometry eye-fit technically verified; appearance still blocked. Update this document with each proposal and repository commit; refresh docs/continuity-state.json at substantial milestones.
+**Current verified handoff (2026-10-16):** Geometry v4 technically verified; **human photorealism review remains BLOCKED**. Historical v2/v3 results are retained for provenance, not described as the latest work. Update this document with each proposal and commit; refresh docs/continuity-state.json at substantial milestones.
 
 ## 10. Mandatory continuity updates for proposals and commits
 
@@ -207,3 +231,4 @@ Geometry artifacts are **data**, not merely screenshots or untracked instruction
 - 2026-10-16 [PROPOSED] Geometry v4 replaces independent eyelid overlays with a source-pinned modification of the original skinned face primitive; measure both actual UV split boundaries per eye, preserve source face weights/animations, and validate close-up Chrome imagery before human approval. This is NOT a photorealism claim.
 - 2026-10-16 [COMMITTED] Experimental v4 skinned facial socket primitive with unchanged original weights: source-pinned on actual v2 eye-fitted MakeHuman GLB, adds 112 skin-weighted face vertices/224 triangles in the original `base` primitive, recedes 348 front-facing inner-socket vertices per eye up to 2.7 mm and eight linked eyeball components 1.2 mm. Nine focused real-asset tests passed locally. A first test caught unintended back-head edits; narrowed depth bounds and retested. VTK untextured comparison performed; realistic face materials and Chrome browser review remain UNVERIFIED/BLOCKED. One-time GitHub browser QA workflow prepared; next verify, archive results, delete push trigger; no Vercel deploy.
 - 2026-10-16 [COMMITTED] Geometry v4 real Chrome evidence + manual-only QA cleanup: GitHub run 38879560781 SUCCESS, 171 passed / 2 skipped / 0 failed in full suite; 9/9 actual fitted-GLB reconstruction tests PASS; original skeleton (53 joints), 4 authored clips, skinning prefix and eye-depth alignment confirmed; neutral before/after macros, profile, three-quarter and mobile Chrome captures saved as time-limited workflow evidence. Human visual review remains BLOCKED: slightly improved sclera seating, pink exposed eyelid rims and artificial socket-to-skin transitions. Renderer evidence is headless Chrome software WebGL, NOT a measured Android FPS test. Removed one-shot push-trigger and retained workflow_dispatch-only v4 verification. Next: repair residual texture UV/color and surface continuity on original skinned eyelid geometry, followed by actual close-up human acceptance; do NOT deploy Vercel.
+- 2026-10-16 [COMMITTED] Documentation-only continuity reconciliation from reviewed HEAD f6acba64ab7ea5c12d85129bcebe7c44154bb660: corrected active P0 from already-implemented v3 reconstruction to v4 residual UV/material and skin/eyelid transitions, archived v2/v3 chronology, linked successful v4 run 38879560781 (171 pass, 2 skipped, 0 failed; nine pinned GLB pass; Chrome success), corrected stale checklists/evidence, aligned AGENTS.md and docs/continuity-state.json. Validation: document cross-field/content assertions PASS; engine tests NOT RUN (no runtime changes); photorealism BLOCKED; GitHub remote continuity branch enforcement not enabled. Next: measured reversible v4 UV/material repair and human before/after visual decision; no Vercel deploy.
