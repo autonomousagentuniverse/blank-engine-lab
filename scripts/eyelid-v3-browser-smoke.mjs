@@ -10,8 +10,8 @@ const mime={'.html':'text/html','.css':'text/css','.mjs':'text/javascript','.js'
 const server=createServer(async(req,res)=>{try{
  const url=new URL(req.url,'http://127.0.0.1'),path=resolve(root,'.'+(url.pathname==='/'?'/character-lab/index.html':decodeURIComponent(url.pathname)));
  if(!path.startsWith(resolve(root)+sep))throw Error('Forbidden');
- res.writeHead(200,{'content-type':mime[extname(path)]||'application/octet-stream'});res.end(await readFile(path));
-}catch{res.writeHead(404);res.end('Not found');}});
+ const body=await readFile(path);res.writeHead(200,{'content-type':mime[extname(path)]||'application/octet-stream'});res.end(body);
+}catch{if(!res.headersSent){res.writeHead(404);res.end('Not found');}else res.destroy();}});
 let browser;
 try{
  await new Promise(done=>server.listen(0,'127.0.0.1',done));

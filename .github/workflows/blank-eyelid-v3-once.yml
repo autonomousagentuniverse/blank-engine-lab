@@ -44,3 +44,4 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 # Real fixture pinned by the source GLB SHA recorded in geometry/eyelid-reconstruction.mjs; do not relax the provenance gate.
+# One-time browser rerun after safe local-server header/write sequencing.
