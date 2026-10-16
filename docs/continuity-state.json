@@ -220,5 +220,27 @@
     "blink_shape_key_names_verified": true,
     "eye_anatomy_name_inventory_verified": true,
     "source_rig_audit_run": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38945620587"
+  },
+  "experimental_hero_v4": {
+    "branch": "experiment/hero-v4-einar-shaded",
+    "status": "source_texture_and_cycles_preview_pending",
+    "source_zip_sha256": "3cbb5a1dd9ffd3ca39edab420a83ea7f7db337b435a78ef27a0c87ff3e6977f7",
+    "external_texture_files_expected": 63,
+    "texture_restoration_verified": false,
+    "critical_skin_albedo_loaded": false,
+    "critical_eye_albedo_loaded": false,
+    "cycles_shots_completed": 0,
+    "expected_shots": [
+      "front",
+      "three_quarter",
+      "profile",
+      "eyes_macro",
+      "eyes_three_quarter"
+    ],
+    "human_photorealism_approved": false,
+    "glb_threejs_approved": false,
+    "android_approved": false,
+    "source_license_credit": "Einar Rig (CC-BY) Blender Foundation | studio.blender.org",
+    "no_production_release": true
   }
 }
