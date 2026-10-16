@@ -1,0 +1,46 @@
+name: Blank Engine - Einar official licensed source gate
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - experiment/hero-v3-einar-source # one-time experiment test only; remove afterward
+permissions:
+  contents: read
+jobs:
+  source-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Compile and validate source resolver
+        run: |
+          python3 -m py_compile experiments/hero-v3/einar_public_source.py
+      - name: Inspect publisher character page and downloadable files without credentials
+        run: |
+          python3 experiments/hero-v3/einar_public_source.py
+      - name: Assert honest gate semantics
+        run: |
+          python3 - <<'PY'
+          import json
+          p=json.load(open('artifacts/hero-v3-einar/source-resolution.json'))
+          assert p['publisher']=='Blender Studio'
+          assert p['visual_approval']=='BLOCKED'
+          assert p['source_hash_verified'] is False
+          assert p['rig_and_blink_verified'] is False
+          assert p['threejs_glb_verified'] is False
+          assert p['status'].startswith(('BLOCKED_','DIRECT_PUBLIC_BINARY_FOUND_'))
+          print('EINAR_SOURCE_GATE_AUDITED',p['status'])
+          PY
+      - name: Unchanged engine regression
+        run: npm test
+      - name: Archive only source resolution report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: blank-hero-v3-einar-official-source-gate
+          path: artifacts/hero-v3-einar/
+          retention-days: 7
+          if-no-files-found: warn
