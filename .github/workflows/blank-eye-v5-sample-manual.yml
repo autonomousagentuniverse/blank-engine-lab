@@ -1,6 +1,9 @@
-name: Blank Engine - experimental v6 socket transition
+name: Blank Engine - experimental v7 front-facing eyelid sample
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - experiment/eye-v5-github-sample # one-shot CI for v7 only; remove after run
 permissions:
   contents: read
 jobs:
@@ -33,19 +36,25 @@ jobs:
         run: |
           .ci-venv/bin/python experiments/eye-v6/bridge_socket.py .ci-assets/hero-eye-v5-sample.glb .ci-assets/hero-eye-v6-transition.glb artifacts/hero-v6-transition-report.json
           .ci-venv/bin/python -c "import json; d=json.load(open('artifacts/hero-v6-transition-report.json')); assert d['added_triangles']==224 and d['added_vertices']==112 and not d['collapsed_uv'] and not d['inverted_faces']; print('V6_GEOMETRY_AUDIT_PASS')"
+      - name: Correct experimental faces toward actual camera
+        run: |
+          .ci-venv/bin/python experiments/eye-v7/front_facing.py .ci-assets/hero-eye-v6-transition.glb .ci-assets/hero-eye-v7-facing.glb artifacts/hero-v7-facing-report.json
+          .ci-venv/bin/python -c "import json; x=json.load(open('artifacts/hero-v7-facing-report.json')); assert x['front_facing_experiment_faces']==448 and x['original_face_index_and_normals_preserved']; print('V7_CAMERA_GEOMETRY_PASS')"
       - name: Existing engine tests and pinned real GLB tests
         run: |
           npm test
           BLANK_EYE_V4_FIXTURE=.ci-assets/hero-eye-fit-v2.glb node --test test/eye-socket-remesh.test.mjs
       - name: Capture identical Three.js Chrome macro and profile
-        run: node scripts/eye-v6-transition-browser-smoke.mjs
+        run: node scripts/eye-v7-facing-browser-smoke.mjs
       - name: Archive A/B images and experimental GLB
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: blank-eye-v6-socket-transition
+          name: blank-eye-v7-camera-facing
           path: |
-            artifacts/hero-v6-transition-*.png
+            artifacts/hero-v7-facing-*.png
+            artifacts/hero-v7-facing-report.json
+            .ci-assets/hero-eye-v7-facing.glb
             artifacts/hero-v6-transition-report.json
             .ci-assets/hero-eye-v6-transition.glb
             artifacts/hero-v5-sample-report.json
