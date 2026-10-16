@@ -1,0 +1,33 @@
+{
+  "schema": "blank.asset-factory.profile.v1",
+  "adapter": "einar-static-pbr-v1",
+  "asset": {
+    "id": "einar-hero-v1",
+    "kind": "character",
+    "purpose": "isolated real-time character asset; existing Blank Engine v5 Einar source"
+  },
+  "source": {
+    "url": "https://studio.blender.org/download-source/files/41/419e83fb75f30b989adf7920dec7a21c/419e83fb75f30b989adf7920dec7a21c.zip",
+    "bytes": 579834421,
+    "sha256": "3cbb5a1dd9ffd3ca39edab420a83ea7f7db337b435a78ef27a0c87ff3e6977f7"
+  },
+  "license": {
+    "id": "CC-BY",
+    "credit": "Einar Rig (CC-BY) Blender Foundation | studio.blender.org",
+    "publisher": "Blender Studio",
+    "no_unlicensed_externals": true
+  },
+  "outputs": {
+    "runtime_glb": "artifacts/hero-v5-einar/einar-static-pbr.glb",
+    "browser_evidence": "artifacts/hero-v5-einar"
+  },
+  "quality_targets": {
+    "requires": "independent human macro front/profile/three-quarter review",
+    "no_auto_approval": true,
+    "blinking": "NOT_IMPLEMENTED",
+    "hair_cards": "NOT_IMPLEMENTED",
+    "source_material_parity": "NOT_IMPLEMENTED"
+  },
+  "publish": false,
+  "visual_approval_required": true
+}

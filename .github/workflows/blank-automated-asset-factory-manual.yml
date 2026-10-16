@@ -1,0 +1,70 @@
+name: Blank Engine - automated Blender asset factory
+on:
+  workflow_dispatch:
+    inputs:
+      asset_profile:
+        description: Source-pinned asset profile to build
+        required: true
+        type: choice
+        options:
+          - einar-static-hero
+  push:
+    branches:
+      - experiment/automated-blender-factory-v1 # one-shot test; REMOVE after GitHub verification
+permissions:
+  contents: read
+jobs:
+  automated-asset-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Install headless Blender, image and real WebGL browser dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y libegl1 libgl1-mesa-dri libglx-mesa0 xvfb
+          python3 -m pip install --disable-pip-version-check --no-cache-dir bpy==4.5.3 Pillow==11.3.0
+          npm install --ignore-scripts --no-audit --no-fund
+          npm install --no-save --ignore-scripts --no-audit --no-fund three@0.186.1 playwright@1.56.1
+      - name: Source-factory fail-closed unit tests and manifest preflight
+        run: |
+          python3 -m py_compile scripts/asset_factory.py test/test_asset_factory.py
+          python3 -m unittest discover -s test -p test_asset_factory.py -v
+          python3 scripts/asset_factory.py --manifest assets/specs/einar-static-hero.json --mode plan
+      - name: ONE automated build - pinned source through Blender to real WebGL QA
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+          OMP_NUM_THREADS: '4'
+        run: |
+          python3 -u scripts/asset_factory.py --manifest assets/specs/einar-static-hero.json --mode run
+      - name: Assert end-to-end completed without automatic release
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          report=json.loads(Path('artifacts/asset-factory/einar-hero-v1/factory-report.json').read_text())
+          assert report['status']=='TECHNICAL_PASS_VISUAL_APPROVAL_PENDING'
+          assert not report['production_published']
+          assert not report['blinking_verified']
+          assert report['visual_approval']=='BLOCKED_REQUIRES_HUMAN_REVIEW'
+          assert all(v['status']=='PASS' for v in report['stages'].values())
+          assert Path(report['output']['glb']).is_file()
+          print('AUTOMATED_BLENDER_FACTORY_END_TO_END_PASS_WITH_HUMAN_VISUAL_BLOCK')
+          PY
+      - name: Preserve built GLB, screenshots, all stage logs, manifest and audit
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: blank-engine-automated-asset-factory-einar
+          path: |
+            artifacts/asset-factory/
+            artifacts/hero-v5-einar/
+            artifacts/hero-v4-einar/texture-restore.json
+          retention-days: 7
+          if-no-files-found: warn

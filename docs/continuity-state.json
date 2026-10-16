@@ -9,7 +9,7 @@
   "automatic_deployment_enabled": false,
   "source_of_truth": "GitHub main",
   "priority": "P0",
-  "priority_task": "Einar rendered by experimental Blank Engine real WebGL2 with original source skin/eye texture and actual geometry; technical gate PASS but visual FAIL (bald hair, missing source skin normal/roughness/SSS, seams, no blink). Next transfer full PBR material/hair, then actual eyelid animation and mobile human approval. Do not deploy.",
+  "priority_task": "Automate Blender-to-Blank-Engine character assets end-to-end with asset specs, immutable licensed sources, tests and real WebGL evidence. First source-pinned Einar static adapter must pass; next separately add hair/skin PBR & rig blink. Human visual approval and Vercel remain blocked.",
   "owner_decisions": [
     "hardest problems first",
     "one visually excellent isolated hero before scaling",
@@ -308,5 +308,30 @@
     "true_browser_renderer": "Three.js WebGL2 in experimental Blank Engine Character Lab",
     "original_hair_and_film_skin_shading_missing": true,
     "animated_rig_ported": false
+  },
+  "automated_blender_asset_factory": {
+    "branch": "experiment/automated-blender-factory-v1",
+    "status": "experimental_first_real_end_to_end_gitHub_test_pending",
+    "specification": "assets/specs/einar-static-hero.json",
+    "driver": "scripts/asset_factory.py",
+    "scope": "source-pinned licensed Einar STATIC character only, reusable interface; other adapters future",
+    "stages": [
+      "official_sha_pinned_source",
+      "source_texture_restore",
+      "headless_blender_copy_and_pbr_glb",
+      "gltf_integrity",
+      "engine_regression",
+      "real_blank_engine_chrome_webgl",
+      "contact_sheet"
+    ],
+    "repository_license_preserved": true,
+    "automatic_source_edits": false,
+    "automatic_vercel_deployment": false,
+    "mode": "manual_workflow_dispatch_triggers_unattended_pipeline; temporary experiment push for first test",
+    "can_generate_custom_new_character_from_text": false,
+    "auto_hair_cards": false,
+    "auto_blendshape_blink": false,
+    "human_photorealism_approved": false,
+    "complete_character_builder_integration": false
   }
 }
