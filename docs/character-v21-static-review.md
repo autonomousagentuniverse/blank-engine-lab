@@ -17,3 +17,7 @@ The sourced hero remains bald and has limited face geometry; adding real hair an
 ## QA
 
 Run `npm test`. On GitHub, use the manual Hero v2.1 workflow: it downloads the pinned source, builds the refined GLB, runs the browser, captures five viewport angles and a full mobile screenshot. Never deploy without explicit user approval.
+
+## Results from real browser inspection (2026-10-16)
+
+GitHub Chrome run `38830855179` passed 132 automated tests and five static viewport captures. **Visual approval is BLOCKED**: the front/face screenshots show red-pink eyeballs, confirmed to correspond to red eye regions in the source skin texture atlas (approximately UV U=.05/.11, V=.386 at the forward-facing eye surfaces). The scalp is bald, facial detail is weak, and clothing fit still needs artist review. Repainting or replacing the true eyeball texture/geometry and adding a properly licensed hair asset are future asset-authoring work. Do not state the reference is photorealistic or visually approved. This review is only a technical Character Lab milestone.

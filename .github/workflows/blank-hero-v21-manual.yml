@@ -1,10 +1,6 @@
-name: Blank Engine - one-time Character Builder v2.1 real Chrome QA
+name: Blank Engine - manual Character Builder v2.1 real Chrome QA
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/blank-hero-v21-once.yml'
 permissions:
   contents: read
 jobs:
@@ -42,4 +38,3 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
-# Rerun: directory index routing fixed for /character-lab/ static server.
