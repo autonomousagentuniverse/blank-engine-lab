@@ -9,7 +9,7 @@
   "automatic_deployment_enabled": false,
   "source_of_truth": "GitHub main",
   "priority": "P0",
-  "priority_task": "Review real Chrome Geometry Artifact v3 eyelid lip candidate; residual exposed rim and material mismatch remain BLOCKED",
+  "priority_task": "P0: Retopologize or replace original eyelid geometry with skin-tone/UV continuity and correct eyeball depth; v3 overlay visual acceptance BLOCKED",
   "owner_decisions": [
     "hardest problems first",
     "one visually excellent isolated hero before scaling",
@@ -34,14 +34,15 @@
     }
   },
   "recent_technical_verification": {
-    "workflow_id": 38842660754,
-    "workflow_url": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38842660754",
-    "full_regression_pass": 152,
+    "workflow_id": 38847010619,
+    "workflow_url": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38847010619",
+    "full_regression_pass": 162,
     "full_regression_fail": 0,
-    "real_glb_fit_pass": 6,
+    "full_regression_skipped": 2,
+    "real_glb_fit_pass": 4,
     "chrome_integration": "pass",
     "human_visual_review": "blocked",
-    "note": "Projected contour fit with 0.35mm clearance is not 3D eyelid sealing or photorealistic approval"
+    "note": "Rigid head-parented eyelid surface candidate improves red visual proxy but is not a watertight/skinned anatomical repair."
   },
   "hero": {
     "source": "CC0 MakeHuman/MPFB suited GLB from kunalkushwaha/vsim at pinned commit 3f97faf85e46d2f9a122b0a8b8d3ccc0af598f91",
@@ -79,15 +80,18 @@
       "visual_approval": false,
       "offline_red_proxy_pixels_before": 6179,
       "offline_red_proxy_pixels_after": 2583,
-      "chrome_result": "pending"
+      "chrome_result": "PASS: real Three.js source and candidate, universal inspector before-after macro, profile, three-quarter, mobile; run 38847010619",
+      "visual_review": "BLOCKED: protruding eyeballs, artificial eyelid transition, remaining pink exposure and unmatched skin material",
+      "chrome_run_url": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38847010619"
     }
   },
   "next_steps": [
-    "review actual Three.js/Chrome front and profile v3 evidence and compare with baseline",
-    "continue topology-level correction only if not cosmetically hiding defects",
-    "check eye-to-skin material continuity and 3D intersections",
-    "consider professionally authored facial retopology or asset replacement if overlay inadequate",
-    "keep continuity updated atomically in every commit"
+    "Source-pinned full anatomical eyelid/eye volume 3D intersection audit (front and side)",
+    "Retopologize or source authored eyelids rather than adding more rigid overlap sheets",
+    "Match facial skin UV and PBR response; retain source licensing and rig",
+    "Add gaze and blink controls only with valid mesh deformation/rig",
+    "Run repeatable universal inspector closeups, real Chrome and physical device when available; require human signoff",
+    "Every change includes dated CONTINUITY.md entry; no deployment without explicit authorization"
   ],
   "other_open_blockers": [
     "actual Android device frame-rate/thermal test",

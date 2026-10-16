@@ -30,3 +30,9 @@ On a fixed offline 720px VTK face crop using identical illumination (not Chrome 
 Must review real Three.js/Chrome neutral face, two profiles, 3/4 and macro plus head motion; test normal direction, near-eye z-depth and UV/skin continuity. The base face is NOT retopologized; a future v4 may require direct source-geometry modification or a better authored facial asset if this overlay cannot pass. Do not quietly tune acceptance thresholds to force a pass.
 
 **Deployment:** GitHub only. Preserve CONTINUITY.md in every implementation commit. Permanent CI manual-only. Never deploy Alpha 0.6 to Vercel without explicit consent.
+
+## Verified real-browser result (run 38847010619)
+
+The temporary real Chrome/Three.js QA used a fresh pinned CC0 source and source-hashed candidate. **PASS:** 162 general regression tests with 2 fixture-gated skips; four additional real-GLB v3 tests, candidate builder, real Chrome import, original four source clips, universal-inspector macro capture at 0.34 m, profile/three-quarter and mobile screenshots. https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38847010619
+
+**Visual verdict: BLOCKED.** Actual Chrome macros confirm less pink upper eyelid exposure, but visible bulging eyeballs, remaining eyelid edge/skin tone mismatch and lack of authentic blink/gaze remain. The overlay is source-preserving geometry, **not** an accepted facial reconstruction or photorealistic character. Real headset and physical Android tests remain absent. A next iteration should re-author face/lid topology and material continuity rather than endlessly tweak a rigid surface overlay. Screenshots are in the time-limited workflow artifact; regenerate using this manual workflow.
