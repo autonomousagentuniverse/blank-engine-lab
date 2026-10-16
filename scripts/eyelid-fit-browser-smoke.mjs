@@ -11,9 +11,9 @@ import {chromium} from 'playwright';
 const root=fileURLToPath(new URL('../',import.meta.url));
 const mime={'.html':'text/html','.css':'text/css','.mjs':'text/javascript','.js':'text/javascript','.json':'application/json','.glb':'model/gltf-binary'};
 const server=createServer(async(req,res)=>{try{
- const url=new URL(req.url,'http://127.0.0.1'),path=resolve(root,'.'+(url.pathname==='/'?'/character-lab/index.html':decodeURIComponent(url.pathname)));
+ const url=new URL(req.url,'http://127.0.0.1'),path=resolve(root,'.'+((url.pathname==='/'||url.pathname==='/character-lab/')?'/character-lab/index.html':decodeURIComponent(url.pathname)));
  if(!path.startsWith(resolve(root)+sep))throw Error('Forbidden');
- res.writeHead(200,{'content-type':mime[extname(path)]||'application/octet-stream'});res.end(await readFile(path));
+ const body=await readFile(path);res.writeHead(200,{'content-type':mime[extname(path)]||'application/octet-stream'});res.end(body);
 }catch{res.writeHead(404);res.end('Not found')}});
 let browser;
 try{

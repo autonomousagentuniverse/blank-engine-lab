@@ -39,7 +39,7 @@ jobs:
         with:
           name: blank-eye-fit-measured-qa
           path: |
-            artifacts/hero-eyelid-fit*.png
+            artifacts/hero-eye-fit-*.png
             artifacts/hero-eyelid-fit.glb
             artifacts/hero-eyelid-fit.geometry.json
           retention-days: 7
