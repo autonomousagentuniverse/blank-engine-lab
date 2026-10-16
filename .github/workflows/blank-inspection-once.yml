@@ -36,3 +36,4 @@ jobs:
           path: artifacts/inspection-*.png
           if-no-files-found: ignore
           retention-days: 7
+# Route Character Lab's trailing slash to its index.html in the one-time Chrome runner.

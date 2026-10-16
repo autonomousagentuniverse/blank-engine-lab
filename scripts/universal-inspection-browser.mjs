@@ -12,7 +12,7 @@ const root=fileURLToPath(new URL('../',import.meta.url));
 const mime={'.html':'text/html','.css':'text/css','.mjs':'text/javascript','.js':'text/javascript','.json':'application/json','.glb':'model/gltf-binary','.wasm':'application/wasm'};
 const server=createServer(async(req,res)=>{try{
  const p=decodeURIComponent(new URL(req.url,'http://localhost').pathname);
- const dest=resolve(root,'.'+(p==='/'?'/index.html':p));
+ const dest=resolve(root,'.'+(p==='/'?'/index.html':p.endsWith('/')?p+'index.html':p));
  if(dest!==resolve(root,'index.html')&&!dest.startsWith(resolve(root)+sep))throw Error('Forbidden path');
  const bytes=await readFile(dest);res.writeHead(200,{'content-type':mime[extname(dest)]||'application/octet-stream','cache-control':'no-store'});res.end(bytes);
 }catch{res.writeHead(404);res.end('Not found');}});
