@@ -37,6 +37,9 @@ async function load(){
  if(data.animations.length<1)throw new Error('Authored Aster head animation not exported');
  const animCount=data.animations.length;
  animations=data.animations;mixer=new THREE.AnimationMixer(model);
+ // A clip is inert until an action is explicitly activated. The original
+ // geometry had keyframes; the first browser probe forgot action.play().
+ mixer.clipAction(animations[0]).play();mixer.setTime(0);
  metrics={schema:'blank.aster01.real-webgl.v1',origin:'original_blender_bpy_geometry',
   asset_id:'aster-01',mesh_count:nodes,triangles:Math.round(polygons),
   material_count:mats.size,emissive_mesh_count:emissive,animation_clips:animCount,
