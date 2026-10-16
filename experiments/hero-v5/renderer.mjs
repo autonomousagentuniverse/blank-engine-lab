@@ -20,7 +20,16 @@ const rim=new THREE.DirectionalLight(0xffeadd,1.1);rim.position.set(3,5,-3);scen
 const camera=new THREE.OrthographicCamera(-1,1,1,-1,.01,100);
 let face=null,eyeL=null,eyeR=null,loaded=false,root=null,front=null,lateral=null,eyeCenter=null,headHeight=0,metrics={};
 function objBox(node){return new THREE.Box3().setFromObject(node).getCenter(new THREE.Vector3());}
-function matching(name){let found=null;root.traverse(o=>{if(o.isMesh&&o.name.includes(name))found??=o;});return found;}
+function matching(name){
+ const norm=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+ const key=norm(name);let found=null;
+ root.traverse(o=>{if(!o.isMesh)return;
+  const own=norm(o.name);let parent=o.parent;
+  const byParent=parent&&norm(parent.name).includes(key);
+  if(own.includes(key)||byParent)found??=o;
+ });
+ return found;
+}
 function cross3(a,b){return a.clone().add(b).multiplyScalar(.5);}
 function describe(root){
  const result={mesh_count:0,triangles:0,materials:[],face_textured:false,eye_textured:false,
@@ -58,7 +67,8 @@ async function load(){
  root=gltf.scene;scene.add(root);
  root.updateWorldMatrix(true,true);
  face=matching('GEO-einar_head');eyeL=matching('GEO-eye.L');eyeR=matching('GEO-eye.R');
- if(!face||!eyeL||!eyeR)throw new Error('Original Einar head/eyes missing from runtime glTF');
+ if(!face||!eyeL||!eyeR){const names=[];root.traverse(o=>{if(o.isMesh)names.push(o.name);});
+ throw new Error('Original Einar head/eyes missing from runtime glTF; actual mesh names='+JSON.stringify(names));}
  const bounds=new THREE.Box3().setFromObject(face),center=bounds.getCenter(new THREE.Vector3());
  headHeight=bounds.getSize(new THREE.Vector3()).y;
  eyeCenter=cross3(objBox(eyeL),objBox(eyeR));

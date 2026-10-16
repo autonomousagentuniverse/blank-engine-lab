@@ -129,6 +129,10 @@ def main():
   print("EINAR_V5_STATIC_REAL_GLTF_EXPORT",json.dumps({"bytes":report["glb_bytes"],
     "sha256":report["glb_sha256"],"meshes":len(clones),"triangles":report["triangle_count"],
     "textures":report["runtime_textures"]}),flush=True)
+  # GLB and audit are fully written; Blender's production rig scene previously
+  # hung >6 min solely during bpy interpreter shutdown AFTER export. Avoid this
+  # bounded-CI stall; no original source data or render state needs saving.
+  sys.stdout.flush();sys.stderr.flush();os._exit(0)
  except Exception as ex:
   report["status"]="BLOCKED_EXPORT";report["error"]=type(ex).__name__+": "+str(ex)[:600]
   save(report);traceback.print_exc();raise
