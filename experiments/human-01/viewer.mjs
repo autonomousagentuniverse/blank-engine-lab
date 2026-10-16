@@ -38,9 +38,9 @@ function show(view){
  const cams={
   negative_y:{dir:[0,0,-1],anchor:.55,dist:2.55},
   positive_y:{dir:[0,0,1],anchor:.55,dist:2.55},
-  three_quarter:{dir:[.52,.14,-.84],anchor:.55,dist:2.4},
-  face_front:{dir:[0,0,-1],anchor:.89,dist:.86},
-  face_three_quarter:{dir:[.45,0,-.89],anchor:.89,dist:.87}
+  three_quarter:{dir:[.52,.14,.84],anchor:.55,dist:2.4},
+  face_front:{dir:[0,0,1],anchor:.89,dist:.86},
+  face_three_quarter:{dir:[.45,0,.89],anchor:.89,dist:.87}
  };
  const p=cams[view];if(!p)throw Error('Bad view '+view);
  const bounds=new THREE.Box3().setFromObject(model),min=bounds.min;

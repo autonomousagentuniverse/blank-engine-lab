@@ -96,12 +96,26 @@ try:
         audit("ADDED_"+type_name.upper(),mesh_name=getattr(obj,"name",""),polygons=len(obj.data.polygons) if getattr(obj,"type","")=="MESH" else None)
     # Runtime selection: original generator body + imported eyes/hair/garments and skeleton,
     # excluding helper vertices via original mask and evaluated export.
+    # MPFB's OFFICIAL export staging is essential: it bakes/removes the
+    # HelperGeometry mask. A raw select-all exporter leaked the helper apron,
+    # rig marker cubes and overlapping body proxy into the visible character.
+    ExportService=importlib.import_module(package_name+".services.exportservice").ExportService
+    ObjectService=importlib.import_module(package_name+".services.objectservice").ObjectService
+    export_root=ExportService.create_character_copy(body,name_suffix="_runtime")
+    export_base=ObjectService.find_object_of_type_amongst_nearest_relatives(export_root,"Basemesh")
+    if not export_root or not export_base:raise RuntimeError("MPFB official export staging failed")
+    ExportService.bake_modifiers_remove_helpers(
+        export_base,bake_masks=True,bake_subdiv=True,
+        remove_helpers=True,also_proxy=True)
     bpy.ops.object.select_all(action="DESELECT")
-    for o in bpy.data.objects:
-        if o.type in ("MESH","ARMATURE"):
-            o.hide_set(False)
-            o.select_set(True)
-    bpy.context.view_layer.objects.active=body
+    export_parts=[export_root]+list(ObjectService.get_list_of_children(export_root))
+    for o in export_parts:
+        if o.type in ("MESH","ARMATURE","EMPTY"):
+            o.hide_set(False);o.select_set(True)
+    bpy.context.view_layer.objects.active=export_root
+    audit("OFFICIAL_EXPORT_HELPERS_BAKED",export_objects=len(export_parts),
+        clean_basemesh_verts=len(export_base.data.vertices),
+        clean_basemesh_faces=len(export_base.data.polygons))
     target=OUT/"human-01.glb"
     bpy.ops.export_scene.gltf(filepath=str(target.resolve()),export_format="GLB",
         use_selection=True,export_yup=True,export_materials="EXPORT",export_normals=True,
