@@ -5,7 +5,7 @@ import {readFile,mkdir} from 'node:fs/promises';
 import {join,resolve,extname,sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {chromium} from 'playwright';
-const root=fileURLToPath(new URL('../',import.meta.url));
+const root=fileURLToPath(new URL('../../',import.meta.url));
 const mime={'.html':'text/html','.css':'text/css','.mjs':'text/javascript','.js':'text/javascript','.json':'application/json','.glb':'model/gltf-binary'};
 const server=createServer(async(req,res)=>{try{
  const url=new URL(req.url,'http://127.0.0.1'),route=decodeURIComponent(url.pathname),path=resolve(root,'.'+(route.endsWith('/')?route+'index.html':route));
