@@ -9,7 +9,7 @@
   "automatic_deployment_enabled": false,
   "source_of_truth": "GitHub main",
   "priority": "P0",
-  "priority_task": "First headless spec-driven Blender asset factory PASS end-to-end in GitHub with source verification, source-copy GLB, Chrome WebGL and audit. Next automate skin normal/roughness and runtime hair assets, blink later. Human photorealism blocked and Vercel never auto-deploys.",
+  "priority_task": "Generate a genuinely original character asset beyond Einar from a parameterized Blender script and prove NEW GLB + NEW Blank Engine WebGL screenshot + head motion automatically. Then choose human-realism geometry/texture generative adapter, pending quality validation. No auto-deploy.",
   "owner_decisions": [
     "hardest problems first",
     "one visually excellent isolated hero before scaling",
@@ -354,5 +354,21 @@
     "permanent_workflow_dispatch_only": true,
     "visual_approval": "BLOCKED; source real-time quality still below user examples",
     "next": "Extend automatic skin normal and roughness PBR map baking/transfer, hair cards; then blink morph rig, Android performance."
+  },
+  "generated_new_procedural_asset": {
+    "asset_id": "aster-01",
+    "kind": "original_humanoid_android",
+    "branch": "experiment/aster01-generated-character",
+    "profile": "assets/specs/aster-01.json",
+    "generator": "experiments/aster-01/build_aster.py",
+    "actual_generated_glb_hash": null,
+    "source": "code-authored original Blender procedural mesh",
+    "einar_reused": false,
+    "original_texture_photos_reused": false,
+    "renderer": "Blank Engine experimental Three.js Chrome WebGL",
+    "animation": "authored head turn pivot, verification pending",
+    "human_photorealism_approved": false,
+    "production_release": false,
+    "status": "CI_visual_and_GLTF_verification_pending"
   }
 }

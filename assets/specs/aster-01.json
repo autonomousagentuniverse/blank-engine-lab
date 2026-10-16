@@ -1,0 +1,14 @@
+{
+  "schema": "blank.asset-factory.procedural-character.v1",
+  "generator": "aster-01",
+  "asset": {
+    "id": "aster-01",
+    "kind": "character",
+    "description": "Original ceramic-and-copper autonomous android, mechanically articulated head"
+  },
+  "seed": 10317,
+  "palette": "cobalt-copper",
+  "output": "artifacts/aster-01/aster-01.glb",
+  "publish": false,
+  "human_approval_required": true
+}

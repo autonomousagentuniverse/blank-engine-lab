@@ -1,0 +1,61 @@
+name: Blank Engine - generate ORIGINAL Aster-01 android in Blender
+on:
+  workflow_dispatch:
+    inputs:
+      asset_profile:
+        description: New procedural Blender asset
+        required: true
+        type: choice
+        options:
+          - aster-01
+  push:
+    branches:
+      - experiment/aster01-generated-character # one-shot branch QA only; remove on verified test
+permissions:
+  contents: read
+jobs:
+  generate-a-new-character:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Install headless Blender + Three.js browser proof
+        run: |
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y libegl1 libgl1-mesa-dri libglx-mesa0 xvfb
+          python3 -m pip install --disable-pip-version-check --no-cache-dir bpy==4.5.3 Pillow==11.3.0 numpy==2.2.6
+          npm install --ignore-scripts --no-audit --no-fund
+          npm install --no-save --ignore-scripts --no-audit --no-fund three@0.186.1 playwright@1.56.1
+      - name: Build genuinely NEW 3D character from parameters (no downloads or Einar)
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+          OMP_NUM_THREADS: '4'
+        run: |
+          mkdir -p artifacts/aster-01
+          python3 -m py_compile experiments/aster-01/build_aster.py
+          timeout -k 7s 160s xvfb-run -a python3 -u experiments/aster-01/build_aster.py -- assets/specs/aster-01.json
+          test -s artifacts/aster-01/aster-01.glb
+      - name: Prove original GLB geometry, own materials and animation
+        run: |
+          python3 experiments/aster-01/validate_new_glb.py
+      - name: Unchanged game engine regressions
+        run: npm test
+      - name: Render new asset in REAL Blank Engine Three.js/Chrome WebGL
+        run: |
+          node --check experiments/aster-01/chrome_test.mjs
+          node experiments/aster-01/chrome_test.mjs
+          python3 experiments/aster-01/montage.py
+      - name: Archive unique GLB + new images + SHA/audits, not prior artwork
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: blank-aster-01-original-generated-3d-asset
+          path: artifacts/aster-01/
+          retention-days: 7
+          if-no-files-found: warn

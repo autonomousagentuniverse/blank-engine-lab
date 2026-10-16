@@ -1,0 +1,12 @@
+# ASTER-01: actual NEW automated Blender character, no reused Einar output
+
+Requested specifically because prior "asset factory" demonstrations reran the exact same Einar GLB and screenshots. This experiment must prove **new independently authored 3D geometry**, not image reposting, copying an existing head, or simply changing the camera. The new 3D asset is a deliberately **mechanical humanoid android** to clearly demonstrate novel Blender geometry from a specification. It is NOT intended to pass the earlier photorealistic human quality goal.
+
+- Profile: \`assets/specs/aster-01.json\` with deterministic seed, palette, name and output location.
+- Generator: \`experiments/aster-01/build_aster.py\`, headless bpy/Blender. Built from newly created procedural Blender meshes: robot skull, armor panels, optical sockets, visor, jaw grille, neck bellows, chest reactor, shoulder/arm/elbow joints, hands/fingers, hips, articulated legs and boots. Eight original PBR materials including emissive eyes/torso. Single authored head-turn animation on a local pivot.
+- **No original Einar ZIP, image, model or photograph is downloaded/used.** Mesh names carry ASTER prefix; source asset images count must be zero; geometry control source is this script, profile and seed.
+- Export glTF GLB with unique SHA, geometry counts, PBR materials and animation. Fail if GLB is not new or has Einar names, no animation, missing required mesh anatomy, too few components.
+- Rendering is REAL Three.js in Blank Engine experimental browser viewer, with four distinct fresh screenshots (full front, three-quarter, profile and head detail) and a fifth rendered head-turn animation frame with objectively measurable changed pixels. No image-generation substitute or pasted Cycles/Einar screenshot.
+- All artifacts are generated automatically by GitHub Actions from one config. Run unchanged engine regression and archive actual GLB plus screenshots, contact sheet and provenance JSON.
+- Human visual approval not assumed. This is a **new procedural android character** benchmark. Hair, realistic skin, user photo-reference fidelity and humans are a separate capability that remains unimplemented. Never call this photorealistic human.
+- Work remains in experiment/aster01-generated-character; temporary branch push for initial QA only; restore manual workflow_dispatch and update continuity on completion. No production main merge or Vercel deployment.
