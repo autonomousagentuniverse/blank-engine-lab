@@ -147,5 +147,6 @@ window.eyeV8={
  },
  report(){return {schema:'blank.eye.v8.pixel-provenance',method:'depth-tested indexed triangle ID, UV pass and hidden geometry variants, skinned Three.js GLTFLoader',eyes:eyes.map(o=>o.name),
  views:Object.keys(rendered).map(attribution),
- caveats:['Pixel pinkish test is a color heuristic, not a source attribution by itself','ID pass uses depth-tested Basic material, not exact PBR alpha','UV pass encodes UV into RGB; sampling the texture atlas is a separate check','No source GLB mutation','No blink/gaze animation or photorealism acceptance']}};
+ caveats:['Pixel pinkish test is a color heuristic, not a source attribution by itself','ID pass uses depth-tested Basic material, not exact PBR alpha','UV pass encodes UV into RGB; sampling the texture atlas is a separate check','No source GLB mutation','No blink/gaze animation or photorealism acceptance']};
+ }
 };

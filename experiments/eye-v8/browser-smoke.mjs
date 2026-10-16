@@ -21,6 +21,8 @@ try{
  browser=await chromium.launch({channel:'chrome',headless:true,args:['--no-sandbox','--enable-unsafe-swiftshader','--disable-gpu-sandbox']});
  const page=await browser.newPage({viewport:{width:1000,height:850}}),errors=[];
  page.on('pageerror',e=>errors.push(e.message));
+ page.on('console',msg=>{if(msg.type()==='error')console.error('BROWSER_CONSOLE_ERROR',msg.text().slice(0,800));});
+ page.on('requestfailed',req=>console.error('BROWSER_REQUEST_FAILED',req.url().slice(0,240),req.failure()?.errorText));
  await page.route('https://cdn.jsdelivr.net/npm/**',async route=>{
   const path=new URL(route.request().url()).pathname;
   const m=path.match(/^\/npm\/three@0\.186\.1\/(.+)$/);
@@ -31,7 +33,8 @@ try{
  const url='http://127.0.0.1:'+server.address().port+'/experiments/eye-v8/';
  const p=await page.goto(url,{waitUntil:'domcontentloaded'});
  assert.equal(p.status(),200);
- await page.waitForFunction(()=>typeof window.eyeV8?.init==='function',{timeout:25000});
+ try{await page.waitForFunction(()=>typeof window.eyeV8?.init==='function',null,{timeout:15000});}
+ catch(e){throw new Error('Diagnostic JS failed to register: '+JSON.stringify(errors)+'; '+e.message)}
  const metadata=await page.evaluate(()=>window.eyeV8.init('/.ci-assets/hero-eye-v7-facing.glb'));
  assert.equal(metadata.faceTriangles,15948);
  assert.equal(metadata.joints,53);
