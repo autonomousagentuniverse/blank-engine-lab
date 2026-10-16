@@ -9,7 +9,7 @@
   "automatic_deployment_enabled": false,
   "source_of_truth": "GitHub main",
   "priority": "P0",
-  "priority_task": "Generate and evaluate an actual unique human via MPFB, not robot/Einar, with authentic eyes skin hair rig, and new Blank Engine WebGL macro shots. Main and Vercel unchanged.",
+  "priority_task": "HUMAN-01 NEW human is generated and renders via Blank Engine WebGL, but visual quality FAILS (protruding eyes, misplaced teeth/mouth, hair intersections). Focus on geometry fitting and source model provenance—not reused images, renderer smoke tests, or deployment.",
   "owner_decisions": [
     "hardest problems first",
     "one visually excellent isolated hero before scaling",
@@ -386,14 +386,30 @@
   "new_generated_human_example": {
     "branch": "experiment/human01-mpfb-generated",
     "asset_id": "human-01",
-    "status": "initial_github_generation_pending",
+    "status": "human_source_glb_and_webgl_technically_passed_but_visual_rejected",
     "individual_profile": "assets/specs/human-01.json",
     "mpfb_source_commit": "3af0cd5a2ffba072e93a34e5f6f494fdc4813ddf",
     "code_license": "GPLv3",
     "source_graphics_license": "CC0",
-    "new_human_glb_created": false,
-    "real_threejs_webgl_views": 0,
+    "new_human_glb_created": true,
+    "real_threejs_webgl_views": 5,
     "human_photorealism_approved": false,
-    "production_release": false
+    "production_release": false,
+    "generated_glb_sha256": "501d8aa88d84cd17bd072dec38ae6f231a59b56000d3f20e439054310fb050d7",
+    "glb_bytes": 25696536,
+    "mesh_count": 7,
+    "materials": 7,
+    "textures": 8,
+    "rig_bones": 53,
+    "webgl_triangles": 43810,
+    "github_run": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38980288978",
+    "artifact_id": 12080937077,
+    "visual_defects": [
+      "protruding eyeballs/eyelid mismatch",
+      "mouth and teeth geometry exposed outside lips",
+      "hair cap intersects the face",
+      "not photographic quality"
+    ],
+    "workflow_manual_only": true
   }
 }

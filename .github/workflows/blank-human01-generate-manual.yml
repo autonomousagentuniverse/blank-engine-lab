@@ -1,9 +1,6 @@
 name: Blank Engine - ORIGINAL automated human example via MakeHuman
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - experiment/human01-mpfb-generated # temporary single experiment run; remove after QA
 permissions:
   contents: read
 jobs:
