@@ -1,9 +1,5 @@
-name: Blank Engine - one-time Geometry Artifact UI verification
+name: Blank Engine - manual Geometry Artifact browser QA
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/blank-geometry-one-time.yml'
 permissions:
   contents: read
 jobs:
@@ -37,6 +33,4 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-# Scoped rerun: serve Character Lab index explicitly in local Chrome test.
 
-# Rerun after fixing geometry export document shadowing.
