@@ -1,9 +1,6 @@
 name: Blank Engine - eye v9 exact contour and texture attribution
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - experiment/eye-v9-targeted-attribution # ONE-SHOT experiment-only QA, remove immediately after test
 permissions:
   contents: read
 jobs:

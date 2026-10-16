@@ -30,3 +30,6 @@ Render: source-pinned v2→v7 rebuild, 171 test regression, nine real GLB fixtur
 Scientific: shading and texture counterfactuals interpreted as *tests*, not proof without matching actual rim pixels; no broad whole-face socket erase, invented blink, or false performance claim.
 
 GitHub Actions uses a one-shot push trigger on the disposable experimental branch only, then must revert to manual-only workflow dispatch in a dated continuity commit. Vercel and production main remain untouched.
+## Verified outcome — 2026-10-16
+
+Successful source-pinned run https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38907152402, with complete archived PNG and JSON. The highest-confidence finding is direct skin atlas redness at the visible rim. Disabling the face texture turns the saturated red area neutral; rendering the atlas without lighting leaves it red. Source texture sample pixels match their depth-tested visual counterparts. Geometry removal alone is much less effective and also exposes holes. See docs/eye-v9-findings.md for measured per-eye counts, exact UV coordinates and source-ID examples. Human photorealism NOT approved. Manual workflow_dispatch only.
