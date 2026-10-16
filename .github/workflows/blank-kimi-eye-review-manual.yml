@@ -1,9 +1,6 @@
 name: Blank Engine - Kimi independent eye review
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - experiment/kimi-eye-review # second and final one-shot Kimi retry
 permissions:
   contents: read
   actions: read
