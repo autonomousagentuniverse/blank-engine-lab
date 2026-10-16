@@ -159,5 +159,24 @@
       "workflow_url": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38847010619",
       "human_visual_review": "blocked"
     }
+  },
+  "recent_experimental_eye_v10": {
+    "branch": "experiment/eye-v10-atlas-pixel-repair",
+    "source_experiment": "V9 source-pinned v7 GLB",
+    "run_url": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38911539413",
+    "run_conclusion": "success",
+    "engine_pass": 171,
+    "engine_skipped": 2,
+    "pinned_glb_pass": 9,
+    "recolored_atlas_texels": 6037,
+    "front_detail_red_heuristic_before": 1770,
+    "front_detail_red_heuristic_after": 722,
+    "changed_pixels_outside_detail_eye_boxes": 0,
+    "visual_approval": "BLOCKED",
+    "observed_grey_brow_polygon_cause": "no-upper-seeds diagnostic removes original triangles (visible background); not normal eyebrow material",
+    "workflow_policy": "manual dispatch only",
+    "original_glb_unchanged": true,
+    "main_unchanged": true,
+    "deployed": false
   }
 }

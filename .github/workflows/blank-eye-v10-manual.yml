@@ -1,8 +1,6 @@
 name: Blank Engine - eye v10 localized red atlas experimental patch
 on:
   workflow_dispatch:
-  push:
-    branches: [experiment/eye-v10-atlas-pixel-repair]
 permissions:
   contents: read
 jobs:
