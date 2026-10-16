@@ -21,7 +21,10 @@ def audit(status,**kwargs):
     print("HUMAN01_GATE",status,json.dumps(kwargs,default=str)[:2000],flush=True)
 def resolve_asset(path):
     matches=list(ASSETS.rglob(Path(path).name))
-    matches=[p for p in matches if p.parent.name==Path(path).parent.name]
+    # Official system pack nests filenames under category/asset-name dirs.
+    # Require matching category somewhere in the ancestor path, not as direct parent.
+    category=Path(path).parts[0]
+    matches=[p for p in matches if category in p.parts]
     if not matches:raise FileNotFoundError("Missing official CC0 system asset: "+path)
     return str(matches[0].resolve())
 state={"schema":"blank.generated-human.v1","asset_id":"human-01",
