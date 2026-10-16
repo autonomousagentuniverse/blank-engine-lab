@@ -1,0 +1,44 @@
+name: Blank Engine - licensed photorealistic head baseline source audit
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - experiment/hero-v2-licensed-baseline # ONE-SHOT test only; remove after run
+permissions:
+  contents: read
+jobs:
+  source-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Fetch immutable official Blender CC0 bundle into runner
+        run: |
+          mkdir -p .ci-hero-v2 artifacts/hero-v2
+          curl --fail --location --retry 3 --max-time 180 --silent --show-error 'https://mirror.blender.org/demo/asset-bundles/human-base-meshes/human-base-meshes-bundle-v1.4.1.zip' -o .ci-hero-v2/source.zip
+          python3 experiments/hero-v2/bundle_inspect.py .ci-hero-v2/source.zip artifacts/hero-v2
+      - name: Install Blender 4.5 Python engine for source-only audit
+        run: |
+          python3 -m pip install --disable-pip-version-check --no-cache-dir bpy==4.5.3 Pillow==11.3.0
+          python3 -c "import bpy; assert bpy.app.version[:2] == (4, 5), bpy.app.version_string; print('BLENDER_PYTHON_SOURCE_AUDIT_READY',bpy.app.version_string)"
+      - name: Evaluate real head geometry, UV, eyes, materials and export candidate GLB
+        run: |
+          python3 experiments/hero-v2/head_probe.py
+          python3 experiments/hero-v2/montage.py
+      - name: Regression safety on unchanged engine
+        run: npm test
+      - name: Archive evidence without altering production asset
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: blank-hero-v2-licensed-source-evaluation
+          path: |
+            artifacts/hero-v2/
+          retention-days: 7
+          if-no-files-found: warn

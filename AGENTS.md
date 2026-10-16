@@ -5,7 +5,7 @@ Before substantial work read [docs/CONTINUITY.md](docs/CONTINUITY.md) and [docs/
 ## Owner decisions (non-negotiable)
 
 - GitHub source of truth: autonomousagentuniverse/blank-engine-lab.
-- Work on hard underlying problems first. Current P0: **repair residual eyelid UV/skin-material mismatch and face/socket continuity on source-pinned skinned v4 candidate**. v3 and v4 were technically tested; human hero photorealism approval remains BLOCKED.
+- Work on hard underlying problems first. Current experimental P0: **replace the inadequate MakeHuman hero starting asset with a license-verified higher-quality realistic human head, and prove visual anatomy/materials before committing to a full new character**. Previous geometry v1–v10 experiments are retained as history; skin/UV microfixes are NOT the current priority. Human photorealism approval remains BLOCKED.
 - Character Builder first; one high-quality isolated hero, then Object Builder, Scene Builder and composited world. Universal Inspector and Geometry Artifacts are **builder-independent**.
 - **No automatic Vercel deployment** and no manual Vercel deployment without explicit authorization for a **major** release. Alpha 0.5 remains live while 0.6 accumulates on GitHub.
 - No secrets or credentials in Git, browser, URLs, logs or docs. NVIDIA_API_KEY and BLANK_PG_URL are server-side GitHub Actions secrets.
@@ -15,7 +15,7 @@ Before substantial work read [docs/CONTINUITY.md](docs/CONTINUITY.md) and [docs/
 
 ## Fast entry points
 
-- Current focus: docs/eye-socket-remesh-v4.md and geometry/eye-socket-remesh.mjs; docs/eye-aperture-solver-v2.md and geometry/eyelid-fit.mjs are prior-stage references
+- Current experimental focus: docs/hero-v2-source-evaluation.md and experiments/hero-v2/; old Geometry v1–v10 eye revisions are historical diagnostics, not the active baseline
 - Saved measurement: geometry/artifacts/hero-eye-assembly.geometry.json
 - Universal schema: geometry/artifact.mjs and docs/geometry-artifact.md
 - Hero preview: character-lab/index.html; controller: character-lab/lab.mjs

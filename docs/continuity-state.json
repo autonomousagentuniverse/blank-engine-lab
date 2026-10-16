@@ -9,7 +9,7 @@
   "automatic_deployment_enabled": false,
   "source_of_truth": "GitHub main",
   "priority": "P0",
-  "priority_task": "Correct remaining pink eyelid UV/material mismatch and connected face-lid surface quality on source-pinned v4 geometry; human visual gate blocked",
+  "priority_task": "Experimental hero-v2 source replacement: license and provenance first; evaluate real human head anatomy, eye completeness and skin-material pipeline; human visual acceptance BLOCKED. Keep deployed and main MakeHuman baseline unchanged pending approval.",
   "owner_decisions": [
     "hardest problems first",
     "one visually excellent isolated hero before scaling",
@@ -159,5 +159,21 @@
       "workflow_url": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38847010619",
       "human_visual_review": "blocked"
     }
+  },
+  "experimental_hero_v2": {
+    "status": "source_evaluation_pending_not_approved",
+    "branch": "experiment/hero-v2-licensed-baseline",
+    "source_candidate": "Blender Studio Human Base Meshes v1.4.1 CC0, official download, full SHA pending Actions",
+    "source_url": "https://mirror.blender.org/demo/asset-bundles/human-base-meshes/human-base-meshes-bundle-v1.4.1.zip",
+    "source_license": "CC0-1.0 per official Blender demo files asset card",
+    "source_hash": null,
+    "source_verified": false,
+    "glb_generated": false,
+    "real_skin_textures_verified": false,
+    "separate_cornea_iris_lids_verified": false,
+    "facial_animation_verified": false,
+    "real_three_js_pbr_verified": false,
+    "human_photorealism_approved": false,
+    "note": "Experimental asset screening; official Blender sculpting base cannot be declared a photographic digital human without additional evidence. Main and deployed hero unchanged."
   }
 }
