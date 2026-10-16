@@ -21,6 +21,10 @@
 #skinName{text-transform:capitalize;}
 
 
+/* Universal surface inspection for world/object/character detail review. */
+.feature-inspector-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:12px;margin-top:10px;background:#14253a;border:1px solid #42637a;border-radius:10px;color:#d3edfa;font-size:12px}
+.feature-inspector-bar strong{font-size:10px;letter-spacing:.12em;color:#8ed9ee}.feature-inspector-bar button,.feature-inspector-bar select{padding:7px 9px;border:1px solid #496987;border-radius:7px;background:#233c56;color:#e9f5ff;font-size:12px}.feature-inspector-bar button:disabled,.feature-inspector-bar input:disabled{opacity:.45}.feature-inspector-bar input{width:120px;accent-color:#8edcef}.feature-inspector-bar small{flex-basis:100%;color:#b2ccde;overflow-wrap:anywhere}@media(max-width:680px){.feature-inspector-bar{padding:10px}.feature-inspector-bar button{flex:1 1 38%}.feature-inspector-bar input{flex:1 1 40%}.feature-inspector-bar select{flex:1 1 100%;min-width:0}}
+
 /* Alpha 0.6: bounded PBR texture presets, accessible on mobile. */
 .texturebar{margin:12px 0 4px;padding:12px 14px;border:1px solid #35546a;border-radius:10px;background:#111c2c;display:flex;align-items:center;flex-wrap:wrap;gap:8px;color:#c3d4e9;font-size:11px}
 .texturebar strong{color:#80e2d1;letter-spacing:.1em;font-size:10px;margin-right:7px}

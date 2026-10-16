@@ -7,6 +7,7 @@ import {mapHumanoidBones,REQUIRED_HUMANOID} from '../character/retarget.mjs';
 import {repairSuitedMaterials} from './repair.mjs';
 import {finishHeroPBR} from './hero-finish.mjs';
 import {repairHeroEyes,inspectHeroEyes} from './eyes.mjs';
+import {createUniversalInspector} from '../inspection/focus.mjs';
 import {REVIEW_VIEWS,LIGHT_PRESETS,auditStaticReview} from './hero-review.mjs';
 const $=id=>document.getElementById(id);
 const viewport=$('viewport'),renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
@@ -16,7 +17,7 @@ renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 viewport.insertBefore(renderer.domElement,viewport.firstChild);
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x131f31);
 const camera=new THREE.PerspectiveCamera(39,1,.04,180);camera.position.set(3,1.85,4.7);
-const controls=new OrbitControls(camera,renderer.domElement);controls.target.set(0,1,0);controls.enableDamping=true;controls.minDistance=1.15;controls.maxDistance=14;controls.maxPolarAngle=Math.PI*.54;
+const controls=new OrbitControls(camera,renderer.domElement);controls.target.set(0,1,0);controls.enableDamping=true;controls.minDistance=.13;controls.maxDistance=14;controls.maxPolarAngle=Math.PI*.54;
 const ambient=new THREE.HemisphereLight(0xdbeeff,0x384052,1.25);scene.add(ambient);
 const key=new THREE.DirectionalLight(0xfff1e0,2.6);key.position.set(-3,7,4);key.castShadow=true;key.shadow.mapSize.set(2048,2048);key.shadow.camera.left=-6;key.shadow.camera.right=6;key.shadow.camera.top=8;key.shadow.camera.bottom=-6;key.shadow.bias=-.00035;scene.add(key);
 const rim=new THREE.DirectionalLight(0x85b7fc,1.55);rim.position.set(4,5,-4);scene.add(rim);
@@ -27,6 +28,29 @@ const grid=new THREE.GridHelper(40,40,0x51647a,0x30465b);grid.position.y=.013;gr
 let reviewView='front',reviewLight='portrait',capturedViews=new Set(),sourceRoot=null,sourceGltf=null,stageRoot=null,mixer=null,actions=[],activeAction=null,assetBytes=null,assetName='',assetOrigin='',assetLicense='',audit=null,paused=false,turntable=false,skeletonHelper=null,skeletonVisible=false,wireframe=false,currentMaterial=null;
 const originalMaterials=new Map();let sunMode=false,latestRun=performance.now(),frames=0,elapsed=0,loadTicket=0;
 const setStatus=(text,error=false)=>{$('status').textContent=text;$('status').classList.toggle('error',error);};
+
+// Shared with Object Builder and Scene Builder: selection is a 3D surface
+// anchor, not a character-specific bone, eye or facial landmark.
+const detailInspector=createUniversalInspector(THREE,{
+ camera,canvas:renderer.domElement,controls,getRoots:()=>stageRoot?[stageRoot]:[],afterFocus:updateDetailUI
+});
+function updateDetailUI(state=detailInspector.getState()){
+ const selected=state.selected;
+ $('detailPick').textContent='Pick any detail: '+(state.armed?'ON':'off');
+ $('detailName').textContent=selected?`Selected: ${selected.label} · ${selected.distance.toFixed(2)} m`:'Select any visible feature: eye, hand, clothing seam, prop or component.';
+ $('detailDistance').disabled=!selected;$('detailDistance').value=selected?Math.min(5,selected.distance):1;
+ $('detailDistanceValue').textContent=selected?selected.distance.toFixed(2)+' m':'—';
+ for(const id of ['detailBookmark','detailCapture','detailReturn'])$(id).disabled=!selected;
+}
+function syncDetailBookmarks(){
+ const select=$('detailSaved'),selected=select.value;
+ select.innerHTML='<option value="">Saved inspection views</option>';
+ for(const item of detailInspector.bookmarks.list()){
+  const option=document.createElement('option');option.value=String(item.id);option.textContent=item.label;select.add(option);
+ }
+ if([...select.options].some(o=>o.value===selected))select.value=selected;
+}
+
 function updateMaterialSelection(){
  const s=$('materialSelect');const option=s.selectedOptions[0];currentMaterial=option?originalMaterials.get(Number(option.value))?.material:null;
  for(const id of ['roughness','metalness','resetMaterials'])$(id).disabled=!currentMaterial;
@@ -34,6 +58,7 @@ function updateMaterialSelection(){
  $('roughnessValue').textContent=Number($('roughness').value).toFixed(2);$('metalnessValue').textContent=Number($('metalness').value).toFixed(2);
 }
 function cleanModel(){
+ detailInspector.clear({restore:false});detailInspector.bookmarks.clear();syncDetailBookmarks();
  $('downloadRepairedBtn').disabled=true;
  if(skeletonHelper){scene.remove(skeletonHelper);skeletonHelper.geometry.dispose();skeletonHelper.material.dispose();skeletonHelper=null;}
  if(stageRoot){scene.remove(stageRoot);stageRoot=null;}
@@ -88,6 +113,7 @@ function freezeNeutralPose(){
  setStatus('Neutral idle pose frozen for static appearance review. No motion-quality claim.');
 }
 function applyReviewView(name){
+ detailInspector.clear({restore:false});
  if(!Object.hasOwn(REVIEW_VIEWS,name))throw Error('Invalid review camera');reviewView=name;
  const v=REVIEW_VIEWS[name];camera.position.set(...v.position);controls.target.set(...v.target);controls.update();
  $('reviewView').value=name;
@@ -110,7 +136,36 @@ $('captureBtn').onclick=()=>{
   capturedViews.add(reviewView);refreshReview();setStatus('Saved '+reviewView+' still. Review face, hair, clothing and silhouette manually.');
  },'image/png');
 };
-applyReviewLight('portrait');refreshReview();
+applyReviewLight('portrait');refreshReview();updateDetailUI();syncDetailBookmarks();
+
+// Precise generic inspection: freeze the current character before tapping a
+// surface to avoid selecting an animated pose by accident.
+$('detailPick').onclick=()=>{
+ if(!sourceRoot){setStatus('Load a character before picking details.',true);return;}
+ const enabling=!detailInspector.getState().armed;
+ if(enabling)freezeNeutralPose();
+ detailInspector.setArmed(enabling);
+ setStatus(enabling?'Tap or click a specific surface feature in the 3D viewport.':'Detail picking disabled; saved views remain available.');
+};
+$('detailDistance').oninput=e=>{if(detailInspector.getState().selected)detailInspector.setDistance(Number(e.target.value));};
+$('detailBookmark').onclick=()=>{
+ const saved=detailInspector.bookmark();if(!saved)return;
+ syncDetailBookmarks();$('detailSaved').value=String(saved.id);setStatus('Saved focus on '+saved.label+'; repeat this view during revisions.');
+};
+$('detailSaved').onchange=e=>{const id=Number(e.target.value);if(id&&detailInspector.recall(id))setStatus('Recalled inspection view '+id+'.');};
+$('detailReturn').onclick=()=>{detailInspector.clear();setStatus('Returned from detailed inspection.');};
+$('detailCapture').onclick=()=>{
+ if(!detailInspector.getState().selected)return;
+ // Capture the actual WebGL frame at the chosen focus, not a generated illustration.
+ renderer.render(scene,camera);
+ renderer.domElement.toBlob(blob=>{
+  if(!blob){setStatus('Cannot capture inspection frame.',true);return;}
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='blank-feature-inspection.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  setStatus('Saved close-up screenshot; use saved views to compare later revisions.');
+ },'image/png');
+};
+
 async function openReference(){
  $('referenceBtn').disabled=true;setStatus('Fetching CC0 MakeHuman reference (6.7 MB)…');
  try{let response=await fetch(HERO_REFERENCE.localUrl,{cache:'no-store'});if(!response.ok)response=await fetch(HERO_REFERENCE.download,{cache:'force-cache'});
@@ -142,5 +197,5 @@ $('resetMaterials').onclick=()=>{for(const {material,roughness,metalness} of ori
 $('exportBtn').onclick=async()=>{try{const hash=await assetDigest(assetBytes);const pkg=createCharacterPackage({assetName,assetBytes:assetBytes.byteLength,assetHash:hash,license:assetLicense,audit,source:assetOrigin});
 const blob=new Blob([JSON.stringify(pkg,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='blank-hero-character-spec.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);setStatus('Exported CharacterSpec. Keep it alongside the matching GLB.');}catch(e){setStatus(e.message,true)}};
 const ro=new ResizeObserver(()=>{const w=Math.max(1,viewport.clientWidth),h=Math.max(1,viewport.clientHeight);camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false);});ro.observe(viewport);
-function frame(now){requestAnimationFrame(frame);const dt=Math.min(.05,Math.max(0,(now-latestRun)/1000));latestRun=now;if(mixer&&!paused)mixer.update(dt);if(turntable&&stageRoot)stageRoot.rotation.y+=dt*.32;controls.update();renderer.render(scene,camera);frames++;elapsed+=dt;if(elapsed>=1){$('perfHud').textContent=`${Math.round(frames/elapsed)} FPS · ${renderer.info.render.calls} draw calls · ${renderer.info.render.triangles.toLocaleString()} triangles`;frames=0;elapsed=0;}}
+function frame(now){requestAnimationFrame(frame);const dt=Math.min(.05,Math.max(0,(now-latestRun)/1000));latestRun=now;if(mixer&&!paused)mixer.update(dt);if(turntable&&stageRoot)stageRoot.rotation.y+=dt*.32;controls.update();detailInspector.follow();renderer.render(scene,camera);frames++;elapsed+=dt;if(elapsed>=1){$('perfHud').textContent=`${Math.round(frames/elapsed)} FPS · ${renderer.info.render.calls} draw calls · ${renderer.info.render.triangles.toLocaleString()} triangles`;frames=0;elapsed=0;}}
 requestAnimationFrame(frame);

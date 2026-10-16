@@ -10,8 +10,11 @@ import {createPBRLibrary,DEFAULT_MATERIALS,PRESETS,TARGETS,validateMaterialProfi
 import {loadCompressedAuthoredSet,createKTX2Adapter} from './materials/compression.mjs';
 import {CC0_CATALOG,readPreparedMaterial} from './materials/catalog.mjs';
 import {facadePlan,addArchitecturalDetails} from './geometry/architecture.mjs';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {createUniversalInspector} from './inspection/focus.mjs';
 const $=(id)=>document.getElementById(id);
 const holder=$('viewport');
+let worldInspector=null,worldInspectOrbit=null,worldInspectMode=false;
 let spec;
 try { spec=validateSpec(JSON.parse(localStorage.getItem('blankbox-game-v1'))); } catch { spec=validateSpec(DEFAULT_SPEC); }
 let renderer,scene,camera,player,characterRig,actor,physicsWorld,physicsToken=0,physicsAccum=0,crateMeshes=[],light,hemi,sky,ground,beacon,gateDoor,lanternObject,world,quest,progress,robotActors=[],walls=[],objects=[],t=0,last=performance.now(),fpsSum=0,fpsFrames=0,cameraYaw=0.45,cameraPitch=0.32,cameraDistance=16,mouseDown=false,prevX=0,prevY=0,paused=false;
@@ -33,6 +36,8 @@ let autoDemoRequested=false;
 function material(color, extra={}) { const m=new THREE.MeshStandardMaterial({color,roughness:.62,metalness:.26,...extra}); materials.push(m); return m; }
 function addMesh(geo,mat,parent=scene){ const mesh=new THREE.Mesh(geo,mat); parent.add(mesh); return mesh; }
 function clearWorld(){
+ if(worldInspectMode)stopWorldInspection({restore:false});
+ worldInspector?.clear({restore:false});
   physicsToken++;avatarGeneration++;
   characterRig?.dispose?.();
   if(physicsWorld){physicsWorld.dispose();physicsWorld=null;}
@@ -51,17 +56,27 @@ function init(){
   renderer.toneMapping=THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure=1.15;
   holder.appendChild(renderer.domElement);
+
+  // This inspection subsystem is shared with Character Lab. Selecting a tiny
+  // location on an arbitrary mesh changes the camera, NOT the world or physics.
+  worldInspectOrbit=new OrbitControls(camera,renderer.domElement);
+  worldInspectOrbit.enabled=false;worldInspectOrbit.minDistance=.13;worldInspectOrbit.maxDistance=80;
+  worldInspector=createUniversalInspector(THREE,{
+   camera,canvas:renderer.domElement,controls:worldInspectOrbit,
+   getRoots:()=>[...objects,player].filter(Boolean),afterFocus:syncWorldInspection
+  });
+
   light=new THREE.DirectionalLight(0xc6ebff,2.1); light.position.set(-14,31,-25);scene.add(light);
   hemi=new THREE.HemisphereLight(0x82c2ff,0x131624,1.6); scene.add(hemi);
   sky=new THREE.Color(0x071325);scene.background=sky;
   scene.fog=new THREE.FogExp2(0x071325,.012);
   window.addEventListener('resize',resize); resize();
   const c=renderer.domElement;
-  c.addEventListener('pointerdown',(e)=>{mouseDown=true;prevX=e.clientX;prevY=e.clientY;c.setPointerCapture(e.pointerId);});
+  c.addEventListener('pointerdown',(e)=>{if(worldInspectMode)return;mouseDown=true;prevX=e.clientX;prevY=e.clientY;c.setPointerCapture(e.pointerId);});
   c.addEventListener('pointerup',()=>mouseDown=false);
   c.addEventListener('pointercancel',()=>mouseDown=false);
-  c.addEventListener('pointermove',(e)=>{if(!mouseDown)return;cameraYaw-=(e.clientX-prevX)*.006;cameraPitch=Math.max(.12,Math.min(1.25,cameraPitch+(e.clientY-prevY)*.004));prevX=e.clientX;prevY=e.clientY;});
-  c.addEventListener('wheel',(e)=>{cameraDistance=Math.max(7,Math.min(32,cameraDistance+e.deltaY*.015));},{passive:true});
+  c.addEventListener('pointermove',(e)=>{if(!mouseDown||worldInspectMode)return;cameraYaw-=(e.clientX-prevX)*.006;cameraPitch=Math.max(.12,Math.min(1.25,cameraPitch+(e.clientY-prevY)*.004));prevX=e.clientX;prevY=e.clientY;});
+  c.addEventListener('wheel',(e)=>{if(worldInspectMode)return;cameraDistance=Math.max(7,Math.min(32,cameraDistance+e.deltaY*.015));},{passive:true});
   window.addEventListener('keydown',e=>{ if(['INPUT','TEXTAREA'].includes(document.activeElement?.tagName))return; if(e.code==='KeyE'){if(!e.repeat)interact();return;} if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();pressed.add(e.code); });
   window.addEventListener('keyup',e=>pressed.delete(e.code));
   window.addEventListener('blur',()=>pressed.clear());
@@ -192,7 +207,7 @@ function update(dt){
   if(pressed.has('KeyA')||pressed.has('ArrowLeft'))dx-=1;
   if(pressed.has('KeyD')||pressed.has('ArrowRight'))dx+=1;
   const angle=Math.atan2(dx,dz)+cameraYaw;
-  const magnitude=Math.min(1,Math.hypot(dx,dz));
+  const magnitude=worldInspectMode?0:Math.min(1,Math.hypot(dx,dz));
   const input={x:Math.sin(angle)*magnitude,z:Math.cos(angle)*magnitude,
     jump:pressed.has('Space'),run:pressed.has('ShiftLeft')||pressed.has('ShiftRight')};
   physicsAccum=stepAccumulator(physicsAccum,dt,step=>{
@@ -224,7 +239,8 @@ function update(dt){
   });
   const look=new THREE.Vector3(playerPos.x,playerPos.y+1.55,playerPos.z),cp=cameraPitch;
   const dest=new THREE.Vector3(look.x+Math.sin(cameraYaw)*Math.cos(cp)*cameraDistance,look.y+Math.sin(cp)*cameraDistance,look.z+Math.cos(cameraYaw)*Math.cos(cp)*cameraDistance);
-  camera.position.lerp(dest,Math.min(1,dt*10));camera.lookAt(look);
+  if(worldInspectMode){worldInspectOrbit.update();worldInspector.follow();}
+  else {camera.position.lerp(dest,Math.min(1,dt*10));camera.lookAt(look);}
   // Gate is stationary so the player can walk through its arch once unlocked.
   if(gateDoor)gateDoor.position.y+=( (progress.completed?6.8:2.05)-gateDoor.position.y)*Math.min(1,dt*3);
   if(lanternObject){lanternObject.visible=quest.mode==='lantern'&&!progress.hasLantern&&quest.stages[progress.stage]?.type==='lantern';lanternObject.rotation.y=t*.7;lanternObject.position.y=Math.sin(t*2)*.12;}
@@ -474,4 +490,48 @@ const closeModal=()=>{$('modal').hidden=true;};
 $('navSpec').onclick=openModal;$('closeModal').onclick=closeModal;$('cancelSpec').onclick=closeModal;
 $('applySpec').onclick=()=>{try{const updated=validateSpec(JSON.parse($('jsonText').value));spec=updated;clearProgress();rebuild();persist();closeModal();setStatus('GameSpec validated and applied.');}catch(e){setStatus(e.message,true);alert('Invalid GameSpec: '+e.message);}};
 $('modal').addEventListener('click',e=>{if(e.target===$('modal'))closeModal();});
+
+/** Scene-wide universal feature inspection: buildings, props, robots, player
+ * and their individual visible surface details use the same 3D raycast anchor. */
+function syncWorldInspection(state=worldInspector?.getState()){
+ if(!state)return;
+ $('inspectWorldBtn').textContent='Pick world detail: '+(worldInspectMode?'ON':'off');
+ $('inspectWorldInfo').textContent=state.selected?`Selected ${state.selected.label} · ${state.selected.distance.toFixed(2)} m`:'Select any visible world object or surface detail.';
+ $('inspectWorldDistance').disabled=!state.selected;
+ if(state.selected)$('inspectWorldDistance').value=Math.min(8,state.selected.distance);
+ for(const id of ['inspectWorldSave','inspectWorldCapture','inspectWorldExit'])$(id).disabled=!state.selected;
+}
+function stopWorldInspection({restore=true}={}){
+ worldInspectMode=false;worldInspectOrbit.enabled=false;
+ worldInspector.clear({restore});pressed.clear();mouseDown=false;syncWorldInspection();
+}
+function syncWorldBookmarks(){
+ const select=$('inspectWorldViews');select.innerHTML='<option value="">Saved inspection views</option>';
+ for(const entry of worldInspector.bookmarks.list()){
+  const option=document.createElement('option');option.value=String(entry.id);option.textContent=entry.label;select.add(option);
+ }
+}
+$('inspectWorldBtn').onclick=()=>{
+ if(worldInspectMode){stopWorldInspection();return;}
+ // Save a meaningful orbit target, not the zero vector left by the play camera.
+ worldInspectOrbit.target.set(playerPos.x,playerPos.y+1.55,playerPos.z);
+ worldInspectMode=true;worldInspectOrbit.enabled=true;pressed.clear();mouseDown=false;
+ worldInspector.setArmed(true);syncWorldInspection();
+ setStatus('Inspection mode: tap any object/detail to focus. Physics and quest are unchanged.');
+};
+$('inspectWorldDistance').oninput=e=>worldInspector.setDistance(Number(e.target.value));
+$('inspectWorldSave').onclick=()=>{if(worldInspector.bookmark()){syncWorldBookmarks();setStatus('Saved exact inspection view.');}};
+$('inspectWorldViews').onchange=e=>{if(!worldInspectMode){worldInspectOrbit.enabled=true;worldInspectMode=true;}worldInspector.recall(Number(e.target.value));syncWorldInspection();};
+$('inspectWorldExit').onclick=()=>{stopWorldInspection();setStatus('Returned to gameplay camera.');};
+$('inspectWorldCapture').onclick=()=>{
+ if(!worldInspector.getState().selected)return;
+ renderer.render(scene,camera);
+ renderer.domElement.toBlob(blob=>{
+  if(!blob){setStatus('Inspection PNG capture failed.',true);return;}
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='blank-scene-detail.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  setStatus('Saved selected world-detail close-up.');
+ },'image/png');
+};
+
 try { init(); if(!localStorage.getItem('blankbox-game-v1'))loadDemo(true); }catch(e){$('webglError').hidden=false;$('webglError').textContent='3D renderer could not initialize: '+e.message;setStatus('Rendering failed: '+e.message,true);}

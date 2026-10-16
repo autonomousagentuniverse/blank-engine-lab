@@ -1,0 +1,38 @@
+name: Blank Engine - one-time universal feature inspector verification
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/blank-inspection-once.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Install pinned browser and rendering libraries
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm install --no-save --ignore-scripts --no-audit --no-fund three@0.186.1 @dimforge/rapier3d-compat@0.18.0 playwright@1.56.1
+          npx playwright install chrome
+      - name: Run entire regression suite
+        run: npm test
+      - name: Prepare actual CC0 human reference
+        run: |
+          mkdir -p character-lab/assets
+          curl --fail --location --retry 3 --silent --show-error 'https://raw.githubusercontent.com/kunalkushwaha/vsim/3f97faf85e46d2f9a122b0a8b8d3ccc0af598f91/packages/assets/library/suited.glb' -o character-lab/assets/hero.glb
+      - name: Test universal surface inspection in real Chrome
+        run: node scripts/universal-inspection-browser.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: blank-universal-inspection-evidence
+          path: artifacts/inspection-*.png
+          if-no-files-found: ignore
+          retention-days: 7
