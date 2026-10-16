@@ -1,9 +1,6 @@
 name: Blank Engine - experimental v6 socket transition
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - experiment/eye-v5-github-sample # one-shot CI, remove after run
 permissions:
   contents: read
 jobs:
