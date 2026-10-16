@@ -1,0 +1,37 @@
+name: Blank Engine - Kimi independent eye review
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - experiment/kimi-eye-review # ONE-SHOT: remove after first run
+permissions:
+  contents: read
+  actions: read
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Fetch prior real eye macros when available
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p .ci-kimi-eye-screenshots
+          gh run download 38896437213 --name blank-eye-v7-camera-facing --dir .ci-kimi-eye-screenshots || echo 'Previous Chrome macros unavailable; proceeding with source-grounded text review'
+      - name: Ask Kimi via Moonshot without exposing secrets
+        env:
+          MOONSHOT_API_KEY: ${{ secrets.MOONSHOT_API_KEY }}
+          MOONSHOT_ID: ${{ secrets.MOONSHOT_ID }}
+        run: python3 scripts/review/kimi_eye_review.py
+      - name: Archive Kimi technical response
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: kimi-eye-review
+          path: artifacts/kimi-eye-review/
+          retention-days: 7
+          if-no-files-found: warn
