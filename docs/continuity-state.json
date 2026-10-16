@@ -9,7 +9,7 @@
   "automatic_deployment_enabled": false,
   "source_of_truth": "GitHub main",
   "priority": "P0",
-  "priority_task": "Real Blank Engine experimental Three.js/WebGL screenshot of genuine Einar head/eyes and licensed skin/eye textures, then blink/runtime material fidelity and human photo standard. Do not claim Blender Cycles source images are Blank Engine renders; main and Alpha0.5 untouched.",
+  "priority_task": "Einar rendered by experimental Blank Engine real WebGL2 with original source skin/eye texture and actual geometry; technical gate PASS but visual FAIL (bald hair, missing source skin normal/roughness/SSS, seams, no blink). Next transfer full PBR material/hair, then actual eyelid animation and mobile human approval. Do not deploy.",
   "owner_decisions": [
     "hardest problems first",
     "one visually excellent isolated hero before scaling",
@@ -276,16 +276,37 @@
   },
   "experimental_hero_v5": {
     "branch": "experiment/hero-v5-blank-webgl",
-    "status": "source_to_static_glb_real_webgl_test_pending",
+    "status": "real_blank_engine_threejs_webgl_five_views_pass_but_visual_rejected",
     "source_zip_sha256": "3cbb5a1dd9ffd3ca39edab420a83ea7f7db337b435a78ef27a0c87ff3e6977f7",
     "source_license": "CC-BY, Einar Rig (CC-BY) Blender Foundation | studio.blender.org",
-    "actual_runtime_webgl_verified": false,
+    "actual_runtime_webgl_verified": true,
     "static_source_geometry": true,
     "original_skin_eye_albedo_used": true,
     "runtime_blink_implemented": false,
     "original_cycles_hair_shader_transferred": false,
     "android_performance_verified": false,
     "human_photorealism_approved": false,
-    "production_release": false
+    "production_release": false,
+    "glb_sha256": "658d56f0b9112963e2369154725de41a87aa7460135cf1e6db1291897825a1ac",
+    "runtime_glb_bytes": 9483924,
+    "runtime_mesh_count": 12,
+    "runtime_triangles": 56572,
+    "runtime_pbr_materials": 5,
+    "embedded_original_source_albedo_textures": 2,
+    "face_skin_basecolor_present": true,
+    "eye_color_texture_present": true,
+    "separate_cornea_present": true,
+    "webgl_views_rendered": [
+      "front",
+      "three_quarter",
+      "profile",
+      "eyes_macro",
+      "eyes_three_quarter"
+    ],
+    "last_verified_run": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38953227006",
+    "engine_test_results": "171 pass, 2 skipped, 0 fail",
+    "true_browser_renderer": "Three.js WebGL2 in experimental Blank Engine Character Lab",
+    "original_hair_and_film_skin_shading_missing": true,
+    "animated_rig_ported": false
   }
 }

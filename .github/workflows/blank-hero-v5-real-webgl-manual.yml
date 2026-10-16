@@ -1,9 +1,6 @@
 name: Blank Engine - Einar actual Three.js WebGL screenshot proof
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - experiment/hero-v5-blank-webgl # one-shot experiment test only; remove after run
 permissions:
   contents: read
 jobs:
