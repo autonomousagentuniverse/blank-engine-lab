@@ -1,9 +1,5 @@
-name: Blank Engine - one-time universal feature inspector verification
+name: Blank Engine - manual universal feature inspector verification
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/blank-inspection-once.yml'
   workflow_dispatch:
 permissions:
   contents: read
