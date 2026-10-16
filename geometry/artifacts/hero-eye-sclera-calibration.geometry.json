@@ -1,0 +1,83 @@
+{
+  "schema": "blank.geometry.v1",
+  "id": "hero-eye-sclera-calibration-01",
+  "builder": "character",
+  "asset": {
+    "filename": "blank-hero-v22-eyes.glb",
+    "sha256": "a968567c4c61f06de8d09601bbaeba721f79d3f06d91a433968cefc7f93efcb0",
+    "source": "corrected CC0 suited MakeHuman hero"
+  },
+  "target": {
+    "name": "Blank.Eye.L.sclera"
+  },
+  "coordinateFrame": "target-parent-local",
+  "units": "meters",
+  "baseline": {
+    "position": [
+      -0.0357,
+      0.03394144420772425,
+      0.1036150857449223
+    ],
+    "scale": [
+      1,
+      1,
+      1
+    ],
+    "bounds": {
+      "min": [
+        -0.013799999840557575,
+        -0.00419999985024333,
+        -0.009999999776482582
+      ],
+      "max": [
+        0.013799999840557575,
+        0.00419999985024333,
+        0.009999999776482582
+      ]
+    }
+  },
+  "limits": {
+    "maxOffset": [
+      0.008,
+      0.006,
+      0.007
+    ],
+    "minFactor": [
+      0.7,
+      0.7,
+      0.7
+    ],
+    "maxFactor": [
+      1.2,
+      1.2,
+      1.2
+    ],
+    "envelope": null
+  },
+  "mirror": {
+    "name": "Blank.Eye.R.sclera",
+    "axis": 0
+  },
+  "request": {
+    "offset": [
+      0,
+      -0.0003,
+      -0.0025
+    ],
+    "factor": [
+      1,
+      0.92,
+      0.84
+    ]
+  },
+  "notes": "MEASURED: original sclera vertex bounds and head-local node translation from the pinned GLB. PROPOSED: slight recess, height reduction and depth reduction. Eyelid aperture was not measured; proposal must be previewed front, profile and three-quarter before acceptance. Iris, pupil and catchlight are separate nodes and are not automatically moved by this sclera-only proposal.",
+  "review": {
+    "status": "not-reviewed",
+    "needed": [
+      "measure eyelid opening and add a true fit envelope",
+      "check exposed pink eyelid area",
+      "verify pupil and iris stay aligned with adjusted sclera",
+      "capture before and after in all three views"
+    ]
+  }
+}

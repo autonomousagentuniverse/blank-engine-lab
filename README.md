@@ -102,3 +102,7 @@ A high-quality realtime preview is not a certification of photorealism; visual a
 ### Character Builder v2.1 — isolated static hero review
 
 Character Lab adds reproducible PBR finishing of the corrected CC0 suited reference (skin/cloth/shoes roughness only), a frozen authored idle pose, full-body front/three-quarter/side/rear and face portrait framing, studio/neutral/daylight lighting, and user-exported review PNG captures. It never auto-certifies photorealism. See `docs/character-v21-static-review.md`. A standalone offline GLB finisher is `scripts/finish-hero.mjs`. No automatic Vercel deploy.
+
+### Geometry Artifact v1 — constrained detail editing (development)
+
+Character Lab now creates and exports universal Geometry Artifacts from selected 3D meshes. The artifact stores the original geometry bounds and local transform, optional measured fit envelope, limits, paired mirror target, and proposed reversible adjustment. The solver clamps transforms to validated constraints, while preview/undo never alter the source GLB. It can be reused by Object Builder and Scene Builder. See [Geometry Artifact documentation](docs/geometry-artifact.md) and the measured [hero eye calibration proposal](geometry/artifacts/hero-eye-sclera-calibration.geometry.json). Geometry fit and photorealism remain subject to human visual approval.

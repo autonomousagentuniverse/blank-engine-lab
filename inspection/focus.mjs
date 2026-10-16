@@ -112,5 +112,5 @@ export function createUniversalInspector(THREE,{camera,canvas,controls=null,getR
   }
   canvas.addEventListener('pointerdown',onPointerDown);
   canvas.addEventListener('pointerup',onPointerUp);
-  return {setArmed,pickAt,focusPoint,setDistance,follow,bookmark,recall,clear,getState,getCameraPose,bookmarks,dispose(){canvas.removeEventListener('pointerdown',onPointerDown);canvas.removeEventListener('pointerup',onPointerUp);clear({restore:false});}};
+  return {setArmed,pickAt,focusPoint,setDistance,follow,bookmark,recall,clear,getState,getCameraPose,bookmarks,getSelection:()=>focus?.object?{object:focus.object,point:[...focus.point]}:null,dispose(){canvas.removeEventListener('pointerdown',onPointerDown);canvas.removeEventListener('pointerup',onPointerUp);clear({restore:false});}};
 }

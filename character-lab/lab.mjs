@@ -8,6 +8,8 @@ import {repairSuitedMaterials} from './repair.mjs';
 import {finishHeroPBR} from './hero-finish.mjs';
 import {repairHeroEyes,inspectHeroEyes} from './eyes.mjs';
 import {createUniversalInspector} from '../inspection/focus.mjs';
+import {artifactFromThreeMesh,createGeometrySession} from '../geometry/three-adapter.mjs';
+import {validateGeometryArtifact,serializeGeometryArtifact} from '../geometry/artifact.mjs';
 import {REVIEW_VIEWS,LIGHT_PRESETS,auditStaticReview} from './hero-review.mjs';
 const $=id=>document.getElementById(id);
 const viewport=$('viewport'),renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
@@ -26,6 +28,7 @@ const floor=new THREE.Mesh(new THREE.PlaneGeometry(40,40),new THREE.MeshStandard
 const ring=new THREE.Mesh(new THREE.TorusGeometry(1.05,.018,8,128),new THREE.MeshBasicMaterial({color:0x80abbc,transparent:true,opacity:.6}));ring.rotateX(-Math.PI/2);ring.position.y=.018;scene.add(ring);
 const grid=new THREE.GridHelper(40,40,0x51647a,0x30465b);grid.position.y=.013;grid.material.transparent=true;grid.material.opacity=.26;scene.add(grid);
 let reviewView='front',reviewLight='portrait',capturedViews=new Set(),sourceRoot=null,sourceGltf=null,stageRoot=null,mixer=null,actions=[],activeAction=null,assetBytes=null,assetName='',assetOrigin='',assetLicense='',audit=null,paused=false,turntable=false,skeletonHelper=null,skeletonVisible=false,wireframe=false,currentMaterial=null;
+let geometryArtifact=null,geometrySession=null,geometrySolution=null;
 const originalMaterials=new Map();let sunMode=false,latestRun=performance.now(),frames=0,elapsed=0,loadTicket=0;
 const setStatus=(text,error=false)=>{$('status').textContent=text;$('status').classList.toggle('error',error);};
 
@@ -41,6 +44,7 @@ function updateDetailUI(state=detailInspector.getState()){
  $('detailDistance').disabled=!selected;$('detailDistance').value=selected?Math.min(5,selected.distance):1;
  $('detailDistanceValue').textContent=selected?selected.distance.toFixed(2)+' m':'—';
  for(const id of ['detailBookmark','detailCapture','detailReturn'])$(id).disabled=!selected;
+ $('geoMake').disabled=!detailInspector.getSelection()?.object?.isMesh;
 }
 function syncDetailBookmarks(){
  const select=$('detailSaved'),selected=select.value;
@@ -58,6 +62,9 @@ function updateMaterialSelection(){
  $('roughnessValue').textContent=Number($('roughness').value).toFixed(2);$('metalnessValue').textContent=Number($('metalness').value).toFixed(2);
 }
 function cleanModel(){
+ geometrySession?.revert();geometrySession=null;geometryArtifact=null;geometrySolution=null;
+ $('geoPreview').disabled=$('geoUndo').disabled=$('geoExport').disabled=true;
+ $('geoStatus').textContent='No Geometry Artifact. Source GLBs remain unchanged.';
  detailInspector.clear({restore:false});detailInspector.bookmarks.clear();syncDetailBookmarks();
  $('downloadRepairedBtn').disabled=true;
  if(skeletonHelper){scene.remove(skeletonHelper);skeletonHelper.geometry.dispose();skeletonHelper.material.dispose();skeletonHelper=null;}
@@ -196,6 +203,72 @@ for(const id of ['roughness','metalness'])$(id).oninput=()=>{if(!currentMaterial
 $('resetMaterials').onclick=()=>{for(const {material,roughness,metalness} of originalMaterials.values()){material.roughness=roughness;material.metalness=metalness;material.needsUpdate=true;}updateMaterialSelection();setStatus('Restored original material parameters.');};
 $('exportBtn').onclick=async()=>{try{const hash=await assetDigest(assetBytes);const pkg=createCharacterPackage({assetName,assetBytes:assetBytes.byteLength,assetHash:hash,license:assetLicense,audit,source:assetOrigin});
 const blob=new Blob([JSON.stringify(pkg,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='blank-hero-character-spec.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);setStatus('Exported CharacterSpec. Keep it alongside the matching GLB.');}catch(e){setStatus(e.message,true)}};
+// Geometry workbench: a constrained scene-local transform, exported as a sidecar.
+// It deliberately does NOT assert that eyelid openings or other organic surfaces fit.
+const geoFields=['geoX','geoY','geoZ','geoSX','geoSY','geoSZ'];
+function setGeoFields(request){
+ [...request.offset,...request.factor].forEach((v,i)=>$(geoFields[i]).value=String(Number(v.toFixed(6))));
+}
+function readGeoFields(){
+ const numbers=geoFields.map(id=>Number($(id).value));
+ if(numbers.some(n=>!Number.isFinite(n)))throw Error('Geometry values must be finite');
+ return {offset:numbers.slice(0,3),factor:numbers.slice(3)};
+}
+function setGeometryStatus(message,error=false){$('geoStatus').textContent=message;$('geoStatus').style.color=error?'#ffb6b6':'';}
+async function startGeometryArtifact(mesh,loaded=null){
+ geometrySession?.revert();geometrySession=null;geometrySolution=null;
+ if(!mesh?.isMesh||!sourceRoot)throw Error('Pick an editable mesh in the character viewport');
+ const hash=await assetDigest(assetBytes);
+ if(loaded){
+  validateGeometryArtifact(loaded);
+  if(loaded.builder!=='character'||loaded.asset?.sha256!==hash||loaded.target.name!==mesh.name)throw Error('Artifact does not match this character asset and selected mesh');
+  geometryArtifact=loaded;
+ }else{
+  const otherName=mesh.name.includes('.L.')?mesh.name.replace('.L.','.R.'):mesh.name.includes('.R.')?mesh.name.replace('.R.','.L.'):null;
+  const other=otherName&&sourceRoot.getObjectByName(otherName);
+  geometryArtifact=artifactFromThreeMesh(mesh,{builder:'character',asset:{sha256:hash,filename:assetName},
+   mirror:$('geoMirror').checked&&other?.isMesh?{name:otherName,axis:0}:null,
+   notes:'Source bounds are measured from mesh geometry. An eyeball/eyelid aperture envelope has NOT been measured.'});
+ }
+ geometrySession=createGeometrySession(sourceRoot,geometryArtifact);setGeoFields(geometryArtifact.request);
+ $('geoPreview').disabled=$('geoExport').disabled=false;$('geoUndo').disabled=true;
+ setGeometryStatus('Artifact '+geometryArtifact.id+' ready. '+(geometryArtifact.mirror?'Bilateral mirror enabled. ':'')+'Source GLB unchanged; aperture fit not certified.');
+}
+$('geoMake').onclick=async()=>{
+ try{const selection=detailInspector.getSelection();if(!selection)throw Error('Select a visible mesh using Pick any detail');await startGeometryArtifact(selection.object);}
+ catch(e){setGeometryStatus(e.message,true);}
+};
+$('geoPreview').onclick=()=>{
+ try{
+  if(!geometrySession)throw Error('Create or import an artifact first');
+  const request=readGeoFields();const solved=geometrySession.preview(request);
+  geometryArtifact.request=request;geometrySolution=solved;$('geoUndo').disabled=false;
+  setGeometryStatus(`Preview ${solved.constraintStatus} · ${solved.clampedAxes.length?'clamped '+solved.clampedAxes.join(', '):'within numeric limits'} · ${solved.measuredEnvelope?'measured envelope':'aperture NOT measured'} · visual approval required.`);
+ }catch(e){setGeometryStatus('Geometry solve rejected: '+e.message,true);}
+};
+$('geoUndo').onclick=()=>{geometrySession?.revert();geometrySolution=null;$('geoUndo').disabled=true;setGeometryStatus('Preview reverted. Original mesh positions and scales restored.');};
+$('geoExport').onclick=()=>{
+ try{
+  if(!geometryArtifact)throw Error('No geometry artifact');
+  const request=geometrySolution?geometryArtifact.request:readGeoFields();
+  const document={...geometryArtifact,request,solution:geometrySolution,review:{...geometryArtifact.review,status:'requires-visual-approval'}};
+  const blob=new Blob([serializeGeometryArtifact(document)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=geometryArtifact.id+'.geometry.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  setGeometryStatus('Exported Geometry Artifact sidecar. Keep the original GLB; preview edits are NOT baked into it.');
+ }catch(e){setGeometryStatus(e.message,true);}
+};
+$('geoImport').onchange=async event=>{
+ const file=event.target.files?.[0];
+ try{
+  if(!file)return;if(file.size>32000)throw Error('Artifact JSON exceeds 32 KB');
+  const doc=JSON.parse(await file.text());validateGeometryArtifact(doc);
+  const mesh=sourceRoot?.getObjectByName(doc.target.name);if(!mesh)throw Error('Target mesh not in current character');
+  await startGeometryArtifact(mesh,doc);
+  const solution=geometrySession.preview(doc.request);geometrySolution=solution;$('geoUndo').disabled=false;
+  setGeometryStatus('Imported and previewed '+doc.id+'. Visually review before accepting; source GLB untouched.');
+ }catch(e){setGeometryStatus('Artifact import rejected: '+e.message,true);}
+ finally{event.target.value='';}
+};
 const ro=new ResizeObserver(()=>{const w=Math.max(1,viewport.clientWidth),h=Math.max(1,viewport.clientHeight);camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false);});ro.observe(viewport);
 function frame(now){requestAnimationFrame(frame);const dt=Math.min(.05,Math.max(0,(now-latestRun)/1000));latestRun=now;if(mixer&&!paused)mixer.update(dt);if(turntable&&stageRoot)stageRoot.rotation.y+=dt*.32;controls.update();detailInspector.follow();renderer.render(scene,camera);frames++;elapsed+=dt;if(elapsed>=1){$('perfHud').textContent=`${Math.round(frames/elapsed)} FPS · ${renderer.info.render.calls} draw calls · ${renderer.info.render.triangles.toLocaleString()} triangles`;frames=0;elapsed=0;}}
 requestAnimationFrame(frame);

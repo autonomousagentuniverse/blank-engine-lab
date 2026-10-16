@@ -3,3 +3,10 @@
 /* Shared feature-selection controls: usable with touch screens and arbitrary meshes. */
 #detailName{line-height:1.5;overflow-wrap:anywhere}#detailPick{border-color:#6da7bb}#detailPick:focus-visible{outline:2px solid #c4f1ff}#detailSaved{min-height:43px}#detailDistance{min-height:24px}
 #reviewStatus{font-size:11px;line-height:1.5}#reviewView,#reviewLighting{min-height:42px}#captureBtn{background:#294860;border-color:#5592ac}#neutralPoseBtn{background:#254236;border-color:#598878}
+
+/* Universal Geometry Artifact controls, deliberately independent of character anatomy. */
+.geo-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:12px 0}
+.geo-fields label{margin:0!important;font-size:11px;color:#c9ddec;display:flex!important;flex-direction:column;gap:4px}
+.geo-fields input{width:100%;box-sizing:border-box;border-radius:7px;background:#101c2c;color:#eaf6ff;border:1px solid #50657b;padding:9px}
+.geo-mirror{display:flex!important;align-items:center;gap:7px!important;font-size:12px}
+#geoStatus{overflow-wrap:anywhere;line-height:1.5}

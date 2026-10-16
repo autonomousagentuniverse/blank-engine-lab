@@ -21,8 +21,23 @@
 <div class="buttons"><button id="detailBookmark" disabled>Save focus</button><button id="detailCapture" disabled>Capture detail PNG</button></div>
 <label for="detailSaved">Saved inspection views</label><select id="detailSaved"><option value="">Saved inspection views</option></select>
 <button id="detailReturn" disabled>Return to overview</button>
-<div class="divider"></div><div class="eyebrow">06 / DIAGNOSTICS</div><div class="buttons"><button id="lightBtn">Lighting: portrait</button><button id="skeletonBtn">Skeleton: off</button><button id="wireBtn">Wireframe: off</button></div>
+<div class="divider"></div><div class="eyebrow">06 / GEOMETRY ARTIFACT</div>
+<p class="muted small">Pick a mesh above, then create a <b>portable geometry correction</b>. Preview edits are reversible; export the artifact to reproduce them. An optional measured fit envelope can be added to its JSON.</p>
+<button id="geoMake" disabled>Create geometry artifact from selection</button>
+<div class="geo-fields">
+<label>Move X (m)<input id="geoX" type="number" value="0" step="0.001"></label>
+<label>Move Y (m)<input id="geoY" type="number" value="0" step="0.001"></label>
+<label>Move Z (m)<input id="geoZ" type="number" value="0" step="0.001"></label>
+<label>Width factor<input id="geoSX" type="number" value="1" min="0.65" max="1.35" step="0.01"></label>
+<label>Height factor<input id="geoSY" type="number" value="1" min="0.65" max="1.35" step="0.01"></label>
+<label>Depth factor<input id="geoSZ" type="number" value="1" min="0.65" max="1.35" step="0.01"></label>
+</div>
+<div class="buttons"><button id="geoPreview" disabled>Preview solved geometry</button><button id="geoUndo" disabled>Undo preview</button></div>
+<label class="geo-mirror"><input type="checkbox" id="geoMirror" checked> Mirror L/R counterpart when present</label>
+<div class="buttons"><button id="geoExport" disabled>Export artifact JSON</button><label class="file-button" for="geoImport">Import artifact JSON<input type="file" id="geoImport" accept=".json,application/json" hidden></label></div>
+<div class="source" role="status" id="geoStatus">No Geometry Artifact. Source GLBs remain unchanged.</div>
+<div class="divider"></div><div class="eyebrow">07 / DIAGNOSTICS</div><div class="buttons"><button id="lightBtn">Lighting: portrait</button><button id="skeletonBtn">Skeleton: off</button><button id="wireBtn">Wireframe: off</button></div>
 </aside>
 <section class="stage"><div class="stage-title"><div><span class="eyebrow">ISOLATED CHARACTER VIEWPORT</span><h2 id="modelTitle">Awaiting hero GLB</h2></div><span class="pill" id="animationPill">READY FOR ASSET</span></div><div class="viewport" id="viewport" aria-label="3D Character Lab viewer"><div class="overlay" id="emptyState"><strong>ONE CHARACTER. NO WORLD DISTRACTIONS.</strong><p>Load the licensed suited human or import your own rigged GLB.</p></div><div class="viewport-help">DRAG ORBIT · TAP PICK ANY DETAIL · PINCH / SCROLL ZOOM · CAPTURE CLOSE-UPS</div><div class="perf" id="perfHud">– FPS · – draw calls</div></div><div id="status" class="status" role="status">Ready. Import a self-contained rigged GLB. Your files stay in this browser.</div></section>
-<aside class="panel inspector"><div class="eyebrow">07 / CHARACTER AUDIT</div><h3>Asset diagnostics</h3><dl id="audit"><dt>Model</dt><dd>Not loaded</dd></dl><div class="divider"></div><h3>Quality gates</h3><div id="quality">A real asset is required before assessment.</div><div class="divider"></div><button id="exportBtn" class="primary" disabled>Export CharacterSpec JSON</button><p class="muted small">CharacterSpec references the GLB by filename and hash. It does not embed the binary or certify photorealism. The asset and exported JSON must travel together.</p></aside></main>
+<aside class="panel inspector"><div class="eyebrow">08 / CHARACTER AUDIT</div><h3>Asset diagnostics</h3><dl id="audit"><dt>Model</dt><dd>Not loaded</dd></dl><div class="divider"></div><h3>Quality gates</h3><div id="quality">A real asset is required before assessment.</div><div class="divider"></div><button id="exportBtn" class="primary" disabled>Export CharacterSpec JSON</button><p class="muted small">CharacterSpec references the GLB by filename and hash. It does not embed the binary or certify photorealism. The asset and exported JSON must travel together.</p></aside></main>
 <script type="module" src="./lab.mjs"></script></body></html>
