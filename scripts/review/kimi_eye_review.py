@@ -15,15 +15,13 @@ import urllib.request
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 OUT = ROOT / "artifacts" / "kimi-eye-review"
 API = "https://api.moonshot.ai/v1"
-PREFERRED = ("kimi-k3", "kimi-k2.6", "kimi-k2.5", "kimi-k2-thinking-turbo", "kimi-k2-thinking")
+PREFERRED = ("kimi-k2.6", "kimi-k2.5")
 SOURCE_FILES = [
- "geometry/eye-socket-remesh.mjs",
- "geometry/eyelid-reconstruction.mjs",
- "character-lab/eyes.mjs",
- "character-lab/hero-review.mjs",
- "experiments/eye-v5/sample_fix.py",
- "experiments/eye-v6/bridge_socket.py",
  "experiments/eye-v7/front_facing.py",
+ "experiments/eye-v6/bridge_socket.py",
+ "geometry/eye-socket-remesh.mjs",
+ "experiments/eye-v5/sample_fix.py",
+ "character-lab/eyes.mjs",
  "docs/eye-v7-facing.md",
  "docs/eye-v6-transition.md",
 ]
@@ -53,17 +51,15 @@ def main():
     if not key:raise RuntimeError("MOONSHOT_API_KEY secret missing; no request made")
     available=request("/models",key)["data"]
     models={x["id"]:x for x in available if isinstance(x,dict) and isinstance(x.get("id"),str)}
-    # The optional secret MOONSHOT_ID is used ONLY if it matches a returned model ID.
-    # It might be an account identifier, so never assume it is a model name.
-    override=os.environ.get("MOONSHOT_ID","").strip()
-    model=(override if override in models else next((m for m in PREFERRED if m in models),None))
+    # MOONSHOT_ID may be an account ID; prefer a documented Kimi instant-capable model.
+    model=next((m for m in PREFERRED if m in models),None)
     if not model:raise RuntimeError("No preferred Kimi model returned from Moonshot account /models")
     texts=[]
     for file in SOURCE_FILES:
         path=ROOT/file
         if not path.exists():raise RuntimeError("Required repo file missing: "+file)
         txt=path.read_text(encoding="utf-8")
-        if len(txt)>25000:txt=txt[:25000]+"\n[TRUNCATED]"
+        if len(txt)>2400:txt=txt[:2400]+"\n[EXCERPT TRUNCATED]"
         texts.append("=== "+file+" ===\n"+txt)
     history="""User goal: create ONE photorealistic isolated game-ready hero; do not mass produce.
 Actual source is a 53-joint CC0 MakeHuman suited GLB with pink original sockets; source material is Human.body, the eye assembly is 8 rigid head-attached procedural opaque meshes.
@@ -85,11 +81,11 @@ Provide:
 Be rigorous, direct, concrete. State what cannot be inferred from screenshots or code. Cite filenames and line/function names in the provided data; no invented citations.
 Context:
 """+history+"\n\nRepository source:\n"+"\n\n".join(texts)
-    maxchars=102000
+    maxchars=23500
     if len(prompt)>maxchars:prompt=prompt[:maxchars]+"\n[INPUT TRUNCATED]"
-    images=load_images()
+    images=[]  # Text-only for time-bounded retry.
     usercontent=[{"type":"text","text":prompt}]
-    vis=bool(models[model].get("supports_image_in")) and bool(images)
+    vis=False
     if vis:
         for label,p in images:
             uri="data:image/png;base64,"+base64.b64encode(p.read_bytes()).decode("ascii")
@@ -97,9 +93,9 @@ Context:
                              {"type":"image_url","image_url":{"url":uri}}]
     sysmsg="You are a skeptical senior graphics engineer specializing in glTF 2.0, facial skin meshes, texture atlases, depth/occlusion and realtime rendering. Answer exactly the user's technical question. No vague reassurance. Do not output secrets."
     payload=json.dumps({"model":model,"messages":[{"role":"system","content":sysmsg},
-        {"role":"user","content":usercontent if vis else prompt}],"max_tokens":10000},
+        {"role":"user","content":usercontent if vis else prompt}],"max_tokens":4200,"thinking":{"type":"disabled"}},
         separators=(",",":")).encode("utf-8")
-    reply=request("/chat/completions",key,"POST",payload,timeout=245)
+    reply=request("/chat/completions",key,"POST",payload,timeout=125)
     msg=reply.get("choices",[{}])[0].get("message",{})
     c=msg.get("content")
     if isinstance(c,str):answer=c
