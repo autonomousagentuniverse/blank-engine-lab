@@ -1,9 +1,5 @@
-name: Blank Engine - one-time head-rigged eye QA
+name: Blank Engine - manual head-rigged eye QA
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/blank-hero-eyes-once.yml'
   workflow_dispatch:
 permissions:
   contents: read
