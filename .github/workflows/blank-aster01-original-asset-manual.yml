@@ -29,7 +29,7 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y libegl1 libgl1-mesa-dri libglx-mesa0 xvfb
-          python3 -m pip install --disable-pip-version-check --no-cache-dir bpy==4.5.3 Pillow==11.3.0 numpy==2.2.6
+          python3 -m pip install --disable-pip-version-check --no-cache-dir bpy==4.5.3 Pillow==11.3.0 numpy==1.26.4
           npm install --ignore-scripts --no-audit --no-fund
           npm install --no-save --ignore-scripts --no-audit --no-fund three@0.186.1 playwright@1.56.1
       - name: Build genuinely NEW 3D character from parameters (no downloads or Einar)
