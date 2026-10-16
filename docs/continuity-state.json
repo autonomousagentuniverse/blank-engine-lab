@@ -9,7 +9,7 @@
   "automatic_deployment_enabled": false,
   "source_of_truth": "GitHub main",
   "priority": "P0",
-  "priority_task": "Geometry v4: visually verify original skinned face primitive socket reconstruction in Chrome and assess pink rim and depth defects",
+  "priority_task": "Correct remaining pink eyelid UV/material mismatch and connected face-lid surface quality on source-pinned v4 geometry; human visual gate blocked",
   "owner_decisions": [
     "hardest problems first",
     "one visually excellent isolated hero before scaling",
@@ -63,7 +63,13 @@
       "experimental_v4": "geometry/eye-socket-remesh.mjs",
       "local_real_fixture_tests": "9/9 pass",
       "chrome": "pending",
-      "visual_approval": "blocked"
+      "visual_approval": "blocked",
+      "v4_real_chrome_workflow": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38879560781",
+      "v4_regression": "171 passed, 2 skipped, 0 failed",
+      "v4_pinned_GLb_tests": "9/9 passed",
+      "v4_chrome": "pass",
+      "v4_visual_approval": "blocked",
+      "v4_report": "pink rims, artificial sclera-lid edge; modest improvement only"
     },
     "open_visual_defects": [
       "pink eyelid rims",
@@ -90,10 +96,10 @@
     }
   },
   "next_steps": [
-    "Run scoped real-GLB GitHub Chrome test, capture face/macro/profile/mobile comparisons",
-    "Review eye protrusion and pink seams with original skin material; accept/reject honestly",
-    "Update continuity in same commit as changes, remove temporary trigger and leave manual workflow",
-    "No Vercel deployment until major release approved"
+    "Inspect the original skin atlas UV islands for both measured eye seams and correct exposed pink texels/material continuity",
+    "Keep revisions on original skinned face, compare before/after eye macros and profiles in Chrome",
+    "Human review must explicitly approve/decline anatomy and asset quality",
+    "Record every proposed change and commit in docs/CONTINUITY.md; no automatic or minor Vercel deploys"
   ],
   "other_open_blockers": [
     "actual Android device frame-rate/thermal test",

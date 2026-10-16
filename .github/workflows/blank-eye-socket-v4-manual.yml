@@ -1,9 +1,5 @@
-name: Blank Engine - one-time skinned face eye-socket QA
+name: Blank Engine - manual skinned face eye-socket QA
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/blank-eye-socket-v4-once.yml'
   workflow_dispatch:
 permissions:
   contents: read
