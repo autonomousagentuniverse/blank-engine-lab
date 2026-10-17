@@ -1,0 +1,58 @@
+name: Experimental Einar tear modifier and anatomical eye-surface test
+on:
+  push:
+    branches:
+      - experiment/einar-tear-contact-20261017
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect-einar-real-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Get pinned publisher restore script and verify local Python
+        run: |
+          git fetch --no-tags --depth=1 origin b2ef409e6dfe9caafafe39a3c2c66d9554d7e1ca
+          mkdir -p experiments/hero-v4 .ci-einar artifacts/einar-tear-contact
+          git show FETCH_HEAD:experiments/hero-v4/restore_textures.py > experiments/hero-v4/restore_textures.py
+          python3 -m py_compile experiments/einar-pose/audit_tear_contact.py
+      - name: Get original licensed source, CRC and SHA verification
+        run: |
+          curl --fail --location --retry 3 --connect-timeout 40 --max-time 700 --silent --show-error \
+            'https://studio.blender.org/download-source/files/41/419e83fb75f30b989adf7920dec7a21c/419e83fb75f30b989adf7920dec7a21c.zip' \
+            -o .ci-einar/einar-official.zip
+          python3 experiments/hero-v4/restore_textures.py
+      - name: Evaluate real Blender eye tears lashes and signed-projection surface proxies
+        env:
+          OMP_NUM_THREADS: '4'
+        run: |
+          python3 -m pip install --no-cache-dir --disable-pip-version-check bpy==4.5.3
+          timeout -k 15s 850s python3 -u experiments/einar-pose/audit_tear_contact.py
+      - name: Enforce honest report status and positive known real expression/head movement
+        run: |
+          python3 - <<'PY'
+          import json,pathlib
+          p=pathlib.Path('artifacts/einar-tear-contact/tear-contact-diagnostics.json')
+          d=json.loads(p.read_text())
+          assert d['original_blend_sha256']=='1c6663da0a2e9d6822978467c244e9186edc76083bae2414e02f9e695e711f7b'
+          assert d['source_unchanged'] and not d['release_allowed'] and not d['new_human_generated']
+          assert all(abs(x-1)<.001 for x in d['controls']['blink_key_values_during'].values())
+          assert d['movement']['blink']['GEO-einar_head']['displacement_mm']['max']>3
+          assert d['movement']['head_turn']['GEO-einar_head']['displacement_mm']['max']>10
+          assert not d['signed_lid_globe_clearance_verified'] and not d['tear_rim_follow_verified']
+          assert 'object_modifier_chains' in d and 'contact_surface_proxy' in d
+          print('EINAR_TEAR_CONTACT_REAL_BLENDER_DIAGNOSTIC_RECORDED',p.stat().st_size)
+          PY
+      - name: Preserve only text diagnostic, never original publisher meshes or textures
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: einar-tear-contact-blender-evidence
+          path: artifacts/einar-tear-contact/
+          retention-days: 7
+          if-no-files-found: warn
