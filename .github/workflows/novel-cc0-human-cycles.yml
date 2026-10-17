@@ -1,0 +1,60 @@
+name: CC0-derived non-Einar human — Blender Cycles visual proof
+on:
+  push:
+    branches: [experiment/new-human-cc0-source-v01]
+    paths: ['.github/workflows/novel-cc0-human-cycles.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  create-character-and-render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 26
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Install actual Blender Cycles Python
+        run: python3 -m pip install --no-cache-dir --disable-pip-version-check bpy==4.5.3
+      - name: Fetch pinned, independently licensed CC0 human assets (no Einar)
+        run: |
+          mkdir -p assets/vitruvian-cc0 artifacts/novel-human-v01
+          sha=bdecdcd537b4031fdd0fb299b7e4f93f084fffa0
+          root="https://raw.githubusercontent.com/ibrews/VitruvianGodot/$sha/godot_project"
+          for item in vitruvian_head.glb vitruvian_hair.glb vit_face_bc.png vit_face_n.png vit_face_rough.png vit_iris.png vit_sclera.png vit_mouth.png vit_hair_diffuse.png vit_hair_opacity.png; do
+            echo "Downloading pinned CC0 asset: $item"
+            curl --fail --location --http1.1 --retry 4 --retry-all-errors --retry-delay 3 --connect-timeout 20 --max-time 260 --silent --show-error "$root/$item" -o "assets/vitruvian-cc0/$item"
+            test -s "assets/vitruvian-cc0/$item"
+          done
+          curl --fail --location --silent --show-error \
+            "https://raw.githubusercontent.com/ibrews/VitruvianGodot/$sha/NOTICE.md" -o assets/vitruvian-cc0/NOTICE.md
+          grep -q 'Character assets — CC0' assets/vitruvian-cc0/NOTICE.md
+          python3 -m py_compile experiments/new-human-v01/from_vitruvian_cc0.py
+      - name: Build a different CC0-derived head and genuinely render all four views
+        env:
+          OMP_NUM_THREADS: '4'
+        run: |
+          timeout -k 10s 940s python3 -u experiments/new-human-v01/from_vitruvian_cc0.py
+          python3 - <<'PY'
+          import json,pathlib
+          d=json.loads(pathlib.Path('artifacts/novel-human-v01/report.json').read_text())
+          p=pathlib.Path('artifacts/novel-human-v01')
+          assert d['status']=='FOUR_REAL_CYCLES_RENDERS_SUCCESS_AESTHETIC_REVIEW_REQUIRED',d.get('error')
+          assert d['identity_claim']=='NEW_CC0_DERIVED_VARIANT_NOT_INDEPENDENT_SCULPT'
+          assert d['einar_ancestry'] is False and d['source_images_packed'] is True
+          assert len(d['frames'])==4 and d['authored_variant']['changed_vertices']>300
+          assert len(d['source_files'])==10
+          assert (p/'mira-01-cc0-derived.blend').stat().st_size>1500000
+          for frame in d['frames']:
+            assert (p/frame['file']).stat().st_size>12000
+          print('CC0_DERIVED_BLENDER_RENDER_COMPLETE_VISUAL_APPROVAL_STILL_BLOCKED')
+          PY
+      - name: Archive actual Blender file, provenance report and Cycles PNGs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: mira-01-cc0-derived-blender-cycles
+          path: artifacts/novel-human-v01/
+          retention-days: 7
+          if-no-files-found: warn
