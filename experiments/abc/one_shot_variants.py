@@ -73,7 +73,8 @@ def scalp_frame(head):
     faces=[tuple(p.vertices) for p in head.data.polygons]
     bvh=BVHTree.FromPolygons(verts,faces,all_triangles=False,epsilon=.00003)
     points=[mx@v.co for v in head.data.vertices]
-    ys=sorted(p.y for p in points if p.z>statistics.median(p.z for p in points[::17]))
+    height_median=statistics.median(p.z for p in points[::17])
+    ys=sorted(p.y for p in points if p.z>height_median)
     front=ys[int(len(ys)*.1)];back=ys[int(len(ys)*.9)]
     return bvh,mx,front,back
 
