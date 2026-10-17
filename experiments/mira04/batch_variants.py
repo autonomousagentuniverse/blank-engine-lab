@@ -4,7 +4,8 @@ Opens the *same packed MIRA-03 .blend* for EACH condition, no Einar nor new
 source downloads. Eye anatomy/meshes and corrected head sculpt are unchanged.
 Human aesthetic acceptance remains blocked.
 """
-import bpy,json,hashlib,os,sys,traceback
+import bpy,json,hashlib,os,sys,traceback,faulthandler
+faulthandler.enable()
 from pathlib import Path
 ROOT=Path("artifacts/mira04-batch");ROOT.mkdir(parents=True,exist_ok=True)
 BASE=Path("baseline-mira03/mira03-continuous-midline.blend")
@@ -90,18 +91,35 @@ def eye_candidate():
   changes[name]={"roughness":.10,"transmission":.94}
  return changes
 def hair_brow_candidate():
+ # Preserve the original alpha, UV and hair-card material graph. The first
+ # batch crashed inside hair node surgery before render, so use a deliberately
+ # smaller stable correction: explicitly detach original base-color link,
+ # insert a single Value adjustment, reconnect its stored socket, then set
+ # roughness. No alpha map/range rewrite.
  changes={}
  for name in ("VitHairMat","VitBrowCardsMat"):
-  m=material(name);shader=bsdf(m)
-  is_hair=name=="VitHairMat"
-  changes[name]={
-    "darker_color":mix_multiply_after_image(m,"vit_hair_diffuse.png",
-        (.22,.16,.13,1.) if is_hair else (.18,.13,.10,1.),
-        .62 if is_hair else .32),
-    "opacity_clamp":remap_opacity(m,.28 if is_hair else .13,.86 if is_hair else .88),
-  }
-  shader.inputs["Roughness"].default_value=.79 if is_hair else .89
-  changes[name]["roughness"]=shader.inputs["Roughness"].default_value
+  print("MIRA04_HAIR_CHECKPOINT",name,"before",flush=True)
+  m=material(name);bs=bsdf(m);tree=m.node_tree
+  links=bs.inputs["Base Color"].links
+  if len(links)!=1:raise AssertionError("Exactly one source texture link needed "+name)
+  source_socket=links[0].from_socket
+  source_name=links[0].from_node.name
+  # Remove old link first; do not retain invalid RNA link proxies when
+  # editing the Blender node graph.
+  tree.links.remove(links[0])
+  print("MIRA04_HAIR_CHECKPOINT",name,"unlinked",flush=True)
+  hue=tree.nodes.new("ShaderNodeHueSaturation")
+  hue.inputs["Hue"].default_value=.5
+  hue.inputs["Saturation"].default_value=.95 if name=="VitHairMat" else 1.00
+  hue.inputs["Value"].default_value=.62 if name=="VitHairMat" else .74
+  tree.links.new(source_socket,hue.inputs["Color"])
+  tree.links.new(hue.outputs["Color"],bs.inputs["Base Color"])
+  bs.inputs["Roughness"].default_value=.88 if name=="VitHairMat" else .94
+  changes[name]={"source_texture_node":source_name,
+    "value":hue.inputs["Value"].default_value,
+    "roughness":bs.inputs["Roughness"].default_value,
+    "opacity_texture_kept_unchanged":True}
+  print("MIRA04_HAIR_CHECKPOINT",name,"complete",flush=True)
  return changes
 def skin_candidate():
  m=material("VitSkin");bs=bsdf(m)

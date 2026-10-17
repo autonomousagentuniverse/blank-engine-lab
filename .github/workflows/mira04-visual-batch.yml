@@ -1,4 +1,4 @@
-name: MIRA-04 completed parallel Cycles batch — recover partial evidence
+name: MIRA-04 parallel Cycles batch — stable hair material recovery
 on:
   push:
     branches: [experiment/mira04-parallel-visual-batch]
@@ -33,6 +33,7 @@ jobs:
           print('MIRA03_PINNED_IMMUTABLE_PACKED_SOURCE',h)
           PY
           python3 -m py_compile experiments/mira04/batch_variants.py
+          echo 'Source hash pinned; three variants will use separate bpy processes'
       - name: Restore four verified baseline and eye renders from first batch
         env:
           GH_TOKEN: ${{ github.token }}
