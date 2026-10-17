@@ -20,3 +20,11 @@ Baseline front; reconstructed eyes front+macro; new scalp curves and brow curves
 **Acceptance:** hard gate on genuine visible improvement to eyes, hair, brows, and skin. Failure in hair mechanics triggers a focused procedural source diagnosis rather than arbitrary density adjustments. The high-resolution 1400-pixel 64–128-sample beauty pass and WebGL/Blank Engine parity are separate subsequent gates **only if** this preview batch substantially improves the character. No mainline code merge and no deployment.
 
 At authored commit: TEST PENDING. Do not imply Blender job has run until Actions result verified.
+
+## First real execution and geometry gate
+
+[GitHub Actions 39050817482](https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/39050817482) completed **three real Cycles 700-pixel images**: frozen baseline front, reconstructed-eyes front and reconstructed-eyes macro, and correctly rejected hair at the scalp-front geometry validation before rendering it. Failure: `Scalp geometry distribution invalid {'curves': 12500, 'regions': {'front': 0, 'crown': 1774, 'rear': 10726}, 'mask': 676}`. This repeated A07's known classification flaw: reference `eye_center.y` is anatomically forward of scalp and is NOT a valid measure of the scalp's own frontmost extent. The project stopped on the guard rather than falsely claiming successful hair.
+
+**Recovery:** two-pass source-dependent scalp mask now measures the head's scalp candidate polygons at 5th and 95th percentile world Y (fixed camera face direction is -Y). Hairline uses normalized measured scalp longitude and frontal masks; report `scalp_candidate_regions`, frontal root counts, true surface polygons and percentile Y bounds. Fail if fewer than 100 usable scalp polygons or 10 front polygons, or fewer than 7% of 12,500 root curves in front region. Reuse all three actual PNG files from artifact `mira05-structural-reconstruction-batch` ID 12107488327; verify recorded source and SHA per frame and rerun only hair+brows, skin, identity, integrated in separate bpy processes. No new baseline/eye renders, no Einar, no deploy.
+
+**Result of resumed execution:** pending until real artifact and image review.

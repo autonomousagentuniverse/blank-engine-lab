@@ -121,6 +121,9 @@ def main():
  if not SOURCE.is_file() or SOURCE.stat().st_size<20000000:
   raise RuntimeError("Frozen packed baseline artifact missing")
  r=load_report()
+ if "failed_variant" in r:
+  r.setdefault("recovery_history",[]).append({"failed_variant":r.pop("failed_variant"),
+   "reason":r.pop("error","unclassified"),"resolution":"source-measured scalp longitude front mask"})
  if mode in r["variants"]:raise RuntimeError("Existing verified variant cannot be rerendered")
  try:run(mode,r)
  except BaseException as e:

@@ -59,21 +59,36 @@ def build_hair(head,eye_center,seed=51729,count=12500):
  up=Vector((0,0,1));top=max((mx@v.co).z for v in head.data.vertices)
  ez=eye_center.z; ey=eye_center.y
  halfwidth=max(abs((mx@v.co).x) for v in head.data.vertices if (mx@v.co).z>ez)
- candidates=[];weights=[];total=0
+ # First measure the *scalp* longitude. Eye center is forward of the
+ # scalp shell and cannot be used as a classification baseline (A07/MIRA05).
+ pre=[]
  for poly in head.data.polygons:
   mid=mx@poly.center
   nor=(mx.to_3x3()@poly.normal).normalized()
-  if mid.z<ez+.035 or nor.z<-.43 or abs(mid.x)>max(.115,halfwidth*.92):continue
-  frontness=max(0.,min(1.,(ey-mid.y+.013)/.075))
+  if mid.z<ez+.025 or nor.z<-.50 or abs(mid.x)>max(.115,halfwidth*.92):continue
+  pre.append((poly,mid,nor))
+ if len(pre)<120:raise RuntimeError("Scalp shell undersampled "+str(len(pre)))
+ ys=sorted(mid.y for _,mid,_ in pre)
+ # Use robust interior percentiles to avoid an isolated protruding polygon
+ # consuming the entire range. Normalized orientation is -Y front.
+ front_y=ys[int(.05*(len(ys)-1))]
+ back_y=ys[int(.95*(len(ys)-1))]
+ span=back_y-front_y
+ if span<.025:raise RuntimeError("Scalp front-to-back span implausible "+str(span))
+ candidates=[];weights=[];total=0;regions={"front":0,"crown":0,"rear":0}
+ for poly,mid,nor in pre:
+  frontness=max(0.,min(1.,(back_y-mid.y)/span))
   temples=max(0.,min(1.,(abs(mid.x)-.045)/.065))
-  # Asymmetric natural front hairline with receding temples.
-  hairline=ez+.043+.023*frontness+.012*temples*frontness
+  hairline=ez+.041+.020*frontness+.010*temples*frontness
   hairline+=.0035*math.sin(mid.x*87+1.4)*frontness
   if mid.z<hairline:continue
+  cls="front" if frontness>.60 else ("rear" if frontness<.30 else "crown")
+  regions[cls]+=1
   weight=poly.area*max(.1,.5+nor.z)
   total+=weight
   candidates.append(poly);weights.append(total)
- if len(candidates)<50:raise RuntimeError("Scalp root mask undersampled: "+str(len(candidates)))
+ if len(candidates)<100 or regions["front"]<10:
+  raise RuntimeError("Scalp frontal polygon region missing "+str({"eligible":len(candidates),"regions":regions,"y_range":[front_y,back_y]}))
  paths=[];region={"front":0,"crown":0,"rear":0}
  for i in range(count):
   poly=candidates[bisect.bisect_left(weights,rng.random()*total)]
@@ -92,9 +107,9 @@ def build_hair(head,eye_center,seed=51729,count=12500):
   if nearest is None:continue
   root=mx@nearest
   n=(mx.to_3x3()@n).normalized()
-  front=(ey-root.y)>.026
-  if front:region["front"]+=1
-  elif root.y>ey+.018:region["rear"]+=1
+  scalp_f=max(0.,min(1.,(back_y-root.y)/span))
+  if scalp_f>.60:region["front"]+=1
+  elif scalp_f<.30:region["rear"]+=1
   else:region["crown"]+=1
   # Hair center part: sweep away from part, then drape below ears.
   side=1 if root.x+(rng.random()-.5)*.016>0 else -1
@@ -119,7 +134,10 @@ def build_hair(head,eye_center,seed=51729,count=12500):
  if source is None:raise RuntimeError("Expected source flat hair-card object")
  source.hide_render=True
  return {"hair_curves":len(paths),"root_source":"BVH of actual source scalp mesh",
-  "region_counts":region,"eligible_source_polygons":len(candidates),
+  "region_counts":region,"scalp_candidate_regions":regions,
+  "measured_scalp_y_range_m":[front_y,back_y],
+  "root_frontness":"scalp-relative normalized longitude, not eye-relative",
+  "eligible_source_polygons":len(candidates),
   "original_hair_cards_hidden":source.hide_render,"fibers_object":obj.name,
   "fiber_radius_m":.00011,"length_m":[.145,.205],"head_top_m":top}
 
