@@ -1,5 +1,8 @@
 name: Experimental Einar vs MIRA anatomical-dependency decomposition
 on:
+  push:
+    branches:
+      - experiment/human-reference-decomposition-20261017
   workflow_dispatch:
 permissions:
   contents: read
@@ -43,6 +46,18 @@ jobs:
           python3 -m pip install --no-cache-dir --disable-pip-version-check bpy==4.5.3
           python3 -m py_compile experiments/reference-decomposition/decompose.py
           timeout -k 10s 540s python3 -u experiments/reference-decomposition/decompose.py
+      - name: Measure neutral-to-blink evaluated face and eyelid-contact motion
+        run: |
+          python3 -m py_compile experiments/reference-decomposition/blink_probe.py
+          timeout -k 10s 180s python3 -u experiments/reference-decomposition/blink_probe.py
+          python3 - <<'PY'
+          import json,pathlib
+          r=json.loads(pathlib.Path('artifacts/human-reference-decomposition/mira-blink-probe.json').read_text())
+          assert r['orbital_vertices_sampled']>0
+          assert 'MIRA05_SourceFittedLidContact' in r['static_generated_curves']
+          assert r['no_visual_approval'] and not r['release_allowed']
+          print('BLINK_CONTACT_RELATIONSHIP_TEST_COMPLETED')
+          PY
       - name: Validate report without claiming photorealism
         run: |
           python3 - <<'PY'
