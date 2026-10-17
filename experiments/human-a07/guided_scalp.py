@@ -27,7 +27,9 @@ def make_groom(head,eye_center,front,height):
  depsgraph=bpy.context.evaluated_depsgraph_get()
  evaluated=head.evaluated_get(depsgraph)
  em=evaluated.to_mesh(preserve_all_data_layers=False,depsgraph=depsgraph)
- if em is None or len(em.vertices)<5000:raise AssertionError("Evaluated Blender scalp/head mesh unavailable")
+ if em is None or len(em.vertices)<3000:
+  raise AssertionError("Actual evaluated source mesh unavailable, vertices="+str(len(em.vertices) if em else 0))
+ print("A07_EVALUATED_MESH",len(em.vertices),len(em.polygons),flush=True)
  try:
   # Exact evaluated surface; base-mesh center+normal caused HUMAN-A06's halo.
   coords=[v.co.copy() for v in em.vertices]

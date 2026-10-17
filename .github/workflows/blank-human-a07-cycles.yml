@@ -1,5 +1,8 @@
 name: HUMAN-A07 — evaluated scalp surface and authored guide directions
 on:
+  push:
+    branches: [experiment/human-a07-evaluated-scalp-guides]
+    paths: ['.github/workflows/blank-human-a07-cycles.yml']
   workflow_dispatch:
 permissions:
   contents: read
