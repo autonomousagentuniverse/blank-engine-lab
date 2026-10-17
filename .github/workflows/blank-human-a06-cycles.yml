@@ -1,0 +1,57 @@
+name: HUMAN-A06 — source-derived visible scalp and less weathered skin
+on:
+  push:
+    branches: [experiment/human-a06-visible-scalp-clean-skin]
+    paths: ['.github/workflows/blank-human-a06-cycles.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  front-poc:
+    runs-on: ubuntu-latest
+    timeout-minutes: 27
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Install pinned real Blender Cycles
+        run: python3 -m pip install --disable-pip-version-check --no-cache-dir bpy==4.5.3 Pillow==11.3.0
+      - name: Restore exact publisher Einar v1 textures and source
+        run: |
+          mkdir -p .ci-einar artifacts/human-a06
+          curl --fail --location --retry 3 --connect-timeout 30 --max-time 540 --silent --show-error \
+            'https://studio.blender.org/download-source/files/41/419e83fb75f30b989adf7920dec7a21c/419e83fb75f30b989adf7920dec7a21c.zip' \
+            -o .ci-einar/einar-official.zip
+          python3 experiments/hero-v4/restore_textures.py
+          python3 -m py_compile experiments/human-a06/generate_and_render.py
+      - name: Source-derived scalp and complexion control, one real Cycles render
+        env:
+          OMP_NUM_THREADS: '4'
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          timeout -k 15s 850s python3 -u experiments/human-a06/generate_and_render.py
+          python3 - <<'PY'
+          import json,pathlib
+          p=pathlib.Path('artifacts/human-a06')
+          d=json.loads((p/'report.json').read_text())
+          assert d['status'].startswith('A06_VISIBLE_GROOM_CLEAN_SKIN_FRONT_CYCLES_NEEDS')
+          assert len(d['renders'])==1
+          assert d['a03_short_groom']['strands_created']>=11000
+          assert d['a06_hair_render_flag']
+          assert d['a06_skin_audit']['bruise_color_overlay_strength']==0.
+          assert d['a03_brow_expression']['source_brow_drivers_left_active']
+          assert len(d['a05_unlinked_source_clothing'])>=40
+          assert (p/'front.png').stat().st_size>7000
+          assert (p/'human-a06-skin-short-groom.blend').stat().st_size>100000
+          assert d['human_visual_approval']=='BLOCKED'
+          print('HUMAN_A06_TECHNICAL_PASS_NOT_VISUAL_APPROVAL')
+          PY
+      - name: Preserve genuine derivative Blender .blend, report, and PNG
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: human-a06-visible-hair-and-clean-skin
+          path: artifacts/human-a06/
+          retention-days: 7
+          if-no-files-found: warn
