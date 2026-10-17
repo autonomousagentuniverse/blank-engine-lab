@@ -1,8 +1,5 @@
 name: Experimental Einar tear modifier and anatomical eye-surface test
 on:
-  push:
-    branches:
-      - experiment/einar-tear-contact-20261017
   workflow_dispatch:
 permissions:
   contents: read
