@@ -1,8 +1,5 @@
 name: MIRA05 hair shader forensic renders
 on:
-  push:
-    branches: [diagnostic/mira05-hair-material-causality]
-    paths: ['.github/workflows/mira05-hair-material-forensics.yml']
   workflow_dispatch:
 permissions:
   contents: read
