@@ -21,7 +21,7 @@ function setup(origin='cc0_derived'){
    skin_reference:'Source material UV tangent and physically calibrated pore roughness',
    identity_goal:'Distinct facial proportions verified front and profile'},
   mechanical_limits:{max_hair_light_ratio:1.8,min_scalp_coverage:.94,
-    min_direction_entropy:.45,max_hair_head_penetration:.02,
+    min_direction_entropy:.45,min_face_luminance_retention:.75,max_hair_head_penetration:.02,
     max_eye_intersection_mm:.55,max_lip_midline_jump_mm:.1},
   views:['front','three_quarter','profile','eyes_macro'].map((id,i)=>({id,camera:'CAM'+i})),
   render:{engine:'CYCLES',resolution:[700,700],samples:32}};
@@ -32,8 +32,9 @@ function setup(origin='cc0_derived'){
    source_sha256:plan.source.sha256,method:'Measured via controlled real Blender source probe',
    files:files.map(name=>({name,sha256:hashFile(path.join(dir,name))})),measurements};
  };
- const calibration=(lit=80,emission=60.4)=>evidence('calibration',{
+ const calibration=(lit=80,emission=60.4,face=170,referenceFace=206)=>evidence('calibration',{
     lit_hair_luminance:lit,emission_hair_luminance:emission,
+    face_luminance:face,face_reference_luminance:referenceFace,
     hair_mask_pixels:101522,mask_method:'shader-only emission binding color mask',
     light_sweep:{source_sha256:plan.source.sha256,levels:3,same_camera:true}});
  const geometry=()=>evidence('construction',{
@@ -167,5 +168,19 @@ test('independent human with every stage approved still cannot auto-deploy',()=>
   assert.equal(d.state.status,'BLOCKED_PENDING_EXPLICIT_RELEASE_AUTHORIZATION');
   assert.equal(d.state.release_allowed,false);
   reject(()=>advance(d.state,d.plan,d.evidence('webgl_parity',{}),d.dir),'ALL_STAGES_FINISHED');
+ }finally{d.cleanup();}
+});
+
+test('lighting that darkens hair but ruins the face fails coupled calibration',()=>{
+ const d=setup();
+ try{
+  // Real MIRA05 10% light result: 79.365 hair vs 61.696 emission
+  // but 108.38 face vs 206.00 original; face retention ~0.526.
+  const e=d.calibration(79.3652,61.6961,108.3805,206.0023);
+  reject(()=>advance(d.state,d.plan,e,d.dir),'SKIN_UNDEREXPOSED_BY_HAIR_FIX:0.526');
+  assert.equal(d.state.phase_index,0);
+  const acceptable=d.calibration(80,60.4,170,206);
+  const next=advance(d.state,d.plan,acceptable,d.dir);
+  assert.equal(next.phases[0].findings.face_luminance_retention>0.75,true);
  }finally{d.cleanup();}
 });

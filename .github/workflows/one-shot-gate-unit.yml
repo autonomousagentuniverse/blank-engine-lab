@@ -1,4 +1,4 @@
-name: One-shot quality gate unit regression — focused rerun
+name: One-shot quality gate unit regression — hair and face coupled exposure
 on:
   push:
     branches: [refactor/one-shot-quality-first]

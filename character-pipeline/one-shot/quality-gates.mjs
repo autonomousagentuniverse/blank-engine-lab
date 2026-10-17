@@ -33,6 +33,7 @@ export function validatePlan(p){
  assert(between(limits.max_hair_light_ratio,1.0,4.0),'LIGHT_RATIO_LIMIT');
  assert(between(limits.min_scalp_coverage,0,1),'SCALP_COVERAGE_LIMIT');
  assert(between(limits.min_direction_entropy,0,1),'HAIR_DIRECTION_LIMIT');
+ assert(between(limits.min_face_luminance_retention,0,1),'FACE_LUMINANCE_RETENTION_LIMIT');
  assert(between(limits.max_hair_head_penetration,0,1),'HAIR_COLLISION_LIMIT');
  assert(between(limits.max_eye_intersection_mm,0,5),'EYE_INTERSECTION_LIMIT');
  assert(between(limits.max_lip_midline_jump_mm,0,.5),'MIDLINE_LIMIT');
@@ -81,13 +82,19 @@ function stageValidation(stage,e,p,history){
   assert(between(m.lit_hair_luminance,0,255)&&between(m.emission_hair_luminance,1,255),
     'HAIR_CALIBRATION_NOT_MEASURED');
   assert(string(m.mask_method)&&between(m.hair_mask_pixels,100,25000000),'HAIR_MASK_UNVERIFIED');
+  assert(between(m.face_reference_luminance,1,255)&&between(m.face_luminance,0,255),
+    'FACE_CALIBRATION_NOT_MEASURED');
   assert(object(m.light_sweep)&&m.light_sweep.source_sha256===p.source.sha256,
     'LIGHT_SWEEP_PROVENANCE');
   assert(m.light_sweep.levels>=2&&m.light_sweep.same_camera===true,'LIGHT_SWEEP_INCOMPLETE');
   const ratio=m.lit_hair_luminance/m.emission_hair_luminance;
   assert(ratio<=p.mechanical_limits.max_hair_light_ratio,
     'HAIR_LIGHT_RATIO_EXCEEDS_LIMIT:'+ratio.toFixed(3));
-  return {hair_light_ratio:ratio,light_levels:m.light_sweep.levels};
+  const faceRetention=m.face_luminance/m.face_reference_luminance;
+  assert(faceRetention>=p.mechanical_limits.min_face_luminance_retention,
+    'SKIN_UNDEREXPOSED_BY_HAIR_FIX:'+faceRetention.toFixed(3));
+  return {hair_light_ratio:ratio,face_luminance_retention:faceRetention,
+    light_levels:m.light_sweep.levels};
  }
  if(stage==='construction'){
   assert(m.source_sha256===p.source.sha256,'CONSTRUCTION_USES_OTHER_SOURCE');
