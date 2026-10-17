@@ -150,7 +150,9 @@ test('CC0-derived human cannot auto-promote as independent at WebGL stage',()=>{
 test('independent human with every stage approved still cannot auto-deploy',()=>{
  const d=setup('independent_original');
  try{
-  for(const e of [d.calibration(),d.geometry(),d.preview()])d.state=advance(d.state,d.plan,e,d.dir);
+  for(const prepare of [()=>d.calibration(),()=>d.geometry(),()=>d.preview()]){
+   const evidence=prepare();d.state=advance(d.state,d.plan,evidence,d.dir);
+  }
   d.state=advance(d.state,d.plan,d.evidence('human_review',{
     reviewer:'Human Artist',human_attestation:true,reviewed_at:'2026-10-17',
     preview_fingerprint:d.state.phases.at(-1).fingerprint,

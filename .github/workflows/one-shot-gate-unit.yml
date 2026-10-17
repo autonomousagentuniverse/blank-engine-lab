@@ -1,0 +1,26 @@
+name: One-shot quality gate unit regression — focused rerun
+on:
+  push:
+    branches: [refactor/one-shot-quality-first]
+    paths: ['.github/workflows/one-shot-gate-unit.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  node-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '22'}
+      - name: Negative cases include measured MIRA05 failure and visual gate
+        run: |
+          node --test character-pipeline/one-shot/quality-gates.test.mjs
+          if node character-pipeline/one-shot/cli.mjs validate character-pipeline/one-shot/example.plan.json; then
+            echo 'ERROR: placeholder plan unexpectedly passed'
+            exit 1
+          else
+            echo 'PASS: rights-unverified placeholder blocked'
+          fi
+          python3 -m py_compile character-pipeline/one-shot/lighting_probe.py character-pipeline/one-shot/measure_lighting.py
