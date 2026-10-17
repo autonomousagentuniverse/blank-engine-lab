@@ -1,0 +1,56 @@
+name: HUMAN-A07 — evaluated scalp surface and authored guide directions
+on:
+  push:
+    branches: [experiment/human-a07-evaluated-scalp-guides]
+    paths: ['.github/workflows/blank-human-a07-cycles.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  guided-groom:
+    runs-on: ubuntu-latest
+    timeout-minutes: 19
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Install real Blender Cycles
+        run: python3 -m pip install --disable-pip-version-check --no-cache-dir bpy==4.5.3
+      - name: Reuse saved A05 face — no new publisher archive download
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p baseline-a05 artifacts/human-a07
+          gh run download 39026642127 --repo autonomousagentuniverse/blank-engine-lab \
+            --name human-a05-rig-neutral-clothing-isolation --dir baseline-a05
+          test -s baseline-a05/human-a05-rig-neutral-no-strap.blend
+          test -s baseline-a05/report.json
+          python3 -m py_compile experiments/human-a07/guided_scalp.py
+      - name: Real Blender evaluated-surface groom and two clay Cycles renders
+        env:
+          OMP_NUM_THREADS: '4'
+        run: |
+          timeout -k 15s 800s python3 -u experiments/human-a07/guided_scalp.py
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          p=Path('artifacts/human-a07')
+          d=json.loads((p/'report.json').read_text())
+          assert d['status']=='TWO_REAL_CYCLES_CLAY_RENDERS_SAVED_VISUAL_REVIEW_PENDING'
+          assert d['groom']['strand_count']>=5000
+          assert len(d['renders'])==2
+          assert (p/'hair_macro.png').stat().st_size>5000
+          assert (p/'human-a07-guided-scalp.blend').stat().st_size>50000
+          assert d['photorealism_accepted'] is False
+          print('GUIDED_HAIR_GEOMETRY_TECHNICAL_PASS_NOT_PHOTOREAL')
+          PY
+      - name: Archive derived Blender file, real renders and diagnostic
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: human-a07-surface-guided-groom
+          path: artifacts/human-a07/
+          retention-days: 7
+          if-no-files-found: warn
