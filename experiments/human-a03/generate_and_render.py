@@ -346,7 +346,7 @@ def main():
  # Save the authored Blender project BEFORE Cycles. All data copied from license-pinned source.
  # The .blend retains external texture paths; original publisher archive remains needed to resolve
  # all maps in a detached local checkout. Never call this self-contained when not packed.
- dst=ROOT/"human-a03-neutral-mouth.blend"
+ dst=ROOT/"human-a03-neutral-groom.blend"
  bpy.ops.wm.save_as_mainfile(filepath=str(dst.resolve()),compress=True,check_existing=False)
  if not dst.exists() or dst.stat().st_size<100000:raise AssertionError("derived blend not written")
  report["derived_blend"]={"file":str(dst),"bytes":dst.stat().st_size,
