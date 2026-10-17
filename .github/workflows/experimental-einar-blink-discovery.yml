@@ -1,0 +1,50 @@
+name: Experimental Einar blink driver anatomy diagnostic
+on:
+  push:
+    branches:
+      - experiment/einar-evaluated-pose-20261017
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect-eyelid-driver:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Authenticate official original Einar source and import restoration helper
+        run: |
+          mkdir -p .ci-einar experiments/hero-v4 artifacts/einar-driver-inspection
+          git fetch --no-tags --depth=1 origin b2ef409e6dfe9caafafe39a3c2c66d9554d7e1ca
+          git show FETCH_HEAD:experiments/hero-v4/restore_textures.py > experiments/hero-v4/restore_textures.py
+          python3 -m py_compile experiments/einar-pose/inspect_blink_drivers.py
+          curl --fail --location --retry 3 --connect-timeout 40 --max-time 700 --silent --show-error \
+            'https://studio.blender.org/download-source/files/41/419e83fb75f30b989adf7920dec7a21c/419e83fb75f30b989adf7920dec7a21c.zip' \
+            -o .ci-einar/einar-official.zip
+          python3 experiments/hero-v4/restore_textures.py
+      - name: Evaluate published Blender source key-driver graph and isolated blink
+        run: |
+          python3 -m pip install --no-cache-dir --disable-pip-version-check bpy==4.5.3
+          timeout -k 15s 500s python3 -u experiments/einar-pose/inspect_blink_drivers.py
+      - name: Validate and preserve driver mappings without asserting realism
+        run: |
+          python3 - <<'PY'
+          import json,pathlib
+          p=pathlib.Path('artifacts/einar-driver-inspection/blink-driver-diagnostic.json')
+          d=json.loads(p.read_text())
+          assert d['source_blend_sha256']=='1c6663da0a2e9d6822978467c244e9186edc76083bae2414e02f9e695e711f7b'
+          assert d['source_unchanged'] and not d['release_allowed']
+          assert not d['forced_blendshape_test']['is_author_published_rig_animation']
+          print('BLINK_DRIVER_DIAGNOSTIC_RECORDED',d['blink_driver_count'])
+          PY
+      - name: Archive evidence only; never publisher Blend/textures
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: einar-blink-driver-diagnostic
+          path: artifacts/einar-driver-inspection/
+          retention-days: 7
+          if-no-files-found: warn
