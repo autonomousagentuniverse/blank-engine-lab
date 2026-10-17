@@ -287,3 +287,5 @@ Geometry artifacts are **data**, not merely screenshots or untracked instruction
 - 2026-10-17 [COMMITTED] First HUMAN-A06 GitHub Actions run 39028152760 started from experiment d4ab895; source-based Blender output pending. Restored workflow to workflow_dispatch-only immediately so no unintended repeated rebuilds. No production deploy.
 
 - 2026-10-17 [FAILED FIRST TEST] HUMAN-A06 initial run 39028152760 failed solely downloading official Einar 579MB publisher source at `curl: (92) HTTP/2 stream 3 was not closed cleanly: INTERNAL_ERROR`. Source Blender project not opened, no geometry or render result, no visual claim. Updated workflow to HTTP/1.1 with bounded partial resume retries (up to five) without bypassing restore_textures.py publisher hash check. One scoped temporary workflow push event triggers retest and will be removed after initiation. No main or production changes.
+
+- 2026-10-17 [COMMITTED] Retest Actions run 39028316671 started after HTTP/1.1 resumable download fix 754fc0c. Immediately disabled its temporary branch push trigger; manual-only restored, retest status PENDING. No render/quality verdict yet.
