@@ -115,7 +115,7 @@
     "note": "Original source-pinned MakeHuman suited hero; not the newer generated HUMAN-01 on experiment branch"
   },
   "next_steps": [
-    "Refresh experiment/human01-mpfb-generated code, pinned MPFB2 assets and human01 findings before touching source; branch work not merged into main",
+    "Verify HUMAN-01 experimental branch manual-only workflow and any run after temporary QA trigger, compare original and 16.294mm recessed-eye candidate in real Chrome; do not assume workflow passed without run ID.",
     "Generate isolated human head in unattended Blender; measure eyes/lids/corneas, lip/teeth bounds, hair anchors and rig transform behavior",
     "Render matched front/profile/three-quarter/macro in Blender Cycles and Blank Engine WebGL; trace geometry versus material transfer defects",
     "Fix anatomy before cosmetic skin maps; preserve provenance, source and fail-closed rig/mesh/export tests; add realistic skin normal/roughness/SSS and blink only after fit passes",
@@ -182,7 +182,9 @@
     "regression": "171 pass / 2 skipped / 0 fail",
     "technical": "pass_on_branch",
     "face_visual": "rejected_protruding_eyes_exposed_teeth_hair_intersection",
-    "production_main_code_merged": false
+    "production_main_code_merged": false,
+    "candidate_commit": "871d60df4e3279b2dab2c9976799e8551902aa0b",
+    "branch_head_verified": "852b303aad8c02768d7bc559e3749cd0cfc45194"
   },
   "experimental_blender_lineage": [
     {
@@ -209,5 +211,24 @@
       "workflow_url": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38975653912",
       "result": "new procedural mechanical character, 107 meshes, not organic photorealistic human"
     }
-  ]
+  ],
+  "human01_facial_geometry_candidate": {
+    "schema": "blank.human01.eye-seating.review.v1",
+    "source_sha256": "501d8aa88d84cd17bd072dec38ae6f231a59b56000d3f20e439054310fb050d7",
+    "branch": "experiment/human01-mpfb-generated",
+    "commit": "871d60df4e3279b2dab2c9976799e8551902aa0b",
+    "pipeline_manual_only_commit": "852b303aad8c02768d7bc559e3749cd0cfc45194",
+    "original_face_eye_front_m": 0.144794,
+    "measured_lower_socket_front_m": 0.1265,
+    "eye_recess_candidate_m": 0.016294,
+    "candidate_expected_front_m": 0.1285,
+    "center_teeth_to_lip_depth_m": -0.005335,
+    "engineering": "source-preserving candidate generated and local real GLB test PASS",
+    "new_browser_CI": "RUN_NOT_CONFIRMED",
+    "Blender_Cycles_vs_WebGL": "NOT_RUN",
+    "visual_approval": "BLOCKED",
+    "teeth_fix": false,
+    "hair_fix": false,
+    "deployed": false
+  }
 }
