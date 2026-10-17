@@ -9,7 +9,7 @@
   "automatic_deployment_enabled": false,
   "source_of_truth": "GitHub main for shared handoff, with latest implementation on linked experimental branches (NOT merged)",
   "priority": "P0",
-  "priority_task": "Identify exact evaluated instance behind HUMAN-A03 dangling shoulder strap and source-driven brow expression; test driver-aware neutral and hair geometry visibility with one controlled Cycles frame. Preserve A02 lip contact, skin/eye stack.",
+  "priority_task": "HUMAN-A05 strap root cause resolved and verified in Cycles; now restore visually convincing independent scalp groom and neutral facial identity/material from actual source geometry and shader inspection, no arbitrary old Einar-only corrections; preserve A02 mouth, eye stack, full 301-node skin and isolate geometry; no production deploy",
   "owner_decisions": [
     "hardest problems first",
     "one visually excellent isolated hero before scaling",
@@ -337,5 +337,29 @@
     "short_hair_visually_effective": false,
     "visual_accepted": false,
     "no_deploy": true
+  },
+  "human_a04_a05_result": {
+    "source_identity": "EINAR_CC_BY_DERIVATIVE_NOT_NEW_TOPOLOGY",
+    "diagnostic_run": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/39026288917",
+    "corrective_run": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/39026642127",
+    "artifact_id": 12097934128,
+    "report": "https://github.com/autonomousagentuniverse/blank-engine-lab/blob/experiment/human-a05-source-rig-clothing-isolation/docs/human-a05-findings.md",
+    "branch": "experiment/human-a05-source-rig-clothing-isolation",
+    "experiment_head": "d3e4b8900bc11998340f1446e3a35a92710f631d",
+    "strand_problem": "A03 short scalp hair not visible at portrait resolution",
+    "clothing_objects_unlinked": 43,
+    "identified_strap_object": "GEO-satchel_strap",
+    "strap_visually_removed": true,
+    "brow_rig_drivers_preserved": true,
+    "brow_key_evaluated_inner": 0.58,
+    "brow_key_evaluated_outer": 0.3,
+    "angry_expression_fully_corrected": false,
+    "a02_mouth_preserved": true,
+    "eyes_film_skin_preserved": true,
+    "full_photorealism_accepted": false,
+    "new_independent_human_created": false,
+    "webgl_parity_tested": false,
+    "source_original_modified": false,
+    "deployed": false
   }
 }
