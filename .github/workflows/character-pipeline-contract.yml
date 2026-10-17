@@ -1,8 +1,5 @@
 name: Character pipeline — fail-closed contract tests (no assets or deploy)
 on:
-  push:
-    branches: [refactor/character-pipeline-quality-reset]
-    paths: ['character-pipeline/**', '.github/workflows/character-pipeline-contract.yml']
   workflow_dispatch:
 permissions:
   contents: read

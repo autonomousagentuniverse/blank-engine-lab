@@ -408,7 +408,7 @@
   "character_pipeline_reset": {
     "date": "2026-10-17",
     "branch": "refactor/character-pipeline-quality-reset",
-    "status": "CODE_COMPOSED_CI_PENDING",
+    "status": "SOURCE_AND_HUMAN_REVIEW_CONTRACT_CI_SUCCESS",
     "frozen_reference": "HUMAN-A05",
     "reference_kind": "licensed_Einar_derivative_not_new_human",
     "reference_blend_sha256": "6c5d1236c0a9bae7746014f515b7d480cd644aa21799ae0435fabf521e2368ac",
@@ -421,6 +421,11 @@
     "independent_new_human_generated": false,
     "source_cache_persistent": false,
     "source_downloads_in_pipeline": false,
-    "no_production_deployment": true
+    "no_production_deployment": true,
+    "verified_ci_run": 39038887327,
+    "verified_ci_url": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/39038887327",
+    "manual_only_workflow": true,
+    "visual_new_identity_generated": false,
+    "last_verified_commit": "2e73d7e5f91892e8fe1e287151fa634630a72549"
   }
 }
