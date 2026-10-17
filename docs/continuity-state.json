@@ -9,7 +9,7 @@
   "automatic_deployment_enabled": false,
   "source_of_truth": "GitHub main for shared handoff, with latest implementation on linked experimental branches (NOT merged)",
   "priority": "P0",
-  "priority_task": "MIRA05 structural reconstruction batch completed technically but FAILS photographic realism: 10 real Cycles PNGs, 12500 source-projected hair curves still light-beige curtain, 2600 weak eyebrows, eye and skin stylized, 10.245mm identity change lacks novelty. Do not promote combined; source-aware root-cause/foundation replacement is next. No production deploy.",
+  "priority_task": "MIRA05 one-shot failure root cause VERIFIED by four Blender material-control renders: actual fiber material assignment and BSDF Color parametrization were correct, but physically lit dark materials render pale (brightness 177 hair, 148 dark standard Principled vs 60 dark emission). Geometric groom still produces parallel curtain, exposed scalp patches, weak generic eyebrows/eyelid arcs; one-shot has no image quality gate. Do not repeat shader color guesses or deploy.",
   "owner_decisions": [
     "hardest problems first",
     "one visually excellent isolated hero before scaling",
@@ -516,5 +516,27 @@
     "production_deployed": false,
     "workflow_manual_only": true,
     "next": "validate true scalp/material hair lighting mapping or replace source/groom; no more uncontrolled small edits"
+  },
+  "mira05_hair_root_cause": {
+    "date": "2026-10-17",
+    "branch": "diagnostic/mira05-hair-material-causality",
+    "commit": "bbb05bf9adb1e4e30b2f5963a50ddae5a301f6c1",
+    "test_run": 39058571227,
+    "artifact_id": 12109773705,
+    "source_blend_sha256": "07806e89a1ad2389bb7c216144b57878748d0f54536fe2a47f026f229e2db076",
+    "real_material_probe_renders": 4,
+    "hair_pixel_mask_size": 101522,
+    "original_hair_display_luminance": 177,
+    "dark_principled_display_luminance": 147.9,
+    "dark_emission_display_luminance": 60.4,
+    "material_assignment_correct": true,
+    "color_parametrization_correct": true,
+    "lit_shader_response_overbright": true,
+    "geometric_hair_curtain_unresolved": true,
+    "scalp_shows_through_curves": true,
+    "studio_vs_brdf_ablation_still_required": true,
+    "photoreal_approved": false,
+    "no_new_human_generated": true,
+    "production_unchanged": true
   }
 }
