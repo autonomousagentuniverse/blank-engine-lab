@@ -9,7 +9,7 @@
   "automatic_deployment_enabled": false,
   "source_of_truth": "GitHub main for shared handoff, with latest implementation on linked experimental branches (NOT merged)",
   "priority": "P0",
-  "priority_task": "MIRA05 one-shot failure root cause VERIFIED by four Blender material-control renders: actual fiber material assignment and BSDF Color parametrization were correct, but physically lit dark materials render pale (brightness 177 hair, 148 dark standard Principled vs 60 dark emission). Geometric groom still produces parallel curtain, exposed scalp patches, weak generic eyebrows/eyelid arcs; one-shot has no image quality gate. Do not repeat shader color guesses or deploy.",
+  "priority_task": "ONE-SHOT QUALITY-FIRST REDESIGN TESTED (branch only). The old generator passes render and geometry counts while failing realism. New sequential source/right controls, three-setting measured hair+face lighting check, scalp coverage and heading variability, actual four matched Cycles views, human visual approval and WebGL parity gates are implemented; 9/9 Node tests passed. MIRA05 studio at 10% darkens hair but face luminance falls to 52.6%; no setting in tested sweep passes hair and face targets together. Do not start another cosmetic MIRA revision or deploy.",
   "owner_decisions": [
     "hardest problems first",
     "one visually excellent isolated hero before scaling",
@@ -538,5 +538,45 @@
     "photoreal_approved": false,
     "no_new_human_generated": true,
     "production_unchanged": true
+  },
+  "one_shot_quality_first": {
+    "date": "2026-10-17",
+    "branch": "refactor/one-shot-quality-first",
+    "commit": "bec2c74da01c3a94a40c61cf4feaf15ce8cfff1c",
+    "node_gate_run": 39060711732,
+    "node_gate_tests_pass": 9,
+    "node_gate_tests_fail": 0,
+    "first_mixed_run": 39060067800,
+    "first_mixed_run_status": "failed_fixture_hash",
+    "real_cycles_light_job_status": "success",
+    "light_probe_artifact_id": 12111216491,
+    "input_source": "MIRA05_CC0_derived_frozen_blend",
+    "hair_luma_by_light_strength": {
+      "100_pct": 175.6107,
+      "35_pct": 133.0883,
+      "10_pct": 79.3652
+    },
+    "face_luma_by_light_strength": {
+      "100_pct": 206.0023,
+      "35_pct": 168.1748,
+      "10_pct": 108.3805
+    },
+    "dark_emission_hair_luma": 61.6961,
+    "verdict": "NO_STUDIO_SETTING_PASSES_PROVISIONAL_COUPLED_HAIR_AND_FACE_LIMITS",
+    "hard_stops": [
+      "source_verified",
+      "light_skin_joint_calibration",
+      "groom_scalp_coverage_diversity_collision",
+      "skin_eye_provenance",
+      "four_matched_cycles",
+      "human_visual_review",
+      "webgl_parity",
+      "explicit_release_authorization"
+    ],
+    "no_new_human_generated": true,
+    "integrated_with_live_generator": false,
+    "photoreal_approved": false,
+    "production_deployed": false,
+    "workflow_manual_only": true
   }
 }
