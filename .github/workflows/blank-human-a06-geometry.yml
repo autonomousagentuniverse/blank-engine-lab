@@ -1,8 +1,5 @@
 name: HUMAN-A06 — corrected natural hairline and clay illumination
 on:
-  push:
-    branches: [experiment/human-a06-scalp-geometry-proof]
-    paths: ['.github/workflows/blank-human-a06-geometry.yml']
   workflow_dispatch:
 permissions:
   contents: read
