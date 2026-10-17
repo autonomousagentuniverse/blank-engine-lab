@@ -1,8 +1,5 @@
 name: HUMAN-A05 — actual rig-driven brow, eliminate sourced strap in Cycles
 on:
-  push:
-    branches: [experiment/human-a05-source-rig-clothing-isolation]
-    paths: ['.github/workflows/blank-human-a05-cycles.yml']
   workflow_dispatch:
 permissions:
   contents: read
