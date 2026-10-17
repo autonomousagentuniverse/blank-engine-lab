@@ -1,8 +1,5 @@
 name: CC0-derived non-Einar human — Blender Cycles visual proof
 on:
-  push:
-    branches: [experiment/new-human-cc0-source-v01]
-    paths: ['.github/workflows/novel-cc0-human-cycles.yml']
   workflow_dispatch:
 permissions:
   contents: read
