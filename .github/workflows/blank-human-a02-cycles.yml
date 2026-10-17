@@ -1,8 +1,5 @@
 name: HUMAN-A02 mouth/neutral pose diagnostic and Cycles render
 on:
-  push:
-    branches: [experiment/human-a02-mouth-neutralization]
-    paths: ['.github/workflows/blank-human-a02-cycles.yml']
   workflow_dispatch:
 permissions:
   contents: read
