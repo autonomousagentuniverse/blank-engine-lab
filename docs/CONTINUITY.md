@@ -1,15 +1,41 @@
 # Blank Engine — Project Continuity, Architecture and Next Execution Plan
 
-**Snapshot:** 2026-10-16 UTC (2026-10-15 US evening)
+**Snapshot:** 2026-10-16 UTC; later experimental-branch Blender work reconciled onto main
 **Repository:** https://github.com/autonomousagentuniverse/blank-engine-lab
 **Historical v2 baseline commit:** 92c4588a99c4b22661a05197b8585da8334b806f
-**Latest engineering HEAD verified for this reconciliation:** f6acba64ab7ea5c12d85129bcebe7c44154bb660 (2026-10-16)
-**Latest successful real-asset QA:** https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38879560781 (v4, Chrome/Three.js; 171 passed, 2 skipped, 0 failed; 9/9 pinned-GLB tests)
-**Visual gate:** BLOCKED; no human photorealism approval
+**Verified main HEAD before latest reconciliation:** `dec83c290eddd524456c38f54c7884937f9c6df1`; Blender progress is recorded on separate experiment branches and is NOT merged into main
+**Latest branch-only human QA:** https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38980288978 (HUMAN-01, headless MPFB2/Blender + Blank Engine browser, technical PASS / facial realism REJECT); historical mainline v4 QA: run 38879560781
+**Visual gate:** REJECTED for HUMAN-01 face; no photorealistic human approved
 **Release:** Alpha 0.6 development on GitHub; Vercel remains on manually deployed Alpha 0.5
 **Purpose:** Authoritative handoff for a new engineer or AI agent. Read this before making changes.
 
-> **State of the project (current):** Geometry v3 overlay and v4 source-pinned skinned socket remesh have been implemented and technically exercised, but the isolated hero has **not** passed human photorealism review. Current P0 is to diagnose and correct residual pink eyelid texture/UV islands and eye-to-face surface/shading continuity on the v4 candidate, with exact before/after macro review. Do not repeat the completed v3 work as though it were the next job.
+> **State of the project (current):** Development has progressed from historical MakeHuman GLB eye repairs (v2–v4) to experimental **automated headless Blender asset generation**. Einar established source-shaded Cycles rendering/export; ASTER-01 demonstrated a newly generated mechanical character; HUMAN-01 generated a new rigged human GLB and five authentic Blank Engine WebGL views, but the actual face was **visually rejected** (protruding eyes, dislocated mouth/teeth, hair intersections). **Current P0 is original human facial anatomy/skin/hair quality and Blender-to-Blank-Engine visual parity.** These newest implementations live on *experimental branches*, NOT production `main`; visual approval and major release remain BLOCKED.
+
+## 0. Superseding handoff: headless Blender asset generation (2026-10-16)
+
+**Why this override exists:** Earlier mainline continuity remained at Geometry Artifact v4 while several later sessions created, tested and documented Blender experiments on separate branches. The *branch* continuity files were updated, but the authoritative `main` handoff did not reflect the new direction. This reconciliation documents verified branch evidence without pretending the code was merged or that a photorealistic human exists.
+
+**User objective:** An unattended generator that creates a *new photorealistic human asset* with credible anatomical head, eyelids, correctly recessed eyes/corneas, lips/teeth, brows/lashes, fitted hair, detailed skin maps/subsurface response, facial rigging and studio lighting in Blender; export with provenance and preserve the best possible quality in Blank Engine. A reused Einar render or newly generated robot is not completion.
+
+| Stage | Implementation branch | Verified evidence / limitation |
+|---|---|---|
+| Einar source-shaded Cycles | [`experiment/hero-v4-einar-shaded`](https://github.com/autonomousagentuniverse/blank-engine-lab/tree/experiment/hero-v4-einar-shaded) | [Run 38947591860](https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38947591860): five real Blender Cycles source-shaded views at 600px/12 spp with authentic eye/skin albedo; 58/63 referenced image assets loaded. **Existing Blender Studio Einar source, not a new human; visual approval blocked.** |
+| Automated Einar asset factory | [`experiment/automated-blender-factory-v1`](https://github.com/autonomousagentuniverse/blank-engine-lab/tree/experiment/automated-blender-factory-v1) | [Run 38959953800](https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38959953800): unattended source retrieval, Blender processing, GLB export, regression, five real Three.js/Chrome screenshots; 13/13 pipeline safety tests and 171 engine tests passed, 2 skipped. Static source-copy appearance failed realism. A second Einar factory proof, [run 38956247113](https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38956247113), demonstrated 7/7 automated stages plus real roughness texture, but also visibly defective exported head surfaces. |
+| New procedural ASTER-01 | [`experiment/aster01-generated-character`](https://github.com/autonomousagentuniverse/blank-engine-lab/tree/experiment/aster01-generated-character) | [Run 38975653912](https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38975653912): **new**, non-reused Blender mechanical android; 107 meshes, 7 materials, 47,504 runtime triangles, four static WebGL views plus head-motion view. Valid original geometry, **not an organic human**. |
+| New generated HUMAN-01 | [`experiment/human01-mpfb-generated`](https://github.com/autonomousagentuniverse/blank-engine-lab/tree/experiment/human01-mpfb-generated) | [Run 38980288978](https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38980288978): MPFB2/headless Blender produces a new parameterized **human-01.glb**, 25,696,536 bytes, 53-bone skeleton, 7 skinned meshes, 7 PBR materials, 8 texture images, 43,810 runtime triangles and five real Chrome/WebGL views. Game regression 171 pass / 2 skipped / 0 fail. **Human facial appearance explicitly REJECTED**. |
+
+**Confirmed HUMAN-01 defects:** eyes protrude beyond fitted lids with too much white exposed; mouth/teeth intersect or appear outside lips; polygon hair cap/part intersects or obscures forehead; hair reads as a wig; synthetic skin/material appearance and no proven blink/expression. These are anatomy/assembly failures, not browser/GLB transport failures. Do not cite technical or screenshot tests as photorealistic success.
+
+**Current execution P0 — prove the face before the body:** 
+1. Work from the branch HUMAN-01 generator and immutable pinned MPFB/MakeHuman basemesh, not the Einar asset or the old v4 repair as the sole target. Measure object transforms, parents, fit/scale conventions, rig rest pose, eye/lid meshes, corneal offset, lip/mouth/teeth limits and hair scalp anchors in native Blender coordinates.
+2. Export and retain an **isolated head-only** candidate; compare identical front, left/right profile, 3/4 and macro frames **in Blender (Cycles with physically plausible skin/eye materials)** and **Blank Engine (Three.js/WebGL)**. Record camera, lighting, materials and source SHA for reproducibility. Determine whether defects originate in the Blender asset, the exporter or runtime rendering.
+3. Fix source anatomical fit (integrated lids over sclera/cornea, occluded teeth behind closed lips, hairstyle rooted to scalp without clipping); confirm closed neutral pose and head movement. Only then improve layered skin albedo/normal/roughness/SSS, lashes/brows, tearline/cornea, facial blendshapes/blink and glTF-compatible material transfer. Do not substitute cosmetics for defective geometry.
+4. Re-run deterministic generation, rig/animation/skin/UV checks, real GLB and paired close-ups in browser, and **human visual acceptance**. Reject iteration if close-range face is still uncanny; preserve failed evidence and audit logs. Once one original head passes, extend to body/clothing, animation and universal Character/Object/Scene assets.
+5. Keep latest generator in experimental branch until verified; **do not deploy Vercel**, auto-promote GLBs, or change Alpha 0.5. All production workflows remain manual `workflow_dispatch` initiation, though the asset generation steps themselves must be unattended.
+
+**Re-entry references:** [HUMAN-01 findings](https://github.com/autonomousagentuniverse/blank-engine-lab/blob/experiment/human01-mpfb-generated/docs/human01-findings.md); [Blender automation design](https://github.com/autonomousagentuniverse/blank-engine-lab/blob/experiment/automated-blender-factory-v1/docs/automated-blender-asset-factory.md); [ASTER-01 findings](https://github.com/autonomousagentuniverse/blank-engine-lab/blob/experiment/aster01-generated-character/docs/aster-01-findings.md). Recheck experiment branch heads and workflow evidence on resume; saved URLs are traceability, not claims that an old Actions artifact ZIP is still downloadable.
+
+---
 
 ## 1. Concept and product vision
 
@@ -31,7 +57,7 @@ Key ideas established with the owner:
 | Game generation | Six NVIDIA-hosted roles: director, world, gameplay, character, mission and QA; strict GameSpec validation | Live test passed; manual server-side workflow |
 | Persistence | PostgreSQL migrations, project/revision history, agent runs/tasks/events; pooler for GitHub runner IPv4 connectivity | Live GameSpec creation and DB commit tested |
 | Physical runtime | Rapier capsule, gravity, jumps, collisions, dynamic crates, fixed-step logic, IK and imported GLB motion | Alpha 0.6-dev; real-library/Chrome tests passed for defined cases |
-| Character Builder | Isolated Character Lab, real CC0 MakeHuman suited hero, rig/material/animation audit, static-review camera presets, repair tools | Active focused development; hero visual approval BLOCKED |
+| Character Builder | Isolated Character Lab, historical CC0 MakeHuman reference and GLB eye repair tools; separate Blender/MPFB2 experimental new-human generator | Mainline old hero not visually approved; HUMAN-01 branch proves fresh human generation but face is REJECTED |
 | Feature inspection | Shared inspection/focus.mjs; click/tap any surface, focus, orbit, bookmark, capture | Used in Character Lab and World editor; future builders reuse |
 | Geometry Artifact | General v1 and measured eye-fit v2; experimental head-parented eyelid overlays v3; skinned facial socket remesh candidate v4 | v4 structural/Chrome PASS, human visual approval BLOCKED. The v1 generic artifact is **not** a general-purpose retopology engine |
 | Materials | Procedural PBR; authored PNG/JPEG/WebP/KTX2 import; CC0 Poly Haven offline library; texture limits | Five material sets individually tested; combined budget and phone QA pending |
@@ -123,7 +149,11 @@ Geometry artifacts are **data**, not merely screenshots or untracked instruction
 
 **Long-term generalized pipeline:** inspect selected feature → measure real geometry/topology → define constraints and target → compute candidate(s) → non-destructive preview → compare repeatable close-ups and silhouette → physics/rig/UV validation → approve/reject → export asset and machine-readable artifact. Any automated authoring agent should log measurement source, assumptions, failures and changes.
 
-## 5. Next job (P0): fix v4 eye-to-skin UV/material continuity and facial transitions
+## 5. Historical mainline v4 repair backlog (superseded as overall P0)
+
+> **Resume override:** This section records the original v4 source-specific unfinished repair. The active project P0 is now **automated Blender HUMAN-01 facial anatomy, texture and Blender→Blank Engine transfer quality**, as specified in section 0. Do not mistake an older mainline TODO for the latest project objective.
+
+### Historical v4 repair scope
 
 **Verified starting point:** v4 has already passed source-pinned real-GLB, full regression and Chrome technical QA (run 38879560781), but the human visual gate is BLOCKED. The v3 overlay and v4 skinned socket reconstruction are **completed experiments**; do not start over with another unmeasured eyeball-size adjustment or treat structural test success as realism.
 
@@ -167,6 +197,9 @@ Geometry artifacts are **data**, not merely screenshots or untracked instruction
 
 ## 8. Resume checklist for the next session
 
+**CURRENT FIRST STEP (2026-10-16):** Refresh `experiment/human01-mpfb-generated` and its `docs/human01-findings.md` plus the Blender factory and Einar/ASTER experiment evidence before taking an engineering action. Isolate HUMAN-01 head and diagnose eyes, lip/teeth and hair intersections with Blender Cycles ↔ Blank Engine matched close-ups. All below older v4 steps are retained as **historical mainline backlog**, not active top priority.
+
+
 - [ ] Read `AGENTS.md`, `docs/CONTINUITY.md`, `docs/continuity-state.json` and check the **current GitHub main HEAD**; the pre-reconciliation engineering HEAD was `f6acba64ab7ea5c12d85129bcebe7c44154bb660`.
 - [ ] Start with `docs/eye-socket-remesh-v4.md`, `geometry/eye-socket-remesh.mjs`, `scripts/build-eye-sockets.mjs` and `test/eye-socket-remesh.test.mjs`; use v2/v3 only as source/history.
 - [ ] Confirm run https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38879560781: v4 171 PASS, 2 SKIPPED, 0 FAIL; pinned GLB 9/9 PASS; Chrome success, **human review BLOCKED**.
@@ -191,7 +224,7 @@ Geometry artifacts are **data**, not merely screenshots or untracked instruction
 - CC0 material catalogue QA: https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38801721687
 - AI GameSpec + DB run: https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38743314124
 
-**Current verified handoff (2026-10-16):** Geometry v4 technically verified; **human photorealism review remains BLOCKED**. Historical v2/v3 results are retained for provenance, not described as the latest work. Update this document with each proposal and commit; refresh docs/continuity-state.json at substantial milestones.
+**Current verified handoff (2026-10-16, after branch reconciliation):** Mainline geometry v4 is historical; experimental headless Blender factories, original ASTER-01 and new MPFB2 HUMAN-01 are verified through the linked workflows. HUMAN-01 has **technical PASS but explicit visual REJECTION**; the active P0 is anatomically correct human head generation and Blender↔Blank Engine parity. The experiment branches have not been merged into main. Continue mandatory per-commit documentation and no-deployment policy.
 
 ## 10. Mandatory continuity updates for proposals and commits
 
@@ -214,6 +247,10 @@ Geometry artifacts are **data**, not merely screenshots or untracked instruction
 - **Enforcement boundary:** These are programmatic **local** guards and agent operating rules, not an always-on GitHub branch rule. GitHub's web editor and connector API can bypass local hooks; mandatory remote prevention would require a required GitHub status check / branch ruleset. That is not enabled here because the prior instruction keeps permanent GitHub Actions workflows manual-only. Do not claim it is impossible to push a noncompliant commit remotely.
 
 ### Change ledger
+
+- 2026-10-16 [PROPOSED] Reconcile the authoritative mainline continuity after user identified missed Blender asset-generation progress. Scope: documentation/agent handoff/structured state only; trace Einar Cycles, automated source-copy factory, original ASTER-01, and original MPFB2 HUMAN-01 branches and Actions results. Maintain branch-vs-main distinction, historical v4 material backlog and no-deploy policy. Tests: source evidence and documentation consistency; no runtime changes planned.
+- 2026-10-16 [COMMITTED] Documented and cross-referenced verified Blender/Cycles/Einar automation, ASTER-01 procedural new geometry and HUMAN-01 generated human experiment (run 38980288978). Corrected mainline current P0 to anatomically fitted eyes/eyelids, mouth/teeth, hair and skin with Blender Cycles ↔ Blank Engine close-ups; HUMAN-01 is TECHNICAL PASS / VISUAL REJECTED, *not photorealistic*. Also reconciled AGENTS.md and docs/continuity-state.json in the same commit. Verification: fetched main/branch documentation and commit evidence; docs/state syntax and invariants checked. Build, new render and runtime regressions NOT RUN in this documentation-only reconciliation. No experiment code merged, source assets changed or Vercel deployed.
+
 
 - 2026-10-15 [PROPOSED] Require explicit continuity updates for all proposed work and every project commit. Add a dated engineering ledger, agent requirements, staged-Git guard, PR checklist and tests without enabling automatic deployment or workflows. Remote API bypass remains a known risk.
 - 2026-10-15 [COMMITTED] Implemented continuity-update policy, local pre-commit validator, PR template, npm helper commands and validator tests. Eight focused unit tests and a real Git-staging rejection/acceptance test passed locally; full game-engine suite NOT RUN for this policy-only change. GitHub-hosted remote enforcement remains unconfigured and must not be implied.

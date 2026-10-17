@@ -7,9 +7,9 @@
   "in_development_major": "Alpha 0.6",
   "deployment_policy": "explicit_manual_authorization_only_for_major_release",
   "automatic_deployment_enabled": false,
-  "source_of_truth": "GitHub main",
+  "source_of_truth": "GitHub main for shared handoff, with latest implementation on linked experimental branches (NOT merged)",
   "priority": "P0",
-  "priority_task": "Correct remaining pink eyelid UV/material mismatch and connected face-lid surface quality on source-pinned v4 geometry; human visual gate blocked",
+  "priority_task": "Automated original HUMAN-01 Blender/MPFB2 photorealistic human: correct facial anatomy (eye/lid cornea, lip/teeth, hair anchors), skin maps/SSS and matched Blender Cycles vs Blank Engine WebGL close-up fidelity; visual gate REJECTED",
   "owner_decisions": [
     "hardest problems first",
     "one visually excellent isolated hero before scaling",
@@ -110,14 +110,17 @@
       "chrome_run_url": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38847010619",
       "historical_archived_source_sha256_superseded": "207ba42634bf144f3c43aa72e93673fb1607f39a7e0d259a5d9e4293213ef384",
       "stage": "superseded_experimental_overlay"
-    }
+    },
+    "historical_mainline_asset": true,
+    "note": "Original source-pinned MakeHuman suited hero; not the newer generated HUMAN-01 on experiment branch"
   },
   "next_steps": [
-    "Confirm the v4 source hash, UV island ownership and sampled eye-rim texels against identical eye-macro and profile captures",
-    "Repair v4 skin/material/UV and surface continuity only in a reversible copy; preserve rig, four clips and source provenance",
-    "Run pinned GLB and manually dispatched Three.js/Chrome browser tests; do not infer physical phone GPU performance",
-    "Require explicit human review of anatomy and skin realism, retaining BLOCKED on insufficient evidence",
-    "Update docs/CONTINUITY.md in every proposal and commit, update structured state at milestone, and do not deploy Vercel without major-release approval"
+    "Refresh experiment/human01-mpfb-generated code, pinned MPFB2 assets and human01 findings before touching source; branch work not merged into main",
+    "Generate isolated human head in unattended Blender; measure eyes/lids/corneas, lip/teeth bounds, hair anchors and rig transform behavior",
+    "Render matched front/profile/three-quarter/macro in Blender Cycles and Blank Engine WebGL; trace geometry versus material transfer defects",
+    "Fix anatomy before cosmetic skin maps; preserve provenance, source and fail-closed rig/mesh/export tests; add realistic skin normal/roughness/SSS and blink only after fit passes",
+    "Require explicit human approval of head image quality before body or scale-out; continue documentation same commit, no Vercel deployment",
+    "Historical mainline v4 eye-socket UV/material remediation remains available but is not the current novel-human P0"
   ],
   "other_open_blockers": [
     "actual Android device frame-rate/thermal test",
@@ -141,11 +144,13 @@
     "pr_template": ".github/pull_request_template.md",
     "server_side_enforced": false,
     "caveat": "GitHub web/API writes bypass optional local hooks; manual-only workflow policy preserved",
-    "remote_status": "not_enforced_main_unprotected_as_observed_2026-10-16"
+    "remote_status": "not_enforced_main_unprotected_as_observed_2026-10-16",
+    "latest_reconciliation": "2026-10-16 main handoff corrected for branch-only Blender and HUMAN-01 experiment history",
+    "main_head_before_reconciliation": "dec83c290eddd524456c38f54c7884937f9c6df1"
   },
   "base_commit_role": "historical_v2_baseline_not_current_head",
   "last_verified_engineering_commit_before_docs_sync": "f6acba64ab7ea5c12d85129bcebe7c44154bb660",
-  "latest_verified_engineering_milestone": "experimental skinned face socket v4, human visual acceptance blocked",
+  "latest_verified_engineering_milestone": "Experiment branch HUMAN-01 fresh generated rigged human, TECHNICAL PASS / VISUAL REJECT; older mainline eye-socket v4 remains historical",
   "historical_technical_verification": {
     "eye_fit_v2": {
       "regression_pass": 152,
@@ -159,5 +164,50 @@
       "workflow_url": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38847010619",
       "human_visual_review": "blocked"
     }
-  }
+  },
+  "latest_branch_technical_verification": {
+    "branch": "experiment/human01-mpfb-generated",
+    "commit": "4fb698af98f45dcce1be33399ce48c9fc4e3f882",
+    "report": "docs/human01-findings.md",
+    "workflow_url": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38980288978",
+    "asset": "human-01.glb",
+    "sha256": "501d8aa88d84cd17bd072dec38ae6f231a59b56000d3f20e439054310fb050d7",
+    "bytes": 25696536,
+    "bones": 53,
+    "skinned_meshes": 7,
+    "pbr_materials": 7,
+    "textures": 8,
+    "runtime_triangles": 43810,
+    "webgl_screenshots": 5,
+    "regression": "171 pass / 2 skipped / 0 fail",
+    "technical": "pass_on_branch",
+    "face_visual": "rejected_protruding_eyes_exposed_teeth_hair_intersection",
+    "production_main_code_merged": false
+  },
+  "experimental_blender_lineage": [
+    {
+      "branch": "experiment/hero-v4-einar-shaded",
+      "commit": "9ecc042b89b5266d589feb01bd3392806177ab5d",
+      "workflow_url": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38947591860",
+      "result": "authentic Einar Cycles source-shaded views; source-copy, not generated human"
+    },
+    {
+      "branch": "experiment/automated-blender-factory-v1",
+      "commit": "fd042b5f1fb7dfa0dc7eef3de2e6349a3231f27b",
+      "workflow_url": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38959953800",
+      "result": "unattended Einar asset processing and GLB/WebGL transfer; visually inadequate"
+    },
+    {
+      "branch": "experiment/asset-factory-v1",
+      "commit": "125f4fbd00632985e5600ac1d3a0caaf1868804f",
+      "workflow_url": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38956247113",
+      "result": "7-stage Einar source factory, material roughness transfer, visual failures"
+    },
+    {
+      "branch": "experiment/aster01-generated-character",
+      "commit": "072cf51b334d2a09cb47567c4d87cee8b0a2347f",
+      "workflow_url": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38975653912",
+      "result": "new procedural mechanical character, 107 meshes, not organic photorealistic human"
+    }
+  ]
 }
