@@ -1,8 +1,5 @@
 name: One-shot quality gate unit regression — hair and face coupled exposure
 on:
-  push:
-    branches: [refactor/one-shot-quality-first]
-    paths: ['.github/workflows/one-shot-gate-unit.yml']
   workflow_dispatch:
 permissions:
   contents: read
