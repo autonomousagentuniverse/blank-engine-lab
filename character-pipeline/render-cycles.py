@@ -13,8 +13,10 @@ def run(job,source):
  job=Path(job).resolve();source=Path(source).resolve()
  p=json.loads((job/"plan.json").read_text())
  lock=json.loads((job/"source.lock.json").read_text())
- if p["source"]["origin"]!="independent_original_human":
-  raise ValueError("Only an independently authored source is a new character")
+ if p["source"]["origin"] not in ("independent_original_human","licensed_cc0_variant"):
+  raise ValueError("Unsupported character source class")
+ if p["source"]["origin"]=="licensed_cc0_variant" and not p["source"].get("ancestors"):
+  raise ValueError("CC0 ancestry required to render derived human")
  if digest(source)!=lock["source_sha256"] or lock["source_sha256"]!=p["source"]["sha256"]:
   raise ValueError("Source file SHA-256 changed after lock")
  bpy.ops.wm.open_mainfile(filepath=str(source),load_ui=False)

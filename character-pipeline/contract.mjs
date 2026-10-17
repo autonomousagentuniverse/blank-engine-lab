@@ -24,9 +24,24 @@ export function validatePlan(p){
   check(p?.schema==='blank.character.plan.v1','INVALID_PLAN_SCHEMA');
   check(/^[a-z0-9][a-z0-9-]{3,63}$/.test(p?.id??''),'INVALID_ID');
   const s=p?.source;
-  check(s?.origin==='independent_original_human','NOT_INDEPENDENT_HUMAN_SOURCE');
-  check(s?.derived_from_einar===false&&Array.isArray(s?.ancestors)&&s.ancestors.length===0,
+  const groundup=s?.origin==='independent_original_human';
+  const licensed=s?.origin==='licensed_cc0_variant';
+  check(groundup||licensed,'UNSUPPORTED_HUMAN_SOURCE_CLASS');
+  check(s?.derived_from_einar===false&&Array.isArray(s?.ancestors),
     'DERIVATIVE_OR_UNKNOWN_ANCESTRY');
+  if(groundup){
+    check(s.ancestors.length===0,'DERIVATIVE_OR_UNKNOWN_ANCESTRY');
+  }else{
+    check(s.ancestors.length===1,'CC0_BASE_ANCESTRY_MUST_BE_EXPLICIT');
+    const a=s.ancestors[0];
+    check(a&&a.repo==='ibrews/VitruvianGodot'&&
+      a.commit==='bdecdcd537b4031fdd0fb299b7e4f93f084fffa0'&&
+      a.license==='CC0-1.0'&&a.rights_verified===true&&
+      /^[0-9a-f]{64}$/.test(a.head_glb_sha256??'')&&
+      s.is_original_topology===false,
+      'UNVERIFIED_CC0_BASE_ANCESTRY');
+    check(s.identity_variant_claim===true,'CC0_VARIANT_IDENTITY_CLAIM_REQUIRED');
+  }
   check(s?.rights_verified===true&&!!s.creator?.trim()&&!!s.license?.trim(),'SOURCE_RIGHTS_MISSING');
   check(typeof s.file==='string'&&s.file.endsWith('.blend'),'BLEND_FILE_REQUIRED');
   check(/^[0-9a-f]{64}$/.test(s.sha256),'SOURCE_SHA256_REQUIRED');
@@ -80,7 +95,7 @@ export function renderEvidence(p,lock,report,dir){
     check(actual===f.sha256,'RENDER_HASH_MISMATCH:'+view);
     frameHashes[view]=actual;
   }
-  return {status:'TECHNICAL_PASS_VISUAL_BLOCKED',
+  return {status:'TECHNICAL_PASS_VISUAL_BLOCKED',origin:p.source.origin,
     fingerprint:digest({source:p.source.sha256,plan:lock.plan_hash,frames:frameHashes}),
     source:p.source.sha256,frames:frameHashes};
 }
@@ -90,7 +105,8 @@ export function humanGate(review,evidence){
   check(!!review.reviewer?.trim()&&review.reviewer!=='model'&&review.reviewer!=='automated',
     'HUMAN_REVIEWER_REQUIRED');
   check(review.human_attestation===true&&review.anatomy_ok===true&&
-    review.distinct_from_reference===true&&review.photoreal_ok===true,
+    review.distinct_from_reference===true&&review.photoreal_ok===true&&
+    (evidence.origin!=='licensed_cc0_variant'||review.distinct_from_source_base===true),
     'HUMAN_VISUAL_OR_NOVELTY_REJECTED');
   check(!!review.reviewed_at&&!Number.isNaN(Date.parse(review.reviewed_at)),
     'REVIEW_DATE_REQUIRED');

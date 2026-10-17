@@ -1,0 +1,45 @@
+name: MIRA-01 — contract-check genuine CC0-derived Cycles evidence
+on:
+  push:
+    branches: [experiment/new-human-cc0-source-v01]
+    paths: ['.github/workflows/mira-cc0-evidence-contract.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  validate-existing-blender-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Run independent source, CC0 provenance, review-block tests
+        run: |
+          node --test character-pipeline/contract.test.mjs
+          python3 -m py_compile character-pipeline/render-cycles.py
+      - name: Recover ORIGINAL successful MIRA-01 .blend and PNGs (no rerender)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p artifacts/novel-human-v01
+          gh run download 39041001725 --repo autonomousagentuniverse/blank-engine-lab \
+            --name mira-01-cc0-derived-blender-cycles --dir artifacts/novel-human-v01
+          test -s artifacts/novel-human-v01/mira-01-cc0-derived.blend
+          test -s artifacts/novel-human-v01/report.json
+      - name: Hash actual original Blender and Cycles evidence, require no review approval
+        run: node experiments/new-human-v01/check_pipeline.mjs artifacts/novel-human-v01
+      - name: Save source provenance, immutable camera/PNG hashes and blocked review
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: mira-01-contract-evidence-no-human-approval
+          path: |
+            artifacts/novel-human-v01/mira-plan.json
+            artifacts/novel-human-v01/source.lock.json
+            artifacts/novel-human-v01/render-report.json
+            artifacts/novel-human-v01/technical-evidence.json
+          retention-days: 14
+          if-no-files-found: warn

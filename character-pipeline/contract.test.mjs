@@ -21,7 +21,7 @@ test('good new-human plan describes only source—not visual success',()=>{
 });
 test('source Einar lineage cannot pass even with valid custom model SHA',()=>{
  const p=good();p.source.origin='einar_derivative';
- rejects(()=>validatePlan(p),'NOT_INDEPENDENT');
+ rejects(()=>validatePlan(p),'UNSUPPORTED_HUMAN_SOURCE_CLASS');
  p.source.origin='independent_original_human';p.source.derived_from_einar=true;
  rejects(()=>validatePlan(p),'DERIVATIVE');
  p.source.derived_from_einar=false;p.source.sha256=REFERENCE.blend;
@@ -77,4 +77,29 @@ test('technical evidence without separate human review cannot approve',()=>{
  rejects(()=>humanGate(r,e),'HUMAN_VISUAL_OR_NOVELTY');
  r.distinct_from_reference=true;
  assert.equal(humanGate(r,e).release_allowed,false);
+});
+
+test('pinned CC0 ancestry explicitly allowed but must never be called an independent sculpt',()=>{
+ const p=good();
+ p.source.origin='licensed_cc0_variant';
+ p.source.ancestors=[{repo:'ibrews/VitruvianGodot',
+   commit:'bdecdcd537b4031fdd0fb299b7e4f93f084fffa0',
+   license:'CC0-1.0',rights_verified:true,
+   head_glb_sha256:hash('validated base face GLB')}];
+ p.source.is_original_topology=false;
+ p.source.identity_variant_claim=true;
+ assert.equal(validatePlan(p),true);
+ p.source.is_original_topology=true;
+ rejects(()=>validatePlan(p),'UNVERIFIED_CC0_BASE_ANCESTRY');
+ p.source.is_original_topology=false;p.source.ancestors[0].repo='Einar-source';
+ rejects(()=>validatePlan(p),'UNVERIFIED_CC0_BASE_ANCESTRY');
+});
+test('license-compliant CC0 source does not bypass visual comparison with the CC0 base',()=>{
+ const e={fingerprint:hash('new human frames'),origin:'licensed_cc0_variant'};
+ const review={schema:'blank.character.human-review.v1',fingerprint:e.fingerprint,
+   reviewer:'External Human',human_attestation:true,anatomy_ok:true,
+   distinct_from_reference:true,photoreal_ok:true,reviewed_at:'2026-10-17'};
+ rejects(()=>humanGate(review,e),'HUMAN_VISUAL_OR_NOVELTY_REJECTED');
+ review.distinct_from_source_base=true;
+ assert.equal(humanGate(review,e).release_allowed,false);
 });
