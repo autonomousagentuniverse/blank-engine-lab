@@ -1,8 +1,5 @@
 name: Experimental Einar blink driver anatomy diagnostic
 on:
-  push:
-    branches:
-      - experiment/einar-evaluated-pose-20261017
   workflow_dispatch:
 permissions:
   contents: read
