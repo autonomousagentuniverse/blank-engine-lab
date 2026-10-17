@@ -1,8 +1,5 @@
 name: MIRA-04 parallel Cycles batch — stable hair material recovery
 on:
-  push:
-    branches: [experiment/mira04-parallel-visual-batch]
-    paths: ['.github/workflows/mira04-visual-batch.yml']
   workflow_dispatch:
 permissions:
   contents: read
