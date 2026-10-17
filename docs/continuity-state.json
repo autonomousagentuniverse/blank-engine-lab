@@ -9,7 +9,7 @@
   "automatic_deployment_enabled": false,
   "source_of_truth": "GitHub main for shared handoff, with latest implementation on linked experimental branches (NOT merged)",
   "priority": "P0",
-  "priority_task": "MIRA04 visual batch results: preserve independently verified eye-only upper-eyelid white-wedge removal, reject hair/brows and combined (unnatural card-like hair and heavy eyebrows); skin provisional. Next targeted hair-card/eye material A/B batch, maintain corrected MIRA03 head, no source ancestry mislabeling, no production deploy.",
+  "priority_task": "MIRA05 structural reconstruction batch completed technically but FAILS photographic realism: 10 real Cycles PNGs, 12500 source-projected hair curves still light-beige curtain, 2600 weak eyebrows, eye and skin stylized, 10.245mm identity change lacks novelty. Do not promote combined; source-aware root-cause/foundation replacement is next. No production deploy.",
   "owner_decisions": [
     "hardest problems first",
     "one visually excellent isolated hero before scaling",
@@ -494,5 +494,27 @@
     "independent_human_generated": false,
     "production_deployed": false,
     "workflow_manual_only": true
+  },
+  "mira05_structural_rebuild": {
+    "date": "2026-10-17",
+    "run": 39051879470,
+    "status": "technical_success_visual_rejected",
+    "branch": "experiment/mira05-structural-rebuild-batch",
+    "report_commit": "43ceb2869df0419ed3989c3d3ccc849084ff6902",
+    "archive_id": 12108680073,
+    "real_cycles_renders": 10,
+    "packed_blend_file": "mira05-integrated-structural.blend",
+    "packed_blend_sha256": "07806e89a1ad2389bb7c216144b57878748d0f54536fe2a47f026f229e2db076",
+    "scalp_curves": 12500,
+    "frontal_root_curves": 3681,
+    "brow_fibers": 2600,
+    "fitted_eyelid_curves": 4,
+    "identity_max_displacement_mm": 10.245,
+    "photoreal_approved": false,
+    "independent_topology": false,
+    "webgl_tested": false,
+    "production_deployed": false,
+    "workflow_manual_only": true,
+    "next": "validate true scalp/material hair lighting mapping or replace source/groom; no more uncontrolled small edits"
   }
 }
