@@ -1,0 +1,54 @@
+name: HUMAN-A01 direct Blender Cycles first prototype
+on:
+  push:
+    branches: [experiment/human-a01-einar-derived-cycles]
+    paths: ['.github/workflows/blank-human-a01-cycles.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  render-new-human:
+    runs-on: ubuntu-latest
+    timeout-minutes: 29
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Install Blender Python and rendering deps
+        run: |
+          python3 -m pip install --disable-pip-version-check --no-cache-dir bpy==4.5.3 Pillow==11.3.0
+      - name: Obtain exact original Einar reference (CC-BY) and restore all textures
+        run: |
+          mkdir -p .ci-einar artifacts/human-a01
+          curl --fail --location --retry 3 --connect-timeout 30 --max-time 540 --silent --show-error \
+            'https://studio.blender.org/download-source/files/41/419e83fb75f30b989adf7920dec7a21c/419e83fb75f30b989adf7920dec7a21c.zip' \
+            -o .ci-einar/einar-official.zip
+          python3 experiments/hero-v4/restore_textures.py
+          python3 -m py_compile experiments/human-a01/generate_and_render.py experiments/human-a01/contact_sheet.py
+      - name: Sculpt distinct derivative and render four actual Blender Cycles views
+        env:
+          OMP_NUM_THREADS: '4'
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          timeout -k 15s 900s python3 -u experiments/human-a01/generate_and_render.py
+          python3 experiments/human-a01/contact_sheet.py
+          python3 - <<'PY'
+          import json,pathlib
+          p=pathlib.Path('artifacts/human-a01')
+          d=json.loads((p/'report.json').read_text())
+          assert len(d['renders'])==4
+          assert d['status'].startswith('DERIVED_FACE_AND_FOUR_REAL_CYCLES_RENDERS_COMPLETED')
+          assert d['identity_status']=='EINAR_DERIVATIVE_NOT_INDEPENDENT_NEW_TOPOLOGY'
+          assert d['human_visual_approval']=='BLOCKED'
+          assert (p/'human-a01-derived.blend').stat().st_size>100000
+          print("REAL_BLENDER_RENDER_PROOF_PASS")
+          PY
+      - name: Archive authored Blender project and real renders, not original publisher ZIP
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: human-a01-first-real-cycles-derivative
+          path: artifacts/human-a01/
+          retention-days: 7
+          if-no-files-found: warn
