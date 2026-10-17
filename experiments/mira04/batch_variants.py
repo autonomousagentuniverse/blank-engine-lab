@@ -168,21 +168,47 @@ def render_case(label,use_eyes,use_hair,use_skin,views):
   if saved.stat().st_size<1500000:raise AssertionError("Combined blend not written")
   R["combined_blend"]={"name":saved.name,"sha256":sha(saved),"bytes":saved.stat().st_size}
 def main():
+ # GitHub Actions can resume a partially completed batch, with each mode in a
+ # fresh Blender process; bpy repeatedly loading a 50MB .blend crashed a runner
+ # after four valid PNGs. Never recompute verified completed modes.
  if not BASE.is_file() or BASE.stat().st_size<20000000:
-  raise FileNotFoundError("Missing packed MIRA03 reference .blend")
- R["baseline_blend_sha256"]=sha(BASE)
- save()
- for variant in MODES:render_case(*variant)
+  raise FileNotFoundError("Frozen MIRA03 .blend unavailable")
+ expected_hash="1809398d604efa567a063697f34d84dc10c6db95914f38a31ac5bd6912e5e96d"
+ actual=sha(BASE)
+ if actual!=expected_hash:raise AssertionError("MIRA03_SOURCE_HASH_CHANGED "+actual)
+ if OUT.exists():
+  previous=json.loads(OUT.read_text())
+  if previous["schema"]!=R["schema"] or previous.get("baseline_blend_sha256")!=actual:
+   raise AssertionError("Partial batch provenance not from the frozen MIRA03")
+  for frame in previous["frames"]:
+   p=ROOT/frame["file"]
+   if not p.is_file() or sha(p)!=frame["sha256"]:
+    raise AssertionError("Previous image cannot be reused "+frame["file"])
+  R.update(previous)
+ else:
+  R["baseline_blend_sha256"]=actual
+ modes={v[0]:v for v in MODES}
+ if len(sys.argv)!=2 or sys.argv[1] not in modes:
+  raise ValueError("Usage: python batch_variants.py baseline|eyes|hair_brows|skin|combined")
+ mode=sys.argv[1]
+ if mode in R["modifications"]:
+  raise AssertionError("Cannot rerun verified completed variant "+mode)
+ print("MIRA04_PROCESS_ISOLATION_BEGIN",mode,flush=True)
+ render_case(*modes[mode])
  expected={"baseline_front.png","baseline_eyes_macro.png","eyes_front.png","eyes_eyes_macro.png",
            "hair_brows_front.png","skin_front.png","combined_front.png","combined_eyes_macro.png"}
- if {f["file"] for f in R["frames"]}!=expected:raise AssertionError("Batch not exhaustive")
- R["status"]="EIGHT_REAL_CYCLES_VARIANT_RENDERS_SUCCESS_REVIEW_REQUIRED"
+ actual_files={f["file"] for f in R["frames"]}
+ if len(R["modifications"])==5:
+  if actual_files!=expected:raise AssertionError("Final render set incomplete "+str(actual_files))
+  R["status"]="EIGHT_REAL_CYCLES_VARIANT_RENDERS_SUCCESS_REVIEW_REQUIRED"
+ else:
+  R["status"]="PARTIAL_BATCH_RECORDED_RESUMABLE"
  save()
- print("MIRA04_BATCH_COMPLETE",json.dumps({"modes":[x[0] for x in MODES],
-   "renders":len(R["frames"]),"eyes_and_hair_and_skin_modified_separately":True,
-   "human_photoreal_approved":False}),flush=True)
+ print("MIRA04_VARIANT_DONE",json.dumps({"mode":mode,"complete":len(R["modifications"]),
+ "renders_total":len(R["frames"]),"status":R["status"]}),flush=True)
  sys.stdout.flush();os._exit(0)
-try:main()
-except BaseException as e:
- R["status"]="FAILED";R["errors"].append(type(e).__name__+": "+str(e));save()
- traceback.print_exc();sys.stdout.flush();os._exit(1)
+if __name__=="__main__":
+ try:main()
+ except BaseException as e:
+  R["status"]="FAILED";R["errors"].append(type(e).__name__+": "+str(e));save()
+  traceback.print_exc();sys.stdout.flush();os._exit(1)

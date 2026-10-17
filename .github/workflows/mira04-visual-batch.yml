@@ -1,5 +1,8 @@
-name: MIRA-04 parallel visual quality batch (8 real Cycles views)
+name: MIRA-04 completed parallel Cycles batch — recover partial evidence
 on:
+  push:
+    branches: [experiment/mira04-parallel-visual-batch]
+    paths: ['.github/workflows/mira04-visual-batch.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -30,11 +33,29 @@ jobs:
           print('MIRA03_PINNED_IMMUTABLE_PACKED_SOURCE',h)
           PY
           python3 -m py_compile experiments/mira04/batch_variants.py
-      - name: Render eight matched Cycles views across four independent modifications
+      - name: Restore four verified baseline and eye renders from first batch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download 39046993034 --repo autonomousagentuniverse/blank-engine-lab --name mira04-eight-way-visual-batch --dir artifacts/mira04-batch
+          python3 - <<'PY'
+          import json,pathlib,hashlib
+          d=pathlib.Path('artifacts/mira04-batch')
+          r=json.loads((d/'report.json').read_text())
+          assert len(r['frames'])==4 and set(r['modifications'])=={'baseline','eyes'}
+          assert r['baseline_blend_sha256']=='1809398d604efa567a063697f34d84dc10c6db95914f38a31ac5bd6912e5e96d'
+          for f in r['frames']:
+            assert hashlib.sha256((d/f['file']).read_bytes()).hexdigest()==f['sha256']
+          print('MIRA04_FOUR_RENDERED_IMAGES_SAFELY_REUSED_FROM_PREVIOUS_RUN')
+          PY
+      - name: Render remaining hair/eyebrow, skin and combined variants in fresh Blender processes
         env:
           OMP_NUM_THREADS: '4'
         run: |
-          timeout -k 15s 780s python3 -u experiments/mira04/batch_variants.py
+          for variant in hair_brows skin combined; do
+            echo "Starting independent Blender process: $variant"
+            timeout -k 10s 300s python3 -u experiments/mira04/batch_variants.py "$variant"
+          done
           python3 - <<'PY'
           import json,pathlib,hashlib
           d=pathlib.Path('artifacts/mira04-batch')
@@ -55,7 +76,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: mira04-eight-way-visual-batch
+          name: mira04-resumed-full-eight-view-batch
           path: artifacts/mira04-batch/
           retention-days: 7
           if-no-files-found: warn
