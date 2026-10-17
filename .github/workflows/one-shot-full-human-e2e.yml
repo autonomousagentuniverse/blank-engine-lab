@@ -1,8 +1,5 @@
 name: Experimental one-shot complete human generation and quality-entry test
 on:
-  push:
-    branches:
-      - experiment/one-shot-full-gen-e2e-20261017
   workflow_dispatch:
 permissions:
   contents: read
