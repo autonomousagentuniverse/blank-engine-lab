@@ -9,7 +9,7 @@
   "automatic_deployment_enabled": false,
   "source_of_truth": "GitHub main for shared handoff, with latest implementation on linked experimental branches (NOT merged)",
   "priority": "P0",
-  "priority_task": "ONE-SHOT QUALITY-FIRST REDESIGN TESTED (branch only). The old generator passes render and geometry counts while failing realism. New sequential source/right controls, three-setting measured hair+face lighting check, scalp coverage and heading variability, actual four matched Cycles views, human visual approval and WebGL parity gates are implemented; 9/9 Node tests passed. MIRA05 studio at 10% darkens hair but face luminance falls to 52.6%; no setting in tested sweep passes hair and face targets together. Do not start another cosmetic MIRA revision or deploy.",
+  "priority_task": "Quality-first one-shot validation controller verified on isolated branch with 14/14 tests and source-matched 3-level real Blender light-sweep. Original MIRA05 source remains photoreal FAIL (hair ratio 2.145 even at 32% lamps, hair curtain geometry). Next: source-aware guide/follicle contact modeling and independent human image acceptance. Do not declare original human generator finished or deploy.",
   "owner_decisions": [
     "hardest problems first",
     "one visually excellent isolated hero before scaling",
@@ -578,5 +578,42 @@
     "photoreal_approved": false,
     "production_deployed": false,
     "workflow_manual_only": true
+  },
+  "one_shot_quality_first_reset": {
+    "date": "2026-10-17",
+    "branch": "refactor/one-shot-quality-first",
+    "commit": "9695327d4cbc239dc03c81a73a560c4b0514eedc",
+    "status": "STAGED_CONTROLS_VERIFIED_REAL_LIGHT_SWEEP_VERIFIED_NO_PHOTOREAL_HUMAN",
+    "regression_ci": 39067029559,
+    "regression_pass": 14,
+    "regression_fail": 0,
+    "real_blender_run": 39066589038,
+    "real_blender_job_success": true,
+    "combined_run_status": "failure_old_test_fixture",
+    "evidence_artifact_id": 12114115005,
+    "hair_mask_pixels": 78105,
+    "hair_light_ratios": {
+      "original": 2.887,
+      "medium": 2.647,
+      "dim": 2.145
+    },
+    "face_retention": {
+      "original": 1,
+      "medium": 0.941,
+      "dim": 0.821
+    },
+    "threshold_example_hair_ratio": 1.8,
+    "stages": [
+      "calibration",
+      "construction",
+      "preview",
+      "human_review",
+      "webgl_parity"
+    ],
+    "automatic_photoreal_human_created": false,
+    "independent_anatomy_created": false,
+    "workflow_manual_only": true,
+    "production_deployed": false,
+    "source_ancestry": "CC0_Vitruvian_derived"
   }
 }
