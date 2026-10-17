@@ -9,7 +9,7 @@
   "automatic_deployment_enabled": false,
   "source_of_truth": "GitHub main for shared handoff, with latest implementation on linked experimental branches (NOT merged)",
   "priority": "P0",
-  "priority_task": "MIRA03 genuine Cycles correction VERIFIED: continuous signed jaw transform removed generated lip-to-chin crease; source-derived face/skin remains not photoreal accepted. Next isolate shared eye/eyelid shader under fixed original CC0 eye geometry; preserve matched camera. No new hair/jaw loop, no WebGL or deploy.",
+  "priority_task": "MIRA04 visual batch results: preserve independently verified eye-only upper-eyelid white-wedge removal, reject hair/brows and combined (unnatural card-like hair and heavy eyebrows); skin provisional. Next targeted hair-card/eye material A/B batch, maintain corrected MIRA03 head, no source ancestry mislabeling, no production deploy.",
   "owner_decisions": [
     "hardest problems first",
     "one visually excellent isolated hero before scaling",
@@ -457,5 +457,42 @@
     "eye_hair_defects_still_unresolved": true,
     "production_deployed": false,
     "findings": "https://github.com/autonomousagentuniverse/blank-engine-lab/blob/experiment/mira03-continuous-midline/docs/mira03-midline.md"
+  },
+  "mira04_visual_batch": {
+    "date": "2026-10-17",
+    "branch": "experiment/mira04-parallel-visual-batch",
+    "findings": "docs/mira04-batch-quality.md",
+    "findings_commit": "89b5cc124998b02d348c23a2f6c0a07177317b09",
+    "frozen_source_sha256": "1809398d604efa567a063697f34d84dc10c6db95914f38a31ac5bd6912e5e96d",
+    "first_run": 39046993034,
+    "first_run_status": "failed_bpy_segfault_after_four_real_images",
+    "second_run": 39047447137,
+    "second_run_status": "failed_during_hair_shader_node_edit",
+    "successful_run": 39047787293,
+    "successful_run_status": "success_eight_real_Cycles_PNGs",
+    "archive_artifact_id": 12106925388,
+    "variants": [
+      "baseline",
+      "eyes",
+      "hair_brows",
+      "skin",
+      "combined"
+    ],
+    "rendered_views": 8,
+    "sha256_verified": true,
+    "selected_research_improvement": "eyes_only",
+    "rejected": [
+      "hair_brows",
+      "combined"
+    ],
+    "provisional": [
+      "skin"
+    ],
+    "combined_blend_sha256": "4ae11efedb3bc34cf4142809e8bde25fb2a0fb61856a1ab4948968a6b1d139fc",
+    "combined_blend_photorealism_approved": false,
+    "eye_only_blend_saved": false,
+    "independent_human_generated": false,
+    "production_deployed": false,
+    "workflow_manual_only": true
   }
 }
