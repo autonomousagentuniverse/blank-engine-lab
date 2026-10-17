@@ -1,0 +1,120 @@
+name: Experimental one-shot complete human generation and quality-entry test
+on:
+  push:
+    branches:
+      - experiment/one-shot-full-gen-e2e-20261017
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  full-character-one-pass:
+    runs-on: ubuntu-latest
+    timeout-minutes: 48
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Install actual Blender Python engine
+        run: python3 -m pip install --no-cache-dir --disable-pip-version-check bpy==4.5.3
+      - name: Retrieve pinned full-character generator code without changing its geometry
+        run: |
+          git fetch --no-tags --depth=1 origin 43ceb2869df0419ed3989c3d3ccc849084ff6902
+          mkdir -p experiments/mira05
+          for part in batch.py geometry.py reconstruction.py; do
+            git show FETCH_HEAD:experiments/mira05/$part > experiments/mira05/$part
+          done
+          python3 -m py_compile experiments/mira05/*.py character-pipeline/one-shot/experiment-fullgen-probe.py
+      - name: Verify authentic CC0-derived anatomical base and source SHA
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p baseline-mira03 artifacts/mira05-batch artifacts/one-shot-e2e
+          gh run download 39045175123 --repo autonomousagentuniverse/blank-engine-lab --name mira03-matched-midline-isolate --dir baseline-mira03
+          python3 - <<'PY'
+          import hashlib,pathlib
+          f=pathlib.Path('baseline-mira03/mira03-continuous-midline.blend')
+          assert f.exists() and f.stat().st_size>20000000
+          assert hashlib.sha256(f.read_bytes()).hexdigest()=='1809398d604efa567a063697f34d84dc10c6db95914f38a31ac5bd6912e5e96d'
+          print('PINNED_CC0_DERIVED_SOURCE_VERIFIED')
+          PY
+      - name: ONE generation invocation for complete head eyes hair brows skin identity and rig
+        env:
+          OMP_NUM_THREADS: '4'
+        run: |
+          timeout -k 10s 850s python3 -u experiments/mira05/batch.py integrated
+          test -s artifacts/mira05-batch/mira05-integrated-structural.blend
+          python3 - <<'PY'
+          import json,pathlib
+          d=json.loads(pathlib.Path('artifacts/mira05-batch/report.json').read_text())
+          assert set(d['variants'])=={'integrated'}
+          assert len(d['frames'])==3 and d['independently_original'] is False
+          assert d['photoreal_approved'] is False and d['deployed'] is False
+          print('ONE_COMPLETE_GENERATION_NOT_A_PHOTOREAL_PASS')
+          PY
+      - name: Four matched real Cycles QA views and measured rooted hair direction variation
+        env:
+          OMP_NUM_THREADS: '4'
+        run: |
+          timeout -k 10s 950s python3 -u character-pipeline/one-shot/experiment-fullgen-probe.py
+      - name: Wire resulting whole character to existing fail-closed quality gate
+        run: |
+          python3 - <<'PY'
+          import json,hashlib,pathlib
+          out=pathlib.Path('artifacts/one-shot-e2e')
+          d=json.loads((out/'e2e-report.json').read_text())
+          assert d['full_generation_one_blender_pass'] and len(d['frames'])==4
+          assert {f['id'] for f in d['frames']}=={'front','three_quarter','profile','eyes_macro'}
+          for f in d['frames']:
+            p=out/f['file']
+            assert p.stat().st_size>12000
+            assert hashlib.sha256(p.read_bytes()).hexdigest()==f['sha256']
+          assert d['hair_curve_count']>=10000 and not d['automatic_quality_acceptance']
+          source='generated-full-human.blend'
+          plan={'schema':'blank.one-shot.plan.v1','id':'e2e-full-character-cc0-01',
+          'source':{'file':source,'sha256':d['generated_blend_sha256'],'origin':'cc0_derived',
+             'creator':'VitruvianGodot CC0 source authors (derived character)',
+             'license':'CC0','license_verified':True,'ancestors':['VitruvianGodot CC0 source via pinned MIRA03']},
+          'targets':{'hair_style':'Source-aware natural nonuniform hairstyles','hairline':'Natural temple and scalp coverage',
+             'brow_growth':'Separate rooted eyebrow growth directions','eye_anatomy':'Fitted eyeball and real eyelid geometry',
+             'skin_reference':'Source maps with realistic skin BSDF','identity_goal':'New distinct source-derived human'},
+          'mechanical_limits':{'max_hair_light_ratio':1.8,'min_scalp_coverage':0.9,
+             'min_direction_entropy':0.65,'min_face_luminance_retention':0.72,
+             'max_hair_head_penetration':0.02,'max_eye_intersection_mm':0.25,
+             'max_lip_midline_jump_mm':0.1},
+          'views':[{'id':f['id'],'camera':f['camera']} for f in d['frames']],
+          'render':{'engine':'CYCLES','resolution':[700,700],'samples':32}}
+          (out/'plan.json').write_text(json.dumps(plan,indent=2)+'\n')
+          print('GENERATED_CHARACTER_PLAN_AND_IMAGES_SOURCE_HASH_BOUND')
+          PY
+          node --test character-pipeline/one-shot/quality-gates.test.mjs
+          node character-pipeline/one-shot/quality-cli.mjs check-plan artifacts/one-shot-e2e/plan.json
+          node character-pipeline/one-shot/quality-cli.mjs init artifacts/one-shot-e2e/plan.json artifacts/one-shot-e2e/quality-state
+          node character-pipeline/one-shot/cli.mjs validate artifacts/one-shot-e2e/plan.json
+          python3 - <<'PY'
+          import json,pathlib
+          d=pathlib.Path('artifacts/one-shot-e2e')
+          q=json.loads((d/'quality-state/state.json').read_text())
+          assert q['status']=='BLOCKED_PENDING_CALIBRATION',q
+          assert q['release_allowed'] is False and q['phase_index']==0
+          (d/'test-verdict.json').write_text(json.dumps({
+           'source_generated':True,'four_real_blender_views':True,
+           'quality_stage':'BLOCKED_PENDING_CALIBRATION',
+           'automatic_human_approval':False,'webgl_parity':False,
+           'deployment':False,'requires_fresh_calibration_and_human_review':True},indent=2)+'\n')
+          print('VALID_E2E_TEST_RESULT_COMPLETE_GENERATION_BLOCKED_UNTIL_QUALITY_EVIDENCE')
+          PY
+      - name: Archive complete generated packed Blender file, 4 Cycles frames, gate status and reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: one-shot-complete-human-generated-quality-gated
+          path: |
+            artifacts/one-shot-e2e/
+            artifacts/mira05-batch/report.json
+          if-no-files-found: warn
+          retention-days: 7
