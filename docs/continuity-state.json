@@ -9,7 +9,7 @@
   "automatic_deployment_enabled": false,
   "source_of_truth": "GitHub main for shared handoff, with latest implementation on linked experimental branches (NOT merged)",
   "priority": "P0",
-  "priority_task": "MIRA02 evidence: fix deterministic ~3.95mm jaw/lip centerline fold caused by hard sign(dx) in facial morph; do single continuous-falloff geometry test then matched clay Cycles. Eye and card hair defects are shared original CC0/Blender shader issues. No redundant simultaneous cosmetic edits.",
+  "priority_task": "MIRA03 genuine Cycles correction VERIFIED: continuous signed jaw transform removed generated lip-to-chin crease; source-derived face/skin remains not photoreal accepted. Next isolate shared eye/eyelid shader under fixed original CC0 eye geometry; preserve matched camera. No new hair/jaw loop, no WebGL or deploy.",
   "owner_decisions": [
     "hardest problems first",
     "one visually excellent isolated hero before scaling",
@@ -430,5 +430,32 @@
     "new_independent_human_approved": false,
     "no_production_deployment": true,
     "next": "one mathematically smooth centerline corrective test, not combined eye and hair edits"
+  },
+  "mira03_continuous_midline": {
+    "date": "2026-10-17",
+    "branch": "experiment/mira03-continuous-midline",
+    "status": "FOUR_REAL_CYCLES_MATCHED_IMAGES_TECHNICAL_SUCCESS_VISUAL_CENTERLINE_FIXED",
+    "action_run": 39045175123,
+    "artifact_id": 12105755880,
+    "source_origin": "CC0 Vitruvian derived from pinned ibrews/VitruvianGodot source, not Einar",
+    "original_max_midline_jump_mm": 3.922441938460906,
+    "corrected_near_midline_difference_mm": 0.00016343508067462393,
+    "number_of_tested_samples": 20,
+    "reduction_ratio": 24000,
+    "modified_vertices": 12844,
+    "facial_shape_keys": 27,
+    "visual_crease_eliminated_in_skin_and_clay": true,
+    "real_render_count": 4,
+    "render_resolution": [
+      700,
+      700
+    ],
+    "original_and_corrected_same_camera_lighting_shader": true,
+    "permanent_workflow": "workflow_dispatch_only",
+    "actual_character_visual_approval": false,
+    "independent_original_human": false,
+    "eye_hair_defects_still_unresolved": true,
+    "production_deployed": false,
+    "findings": "https://github.com/autonomousagentuniverse/blank-engine-lab/blob/experiment/mira03-continuous-midline/docs/mira03-midline.md"
   }
 }
