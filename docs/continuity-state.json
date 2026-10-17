@@ -273,5 +273,35 @@
       "detached strap",
       "no verified real-time Three.js materials/blink"
     ]
+  },
+  "einar_source_graph_deconstruction": {
+    "branch": "experiment/einar-structural-deconstruction-v1",
+    "head_sha_before_commit": "70c0747084974683f944a7cdfa78f3464ca1fc74",
+    "source_blend_sha256": "1c6663da0a2e9d6822978467c244e9186edc76083bae2414e02f9e695e711f7b",
+    "workflow_run": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38992142171",
+    "workflow_status": "SUCCESS",
+    "source_zip_sha256": "3cbb5a1dd9ffd3ca39edab420a83ea7f7db337b435a78ef27a0c87ff3e6977f7",
+    "face_vertices": 4596,
+    "face_polygons": 4522,
+    "face_uv_sets": 2,
+    "face_shape_keys": 60,
+    "source_skin_material_slots": 1,
+    "source_skin_shader_nodes": 301,
+    "source_skin_shader_links": 379,
+    "face_modifiers": [
+      "ARMATURE",
+      "CORRECTIVE_SMOOTH",
+      "SUBSURF",
+      "LATTICE (x2)",
+      "NODES-displacement",
+      "NODES-attributes",
+      "NODES-stretch"
+    ],
+    "actual_hair_type": "CURVES",
+    "source_eyelash_dependency": "ARMATURE/SURFACE_DEFORM/LATTICE",
+    "material_graph_archive": "docs/source-audits/einar-source-graph.json.gz",
+    "source_files_persisted": false,
+    "new_human_generated": false,
+    "visual_approval": false
   }
 }
