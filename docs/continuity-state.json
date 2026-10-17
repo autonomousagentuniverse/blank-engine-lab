@@ -9,7 +9,7 @@
   "automatic_deployment_enabled": false,
   "source_of_truth": "GitHub main for shared handoff, with latest implementation on linked experimental branches (NOT merged)",
   "priority": "P0",
-  "priority_task": "Automated original HUMAN-01 Blender/MPFB2 photorealistic human: correct facial anatomy (eye/lid cornea, lip/teeth, hair anchors), skin maps/SSS and matched Blender Cycles vs Blank Engine WebGL close-up fidelity; visual gate REJECTED",
+  "priority_task": "HUMAN-01 close-up photorealism foundation: real anatomical orbit/eyelid/lips/teeth and hair topology audit; reject arbitrary uniform eye recess; compare licensed scan-quality head alternatives plus matched Blender Cycles/GLB/Three.js renders with explicit visual gate",
   "owner_decisions": [
     "hardest problems first",
     "one visually excellent isolated hero before scaling",
@@ -229,6 +229,22 @@
     "visual_approval": "BLOCKED",
     "teeth_fix": false,
     "hair_fix": false,
-    "deployed": false
+    "deployed": false,
+    "recommended_for_production": false,
+    "latest_review": "Kimi advisory rejects justification of entire-eye 16.294mm translation; no independent anatomy re-measure or visual proof"
+  },
+  "kimi_blender_advisory": {
+    "date": "2026-10-16",
+    "provider": "Moonshot API",
+    "model": "kimi-k3",
+    "url": "https://github.com/autonomousagentuniverse/followDiary/blob/experiment/kimi-blender-photorealism-audit-20261016/docs/reviews/kimi-blender-photorealism-20261016.md",
+    "status": "completed_and_archived_actual_model_final_reply",
+    "input": "written project facts only, no direct GLB or image analysis",
+    "uniform_eye_translation_mm": 16.294,
+    "uniform_eye_translation_assessment": "NOT_JUSTIFIED by single lower-socket Z sample; candidate retained but not approved for asset production",
+    "p0": "Verify eyelid/globe and mouth anatomy in Blender with orbit landmarks and neutral clay renders; stop further eye-offset microfixes; evaluate rights-verified scan-quality base head and Cycles vs Three.js parity",
+    "no_new_render": true,
+    "no_new_model": true,
+    "visual_acceptance": "BLOCKED"
   }
 }
