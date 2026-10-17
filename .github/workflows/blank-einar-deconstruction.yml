@@ -1,0 +1,50 @@
+name: Blank Engine - Einar source deconstruction (temporary one-shot)
+on:
+  push:
+    branches: [experiment/einar-structural-deconstruction-v1]
+    paths:
+      - '.github/workflows/blank-einar-deconstruction.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  deconstruct-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Download authentic source and restore images from published archive
+        run: |
+          mkdir -p .ci-einar artifacts/einar-deconstruction-v1
+          curl --fail --location --retry 3 --connect-timeout 30 --max-time 540 --silent --show-error \
+            'https://studio.blender.org/download-source/files/41/419e83fb75f30b989adf7920dec7a21c/419e83fb75f30b989adf7920dec7a21c.zip' \
+            -o .ci-einar/einar-official.zip
+          python3 experiments/hero-v4/restore_textures.py
+      - name: Install real bpy and inspect original .blend without editing
+        run: |
+          python3 -m pip install --disable-pip-version-check --no-cache-dir bpy==4.5.3
+          python3 -m py_compile experiments/einar-deconstruction/audit_source.py
+          timeout -k 10s 360s python3 -u experiments/einar-deconstruction/audit_source.py
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('artifacts/einar-deconstruction-v1/einar-source-graph.json')
+          d=json.loads(p.read_text())
+          assert d['source_unchanged'] and d['project_totals']['materials']>=95
+          h=next(x for x in d['objects'] if x['name']=='GEO-einar_head')
+          assert len(h['uv_layers'])==2 and len(h['shape_keys'])>=25
+          assert len(d['facial_material_shader_graphs'])>=8
+          assert any(r['bones']>=700 for r in d['rigs'])
+          print('AUTHENTIC_SOURCE_DECONSTRUCTION_PASS',len(d['facial_material_shader_graphs']))
+          PY
+      - name: Archive only analysis, never raw source binaries
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: blank-einar-original-blend-deconstruction
+          path: artifacts/einar-deconstruction-v1/
+          retention-days: 7
+          if-no-files-found: warn
