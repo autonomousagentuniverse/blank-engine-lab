@@ -1,0 +1,76 @@
+name: Experimental human anatomical dependency contract
+on:
+  push:
+    branches:
+      - experiment/anatomical-dependency-contract-20261017
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  reference-vs-candidate-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Retrieve authenticated historic Blender Studio reference graph
+        run: |
+          mkdir -p reference/einar reference/reports artifacts/anatomical-contract
+          git fetch --no-tags --depth=1 origin b2ef409e6dfe9caafafe39a3c2c66d9554d7e1ca
+          git show FETCH_HEAD:docs/source-audits/einar-source-graph.json.gz > reference/einar/einar-source-graph.json.gz
+          python3 - <<'PY'
+          import gzip,json,pathlib
+          p=pathlib.Path('reference/einar/einar-source-graph.json.gz')
+          j=json.loads(gzip.decompress(p.read_bytes()))
+          assert j['blend_sha256']=='1c6663da0a2e9d6822978467c244e9186edc76083bae2414e02f9e695e711f7b'
+          assert j['source_unchanged'] is True
+          print('AUTHENTIC_EINAR_SOURCE_GRAPH_VERIFIED_PRIOR_BLENDER_AUDIT')
+          PY
+      - name: Retrieve previously VERIFIED real Blender neutral/head-move/blink records
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download 39077561840 --repo autonomousagentuniverse/blank-engine-lab \
+            --name human-reference-source-decomposition-einar-vs-mira --dir reference/reports
+          python3 - <<'PY'
+          import pathlib,json
+          p=pathlib.Path('reference/reports')
+          cmp=json.loads((p/'reference-vs-mira.json').read_text())
+          blink=json.loads((p/'mira-blink-probe.json').read_text())
+          assert cmp['candidate']['blend_sha256']==blink['candidate_sha256']=='9b57bc2aaa1ba0cfec213eb1035f517dfbcebf5fb43443cc85618f42bb39791e'
+          assert blink['orbital_max_displacement_mm']>10
+          print('PROVEN_PRIOR_BLENDER_MEASUREMENTS_AUTHENTICATED')
+          PY
+      - name: Test fail-closed eleven-edge anatomy contract
+        run: |
+          python3 -m unittest discover -v -s experiments/anatomical-contract -p 'test_contract.py'
+          python3 experiments/anatomical-contract/evaluate.py \
+            --contract character-pipeline/contracts/human-anatomy.v1.json \
+            --einar-graph reference/einar/einar-source-graph.json.gz \
+            --mira-comparison reference/reports/reference-vs-mira.json \
+            --mira-blink reference/reports/mira-blink-probe.json \
+            --output artifacts/anatomical-contract/reference-comparison.json
+      - name: Verify control remains BLOCKED and unmeasured source is not magically passed
+        run: |
+          python3 - <<'PY'
+          import json,pathlib
+          a=json.loads(pathlib.Path('artifacts/anatomical-contract/reference-comparison.json').read_text())
+          r=a['reference']['summary']
+          c=a['candidate']['summary']
+          assert c['dynamic_fail']==3 and c['dynamic_pass']==1
+          assert r['dynamic_pass']==0 and r['structural_evidence']>=4
+          assert not c['ready_for_visual_review'] and not r['ready_for_visual_review']
+          assert not a['release_allowed'] and not a['photoreal_accepted'] and not a['new_human_generated']
+          print('PASS_FAIL_CLOSED_REFERENCE_AUDIT')
+          PY
+      - name: Archive evidence report only, never source .blend or Einar textures
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: anatomy-contract-einar-mira-v1
+          path: artifacts/anatomical-contract/
+          if-no-files-found: warn
+          retention-days: 7
