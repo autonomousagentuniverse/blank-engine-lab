@@ -1,0 +1,54 @@
+name: HUMAN-A04 — targeted brow drivers and shoulder strap Cycles proof
+on:
+  push:
+    branches: [experiment/human-a04-brow-strap-forensics]
+    paths: ['.github/workflows/blank-human-a04-forensics.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect-and-render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Install pinned Blender bpy / Cycles runtime
+        run: python3 -m pip install --disable-pip-version-check --no-cache-dir bpy==4.5.3 Pillow==11.3.0
+      - name: Restore publisher Einar v1 asset and licensed film texture maps
+        run: |
+          mkdir -p .ci-einar artifacts/human-a04
+          curl --fail --location --retry 3 --connect-timeout 30 --max-time 540 --silent --show-error \
+            'https://studio.blender.org/download-source/files/41/419e83fb75f30b989adf7920dec7a21c/419e83fb75f30b989adf7920dec7a21c.zip' \
+            -o .ci-einar/einar-official.zip
+          python3 experiments/hero-v4/restore_textures.py
+          python3 -m py_compile experiments/human-a04/generate_and_render.py
+      - name: Inspect evaluated instances and drivers; render single neutral close-up
+        env:
+          OMP_NUM_THREADS: '4'
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          timeout -k 15s 780s python3 -u experiments/human-a04/generate_and_render.py
+          python3 - <<'PY'
+          import json,pathlib
+          p=pathlib.Path('artifacts/human-a04')
+          r=json.loads((p/'report.json').read_text())
+          assert r['status'].startswith('A04_DRIVER_NEUTRAL_AND_STRAP_PROVENANCE')
+          assert len(r['renders'])==1
+          assert len(r['a03_brow_expression']['disabled_driver_paths'])>0
+          assert len(r['a04_camera_raycast'])==9
+          assert (p/'front.png').stat().st_size>7000
+          assert (p/'human-a04-driver-neutral.blend').stat().st_size>100000
+          assert not r['human_visual_approval'] or r['human_visual_approval']=='BLOCKED'
+          print("HUMAN_A04_ONE_FRAME_TECHNICAL_PASS_NOT_VISUALLY_APPROVED")
+          PY
+      - name: Archive evaluated driver/raycast proof and actual Blender files
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: human-a04-driver-strap-audit
+          path: artifacts/human-a04/
+          retention-days: 7
+          if-no-files-found: warn
