@@ -9,7 +9,7 @@
   "automatic_deployment_enabled": false,
   "source_of_truth": "GitHub main for shared handoff, with latest implementation on linked experimental branches (NOT merged)",
   "priority": "P0",
-  "priority_task": "HUMAN-A07 scalp hairline: correct front follicle mask (1/16500 front classified), add asymmetric natural edge, preserve BVH scalp-hugging strands. Material film source and WebGL remains blocked; A05 best original skin.",
+  "priority_task": "MIRA02 evidence: fix deterministic ~3.95mm jaw/lip centerline fold caused by hard sign(dx) in facial morph; do single continuous-falloff geometry test then matched clay Cycles. Eye and card hair defects are shared original CC0/Blender shader issues. No redundant simultaneous cosmetic edits.",
   "owner_decisions": [
     "hardest problems first",
     "one visually excellent isolated hero before scaling",
@@ -404,5 +404,31 @@
     "visual_issue": "uniform combed cap and incorrect front hairline follicle distribution",
     "next": "Normalize frontness using scalp polygon longitudinal min and max, enforce front coverage; irregular hairline and temple guides",
     "production_deployed": false
+  },
+  "mira02_original_source_audit": {
+    "date": "2026-10-17",
+    "branch": "experiment/mira02-original-vs-variant-diagnostic",
+    "findings": "docs/mira02-source-audit.md",
+    "verified_run": 39043998893,
+    "run_conclusion": "failure_after_six_actual_render_outputs_due_to_late_report_logging_KeyError",
+    "artifact_id": 12105465417,
+    "real_render_files": 6,
+    "render_resolution": [
+      700,
+      700
+    ],
+    "frame_hashes_verified": true,
+    "packed_blend_bytes": 50717650,
+    "original_vitruvian_vs_mira_same_camera_and_shader": true,
+    "crease_present_on_original": false,
+    "crease_present_on_mira": true,
+    "crease_persists_after_clay": true,
+    "root_cause": "discontinuous signed lateral facial offset at x0 in sculpt_variant",
+    "estimated_max_centerline_discontinuity_mm": 3.946,
+    "eye_morph_direct_effect": "negligible_vs_shared_original_shader",
+    "hair_morph_direct_effect": "none",
+    "new_independent_human_approved": false,
+    "no_production_deployment": true,
+    "next": "one mathematically smooth centerline corrective test, not combined eye and hair edits"
   }
 }
