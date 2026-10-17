@@ -1,8 +1,5 @@
 name: Experimental authentic Blender Studio Einar head-look blink pose
 on:
-  push:
-    branches:
-      - experiment/einar-evaluated-pose-20261017
   workflow_dispatch:
 permissions:
   contents: read
