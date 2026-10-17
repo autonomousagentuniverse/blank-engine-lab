@@ -411,5 +411,21 @@
       "not photographic quality"
     ],
     "workflow_manual_only": true
+  },
+  "human01_facial_geometry_candidate": {
+    "schema": "blank.human01.eye-seating.review.v1",
+    "branch": "experiment/human01-mpfb-generated",
+    "source_sha256": "501d8aa88d84cd17bd072dec38ae6f231a59b56000d3f20e439054310fb050d7",
+    "measured_eye_front_m": 0.144794,
+    "measured_lower_socket_front_m": 0.1265,
+    "source_recess_m": 0.016294,
+    "expected_eye_front_after_m": 0.1285,
+    "teeth_depth_rel_lip_m": -0.005335,
+    "technical": "local_original_GLB_candidate_PASS",
+    "actual_new_browser_workflow": "NOT_RUN",
+    "visual": "BLOCKED",
+    "lips_corrected": false,
+    "hair_corrected": false,
+    "source_asset_changed": false
   }
 }

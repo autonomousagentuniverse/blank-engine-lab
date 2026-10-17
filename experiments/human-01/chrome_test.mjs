@@ -20,7 +20,7 @@ try{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',e=>{if(e.type()==='error')errors.push(e.text());});
  await page.goto('http://127.0.0.1:'+server.address().port+'/experiments/human-01/',{waitUntil:'domcontentloaded'});
  await page.waitForFunction(()=>typeof window.humanViewer?.load==='function');
- const data=await page.evaluate(()=>window.humanViewer.load());
+ const data=await page.evaluate(()=>window.humanViewer.load('baseline'));
  console.log('HUMAN01_REAL_THREEJS_GLTF',JSON.stringify(data).slice(0,2600));
  assert.equal(data.asset_id,'human-01');assert.ok(data.triangles>10000);
  assert.ok(data.mesh_count>=3,'Eyes, hair, clothes or body missing');
@@ -31,8 +31,25 @@ try{
    await page.locator('canvas').screenshot({path:join(OUT,'human01-webgl-'+view+'.png'),timeout:30000});
    console.log('HUMAN01_WEBGL_VIEW_SAVED',view);
  }
+ // The baseline is preserved and the corrected eye GLB is independently loaded
+ // through the REAL Chrome/Three.js renderer under exactly the same cameras.
+ const candidate=await page.evaluate(()=>window.humanViewer.load('eye-seat-candidate'));
+ assert.equal(candidate.review_variant,'eye-seat-candidate');
+ assert.equal(candidate.mesh_count,data.mesh_count);
+ assert.equal(candidate.rig_bones_in_runtime,data.rig_bones_in_runtime);
+ assert.equal(candidate.triangles,data.triangles);
+ for(const view of ['face_front','face_three_quarter']){
+   await page.evaluate(v=>window.humanViewer.show(v),view);
+   const target=join(OUT,'human01-webgl-eye-seat-'+view+'.png');
+   await page.locator('canvas').screenshot({path:target,timeout:30000});
+   const before=await readFile(join(OUT,'human01-webgl-'+view+'.png'));
+   const after=await readFile(target);
+   assert.notEqual(Buffer.compare(before,after),0,'Candidate must visibly change pixels: '+view);
+   console.log('HUMAN01_CANDIDATE_REAL_WEBGL_REVIEW',view);
+ }
  assert.deepEqual(errors,[]);
- await writeFile(join(OUT,'webgl-report.json'),JSON.stringify({...data,webgl_views:5,
-  status:'NEW_HUMAN_REAL_WEBGL_IMAGES_CAPTURED_VISUAL_REVIEW_REQUIRED'},null,2)+'\n');
+ await writeFile(join(OUT,'webgl-report.json'),JSON.stringify({...data,
+  candidate_review: candidate,webgl_views:7,
+  status:'BASELINE_AND_EYE_SEAT_GENUINE_WEBGL_SCREENSHOTS_VISUAL_APPROVAL_BLOCKED'},null,2)+'\n');
  console.log('HUMAN01_ACTUAL_BROWSER_RENDER_PASSED');
 }finally{await browser?.close();await new Promise(ok=>server.close(ok));}

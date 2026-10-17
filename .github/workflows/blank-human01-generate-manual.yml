@@ -52,9 +52,15 @@ jobs:
           test -s artifacts/human-01/human-01.glb
       - name: Verify genuine new human eyes hair rig and geometry
         run: python3 experiments/human-01/validate_human_glb.py
+      - name: Measure eye/socket anatomy and produce reversible eye-fit candidate
+        run: |
+          python3 experiments/human-01/face_alignment.py
+          python3 -m unittest discover -v -s experiments/human-01 -p 'test_face_alignment.py'
+          test -s artifacts/human-01/human-01-eye-seat-candidate.glb
+          test -s artifacts/human-01/face-fit-report.json
       - name: Unchanged Blank Engine regression
         run: npm test
-      - name: Render FIVE genuine human WebGL views in Chrome
+      - name: Render baseline FIVE and corrected-eye TWO real human WebGL views in Chrome
         run: |
           node --check experiments/human-01/chrome_test.mjs
           node experiments/human-01/chrome_test.mjs

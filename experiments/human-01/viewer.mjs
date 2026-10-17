@@ -11,8 +11,11 @@ for(const [p,color,energy] of [[[-3,6,-4],0xffe7d7,3.2],[[3,4,-2],0xe0edff,2.2],
 }
 const camera=new THREE.PerspectiveCamera(35,W/H,.01,1000);
 let model=null, report={},center=new THREE.Vector3(),height=1.7;
-async function load(){
- const data=await new GLTFLoader().loadAsync('/artifacts/human-01/human-01.glb');
+async function load(variant='baseline'){
+ if(!['baseline','eye-seat-candidate'].includes(variant))throw Error('Unsupported review variant');
+ if(model){scene.remove(model);model=null;}
+ const asset=variant==='baseline'?'human-01.glb':'human-01-eye-seat-candidate.glb';
+ const data=await new GLTFLoader().loadAsync('/artifacts/human-01/'+asset);
  model=data.scene;scene.add(model);model.updateWorldMatrix(true,true);
  const bounds=new THREE.Box3().setFromObject(model);
  bounds.getCenter(center);height=bounds.getSize(new THREE.Vector3()).y;
@@ -24,7 +27,7 @@ async function load(){
   arr.forEach(m=>{if(m){mats.add(m.name);if(m.map)textured++;}});
  }if(o.isBone)bones++;});
  if(meshCount<3||faces<10000||!names.some(x=>x.includes('HUMAN01_NewPerson_Body')||x.toLowerCase().includes('base')))throw Error('No credible newly parameterized human body in source GLB');
- report={schema:'blank.human01.webgl.v1',asset_id:'human-01',origin:'New MPFB2 parametric human from CC0 assets',
+ report={schema:'blank.human01.webgl.v1',asset_id:'human-01',review_variant:variant,origin:'New MPFB2 parametric human from CC0 assets',
   mesh_count:meshCount,triangles:Math.round(faces),material_count:mats.size,
   textured_material_instances:textured,skin_meshes:skins,rig_bones_in_runtime:bones,
   runtime_threejs_webgl:true,source_einar_used:false,source_aster_used:false,
