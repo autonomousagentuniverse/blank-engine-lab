@@ -9,7 +9,7 @@
   "automatic_deployment_enabled": false,
   "source_of_truth": "GitHub main for shared handoff, with latest implementation on linked experimental branches (NOT merged)",
   "priority": "P0",
-  "priority_task": "HUMAN-01 close-up photorealism foundation: real anatomical orbit/eyelid/lips/teeth and hair topology audit; reject arbitrary uniform eye recess; compare licensed scan-quality head alternatives plus matched Blender Cycles/GLB/Three.js renders with explicit visual gate",
+  "priority_task": "Deconstruct authentic Blender Studio Einar source facial anatomy and shader/UV/rig dependency graphs from publisher-pinned .blend, verify source-to-WebGL loss, then use methods to create a new human; no more unmeasured HUMAN-01 eye offset fixes",
   "owner_decisions": [
     "hardest problems first",
     "one visually excellent isolated hero before scaling",
@@ -246,5 +246,23 @@
     "no_new_render": true,
     "no_new_model": true,
     "visual_acceptance": "BLOCKED"
+  },
+  "einar_source_recovery": {
+    "source_status": "re-downloadable_from_official_pinned_Blender_Studio_url",
+    "source_original_downloaded_in_github_actions": true,
+    "persistently_stored_in_repo": false,
+    "found_in_connected_supabase_storage": false,
+    "original_zip_bytes": 579834421,
+    "original_blend_bytes": 91323760,
+    "official_url": "https://studio.blender.org/download-source/files/41/419e83fb75f30b989adf7920dec7a21c/419e83fb75f30b989adf7920dec7a21c.zip",
+    "zip_sha256": "3cbb5a1dd9ffd3ca39edab420a83ea7f7db337b435a78ef27a0c87ff3e6977f7",
+    "archived_source_model_audit": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38945620587",
+    "archived_cycles_render": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38947591860",
+    "new_deconstruction_branch": "experiment/einar-structural-deconstruction-v1",
+    "new_deconstruction_commit": "2ee68a716f60f492ae2c62070c36722dda29c820",
+    "new_deconstruction_run": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38992142171",
+    "new_run_state": "IN_PROGRESS_NOT_VERIFIED",
+    "licensor": "Einar Rig (CC-BY) Blender Foundation | studio.blender.org",
+    "no_production_deployment": true
   }
 }
