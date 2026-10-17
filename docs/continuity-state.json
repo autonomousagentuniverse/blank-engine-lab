@@ -9,7 +9,7 @@
   "automatic_deployment_enabled": false,
   "source_of_truth": "GitHub main for shared handoff, with latest implementation on linked experimental branches (NOT merged)",
   "priority": "P0",
-  "priority_task": "HUMAN-A05 strap root cause resolved and verified in Cycles; now restore visually convincing independent scalp groom and neutral facial identity/material from actual source geometry and shader inspection, no arbitrary old Einar-only corrections; preserve A02 mouth, eye stack, full 301-node skin and isolate geometry; no production deploy",
+  "priority_task": "HUMAN-A06: stop random scalp hair scatters. Evaluate scalp geometry and build groom guides / density masks before trying skin-film Cycles. Publisher Einar ZIP 503/504; best current film material baseline A05. No WebGL or deployment.",
   "owner_decisions": [
     "hardest problems first",
     "one visually excellent isolated hero before scaling",
@@ -361,5 +361,28 @@
     "webgl_parity_tested": false,
     "source_original_modified": false,
     "deployed": false
+  },
+  "human_a06_experiment": {
+    "status": "TWO_REAL_CLAY_RENDER_TESTS_SUCCESSFUL_VISUAL_FAILED_FULL_MATERIAL_BLOCKED",
+    "source_branch": "experiment/human-a06-visible-scalp-clean-skin",
+    "geometry_branch": "experiment/human-a06-scalp-geometry-proof",
+    "verified_geometry_runs": [
+      39028864347,
+      39029093890
+    ],
+    "blocked_full_source_runs": [
+      39028152760,
+      39028316671
+    ],
+    "restored_from_a05_github_artifact": true,
+    "visible_groom_1_strands": 11500,
+    "visible_groom_2_strands": 12064,
+    "visible_groom_aesthetics": "FAILED_porcupline_then_halo",
+    "full_skin_changes_rendered": false,
+    "source_publisher_outage": "curl 92,18,503,504",
+    "best_photoreal_material_baseline": "HUMAN-A05",
+    "next": "evaluated scalp/groom guides and follicle density mask with root clearance; no random uniform scattering",
+    "new_human_approved": false,
+    "no_deploy": true
   }
 }

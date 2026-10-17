@@ -103,6 +103,18 @@ Owner approved next step after A03: correct source-driven frown and eliminate ha
 
 **Next P0:** Fix material/sculpt-age identity and actual scalp hair visibility by inspecting geometry and source shader nodes, but preserve proven A05 clean object isolation, A02 mouth contact and original film eye/skin improvements. Aim for genuinely independent face source afterward, not simply more tiny Einar morphs.
 
+
+### HUMAN-A06 scalp geometry diagnosis — 2026-10-17
+
+**State:** two actual Blender Cycles *CLAY* geometry runs, both successful TECHNICALLY, both visibly failed grooming aesthetics. Prior A05 remains best source full-material render. **No new photoreal approved human.**
+
+- [A06 full film-source run 39028152760](https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/39028152760) failed before scene load: Blender Studio publisher 580MB ZIP HTTP2 curl 92.
+- [A06 HTTP/1.1 retry 39028316671](https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/39028316671) failed before scene load: interrupted transfers and official source 503/504. Proposed A06 film skin bruise factor and albedo changes **not rendered**; no de-aging claim.
+- [Offline clay run 39028864347](https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/39028864347): reused authentic A05 89MB derived .blend from prior GitHub Actions archive rather than re-downloading source. 11,500 scalp curves rendered (15–36 mm), but looked like a stiff white brush with overexposed lighting — aesthetic FAIL.
+- [Corrected clay run 39029093890](https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/39029093890): 12,064 dark scalp curves visible (7–20 mm), better exposure but a floating bristle halo and thin coverage inside scalp — aesthetic FAIL. Artifact `human-a06-scalp-geometry-clay-proof` ID 12099797198 contains 2 Cycles PNGs, report JSON and actual Blender .blend. These **CLAY** images replace the original complex Einar skin shader for diagnostic purposes; do not compare as a photoreal quality improvement.
+
+**Root cause to investigate next:** fitted evaluated scalp and directional authored hair guides, density soft masks, attachment/root clearance, realistic crown direction and fade. Cannot pass from strand count alone. Preserve A05 mouth/eye/shader/rig/strap cleanup. The full-material A06 shader code resides on branch `experiment/human-a06-visible-scalp-clean-skin`; do not promote unrendered material modifications to main. Source original Einar CC-BY licensing remains required. [Detailed experiments and verdict](https://github.com/autonomousagentuniverse/blank-engine-lab/blob/experiment/human-a06-scalp-geometry-proof/docs/human-a06-findings.md). All A06 CI runs now workflow_dispatch-only, **no deployment**.
+
 ## 1. Concept and product vision
 
 **Blank Box** is the eventual AI-native gaming/console vision; **Blank Engine** is its creation and runtime technology. The goal is an engine in which people describe or direct games, specialized agents collaborate on validated game designs, and builders produce reusable characters, objects, scenes and complete worlds. Agents do not bypass schema validation or human visual acceptance.
@@ -356,3 +368,6 @@ Geometry artifacts are **data**, not merely screenshots or untracked instruction
 
 - 2026-10-17 [PROPOSED] Bring verified A04 forensic / A05 source-rig-plus-clothing Cycles proof to canonical main handoff. No production code merge, no Vercel deploy.
 - 2026-10-17 [COMMITTED] Main continuity now records A04 camera-raycast strap origin, brow driver bone formulas, A05 run SUCCESS, 43 clothing objects unlinked, genuine strap removal in PNG, verified rig shape values 0.58/0.30, remaining severe identity/skin age and bald hair failures, and manual-only code branch. No user visual acceptance of finished new human claimed.
+
+- 2026-10-17 [PROPOSED] Capture HUMAN-A06 real scalp Cycles clay render work, 2 publisher source download failures and 2 successful-but-visually-failed groom proofs; do not overclaim full skin material or photoreal results.
+- 2026-10-17 [COMMITTED] Recorded A06 technical scalp rendering, false confidence of counts, source 503/504 outage, continuity and AGENTS P0; A05 still best real film shader asset. No user-facing new render of photoreal A06, no production merge/deploy.
