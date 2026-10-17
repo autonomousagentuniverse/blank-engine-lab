@@ -1,0 +1,68 @@
+name: Experimental authentic Blender Studio Einar head-look blink pose
+on:
+  push:
+    branches:
+      - experiment/einar-evaluated-pose-20261017
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  einar-source-pose-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 32
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Retrieve pinned publisher source restoration script
+        run: |
+          git fetch --no-tags --depth=1 origin b2ef409e6dfe9caafafe39a3c2c66d9554d7e1ca
+          mkdir -p experiments/hero-v4 .ci-einar artifacts/einar-pose-evaluation
+          git show FETCH_HEAD:experiments/hero-v4/restore_textures.py > experiments/hero-v4/restore_textures.py
+          python3 -m py_compile experiments/hero-v4/restore_textures.py experiments/einar-pose/measure_actual_pose.py
+      - name: Download and verify original licensed Einar publisher .blend and 63 textures
+        run: |
+          curl --fail --location --retry 3 --connect-timeout 40 --max-time 700 --silent --show-error \
+            'https://studio.blender.org/download-source/files/41/419e83fb75f30b989adf7920dec7a21c/419e83fb75f30b989adf7920dec7a21c.zip' \
+            -o .ci-einar/einar-official.zip
+          python3 experiments/hero-v4/restore_textures.py
+          python3 - <<'PY'
+          import hashlib,pathlib
+          p=pathlib.Path('.ci-einar/source/einar_release_v1.blend')
+          assert p.exists()
+          h=hashlib.sha256()
+          with p.open('rb') as f:
+            for c in iter(lambda:f.read(4*1024*1024),b''):h.update(c)
+          assert h.hexdigest()=='1c6663da0a2e9d6822978467c244e9186edc76083bae2414e02f9e695e711f7b'
+          print('PUBLISHER_EINAR_SOURCE_BYTES_AND_LICENSE_RECORD_VERIFIED',p.stat().st_size)
+          PY
+      - name: Install authentic headless Blender bpy 4.5.3
+        run: python3 -m pip install --no-cache-dir --disable-pip-version-check bpy==4.5.3
+      - name: Measure source authored blink and look source controls (bounded)
+        env:
+          OMP_NUM_THREADS: '4'
+        run: timeout -k 15s 1120s python3 -u experiments/einar-pose/measure_actual_pose.py
+      - name: Validate provenance and actual evaluated geometry or reject
+        run: |
+          python3 - <<'PY'
+          import pathlib,json
+          p=pathlib.Path('artifacts/einar-pose-evaluation/actual-einar-pose-report.json')
+          assert p.exists(),'Actual Blender pose report missing'
+          d=json.loads(p.read_text())
+          assert d['source_blend_sha256']=='1c6663da0a2e9d6822978467c244e9186edc76083bae2414e02f9e695e711f7b'
+          assert d['source_unchanged'] is True and not d['release_allowed'] and not d['new_human_generated']
+          for state in ('neutral_to_blink','neutral_to_source_head_look'):
+            assert 'GEO-einar_head' in d[state]
+            assert d[state]['GEO-einar_head']['status']=='measured'
+          print('POSE_ANATOMICAL_EVIDENCE_SAVED',d['neutral_to_blink']['GEO-einar_head']['max_mm'],
+                d['neutral_to_source_head_look']['GEO-einar_head']['max_mm'])
+          PY
+      - name: Archive source provenance and measurements but NEVER licensed .blend or textures
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: einar-authentic-blender-pose-measurements
+          path: artifacts/einar-pose-evaluation/
+          if-no-files-found: warn
+          retention-days: 7
