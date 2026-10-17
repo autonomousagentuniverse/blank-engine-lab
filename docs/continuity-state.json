@@ -542,7 +542,7 @@
   "one_shot_quality_first_reset": {
     "date": "2026-10-17",
     "branch": "refactor/one-shot-quality-first",
-    "status": "COMMITTED_TEST_PENDING",
+    "status": "REAL_BLENDER_SWEEP_SUCCESS_NODE_TEST_FIXTURES_CORRECTED_CI_PENDING",
     "controller": "character-pipeline/one-shot/quality-gates.mjs",
     "cli": "character-pipeline/one-shot/quality-cli.mjs",
     "tests": "character-pipeline/one-shot/quality-gates.test.mjs",
@@ -559,6 +559,32 @@
     "cyclic_cosmetic_iterations_disabled": true,
     "human_visual_review_required": true,
     "production_deployed": false,
-    "autonomous_photoreal_human_generated": false
+    "autonomous_photoreal_human_generated": false,
+    "initial_run": 39066589038,
+    "real_light_sweep_result": "SUCCESS",
+    "initial_contract_result": "FAIL_TEST_FIXTURE_FACE_RETENTION_FIELD_MISSING",
+    "artifact_id": 12114115005,
+    "light_sweep_hair_luminance": {
+      "dim": 134.76,
+      "medium": 166.36,
+      "original": 181.39
+    },
+    "light_sweep_hair_ratios": {
+      "dim": 2.145,
+      "medium": 2.647,
+      "original": 2.887
+    },
+    "face_display_luminance": {
+      "dim": 175.66,
+      "medium": 201.37,
+      "original": 214.02
+    },
+    "face_retention": {
+      "dim": 0.821,
+      "medium": 0.941,
+      "original": 1
+    },
+    "example_limit_hair_ratio": 1.8,
+    "workflow_manual_only": true
   }
 }

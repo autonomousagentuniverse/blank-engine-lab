@@ -23,3 +23,18 @@ The isolated workflow uses original successful MIRA05 .blend SHA256 07806e89a1ad
 Engineering thresholds such as target ratio 1.8, minimum scalp coverage .90, hair-direction diversity .65 and lip jump <0.1mm are preliminary veto controls, not independently validated universal anatomical criteria. They must be calibrated against a rights-cleared visually approved exemplar. The MIRA05 current ratio ~2.93 would fail the default example plan, as desired.
 
 No production deployment, no new independent anatomical source, no GLB export or human visual approval in this phase. New pipeline remains an isolated branch until reviewed and explicitly authorized.
+
+## First real calibration evidence and regression fixture correction
+
+Initial [CI run 39066589038](https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/39066589038): the *actual Blender lighting job succeeded* and archived 3 authentic source-locked 500px Cycles frames plus measured hair mask report (artifact **12114115005**, **1,176,144 bytes**). The **unit-test job failed** because the new test fixture omitted the pre-existing mandatory face luminance retention threshold and cheek reference measurements; this failure was a test contract mismatch, not a failed source render. Corrected test fixtures now preserve the face guard, and a separate negative test demonstrates why a hair-darkening method that underexposes the face must be rejected. Do not relabel the first workflow run as green.
+
+The real light-sweep measured **78,105 magenta-mask hair pixels** from the prior independently verified material A/B. Same frozen MIRA05 SHA256 and same original Hair BSDF/camera throughout. Recorded display-RGB ratios of lit hair versus source-matched dark emission:
+- 100% lamps: hair display brightness **181.39**, ratio **2.887×**;
+- 65% lamps: brightness **166.36**, ratio **2.647×**;
+- 32% lamps: brightness **134.76**, ratio **2.145×**.
+
+Original lamps Mira_Key 46, Mira_Fill 23, Mira_Rim 38 (arbitrary Blender area-light energy units). Reducing energy by 68% did **not** meet the experimental target ratio 1.8 and cannot repair the unchanged hair-curtain geometry. Skin also darkens: independent same-camera cheek regions (two fixed 35×60 pixel ROIs) have display-RGB mean **214.02 at 100%**, **201.37 at 65%** (**94.1% retention**) and **175.66 at 32%** (**82.1% retention**). ROIs are fixed for this particular portrait, not a general human skin detector. This establishes the trade-off: *light reduction alone is inadequate*, and individual physical shader response plus guide/coverage geometry needs source-aware reconstruction.
+
+The Python light-measurement script now writes cheek face luminance and retention alongside hair ratios to avoid approving a character by darkening its entire face. The user-facing one-shot controller itself still requires a new human source and manual image review; no new human was generated or deployed.
+
+Corrected unit tests: pending second isolated GitHub run at this commit; the earlier lighting job is not unnecessarily rerun.

@@ -25,6 +25,12 @@ if n<4000:raise RuntimeError("Magenta source-backed hair mask too small "+str(n)
 def lum(arr):
  v=arr[mask]
  return float(np.mean(.2126*v[:,0]+.7152*v[:,1]+.0722*v[:,2]))
+def face_lum(arr):
+ # Manual fixed crop from same CAM_MIRA_front (500x500); cheek tissue only.
+ # This is a same-camera relative exposure measurement, not skin realism.
+ cheek=np.concatenate([arr[260:320,180:215].reshape(-1,3),
+                       arr[260:320,285:320].reshape(-1,3)],axis=0)
+ return float(np.mean(.2126*cheek[:,0]+.7152*cheek[:,1]+.0722*cheek[:,2]))
 e=lum(np.asarray(Image.open(BASE/dark["file"]).convert("RGB")).astype("float32"))
 results={}
 for mode in ("dim","medium","original"):
@@ -38,10 +44,16 @@ for mode in ("dim","medium","original"):
    "lit_hair_brightness_display":round(measured,2),
    "dark_emission_brightness_display":round(e,2),
    "lit_to_emission_ratio":round(measured/e,3),
+   "cheek_face_brightness_display":round(face_lum(arr),2),
    "image_sha256":r["sha256"],
    "original_light_energies":r["light_energies_original"],
    "test_light_energies":r["light_energies_tested"]}
+face_reference=results["original"]["cheek_face_brightness_display"]
+for row in results.values():
+ row["face_brightness_retention_vs_original"]=round(row["cheek_face_brightness_display"]/face_reference,3)
 audit={"schema":"blank.one-shot.real-light-calibration.v1",
+       "face_roi_pixels":"fixed left and right cheek rectangles x180:215, x285:320, y260:320 in 500px CAM_MIRA_front",
+       "face_roi_limit":"for this unchanged MIRA05 only; requires relabeling on any different person",
        "source_sha256":source,"magenta_mask_source_sha256":mag["sha256"],
        "hair_mask_pixel_count":n,
        "same_source_geometry_and_camera":True,"three_true_cycles_renders":True,

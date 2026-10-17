@@ -1,0 +1,22 @@
+name: Quality-first one-shot regression tests — no rendering or deployment
+on:
+  push:
+    branches: [refactor/one-shot-quality-first]
+    paths: ['.github/workflows/one-shot-quality-regression.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  negative-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Reject fake sources, overbright hair, washed-out skin, bad topology and fake images
+        run: |
+          node --test character-pipeline/one-shot/quality-gates.test.mjs
+          node --check character-pipeline/one-shot/quality-cli.mjs
+          node --check character-pipeline/one-shot/quality-gates.mjs

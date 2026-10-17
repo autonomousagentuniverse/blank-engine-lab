@@ -1,8 +1,5 @@
 name: Quality-first one-shot character gates and real light-sweep A/B
 on:
-  push:
-    branches: [refactor/one-shot-quality-first]
-    paths: ['.github/workflows/one-shot-quality-first.yml']
   workflow_dispatch:
 permissions:
   contents: read

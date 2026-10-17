@@ -26,7 +26,8 @@
     "min_direction_entropy": 0.65,
     "max_hair_head_penetration": 0.02,
     "max_eye_intersection_mm": 0.25,
-    "max_lip_midline_jump_mm": 0.1
+    "max_lip_midline_jump_mm": 0.1,
+    "min_face_luminance_retention": 0.72
   },
   "views": [
     {

@@ -15,7 +15,7 @@ function fixture(){
   targets:{hair_style:'Side-parted layered hair, varied guides',hairline:'Source measured front and temples',
    brow_growth:'Inner upward then outer temporal',eye_anatomy:'Corneal contact and eyelids',
    skin_reference:'Rights cleared physical material charts',identity_goal:'Distinct but CC0 derived human'},
-  mechanical_limits:{max_hair_light_ratio:2.0,min_scalp_coverage:.85,
+  mechanical_limits:{max_hair_light_ratio:2.0,min_scalp_coverage:.85,min_face_luminance_retention:.72,
    min_direction_entropy:.60,max_hair_head_penetration:.02,
    max_eye_intersection_mm:.3,max_lip_midline_jump_mm:.1},
   views:[{id:'front',camera:'CAM_FRONT'},{id:'three_quarter',camera:'CAM_3Q'},
@@ -31,7 +31,7 @@ function fixture(){
  }
  function calibration(mod={}){
   return {lit_hair_luminance:80,emission_hair_luminance:60,hair_mask_pixels:1200,
-   mask_method:'source-matched fixture pixels',
+   mask_method:'source-matched fixture pixels',face_reference_luminance:150,face_luminance:138,
    light_sweep:{source_sha256:sourceHash,levels:3,same_camera:true},...mod};
  }
  function construction(mod={}){
@@ -146,5 +146,12 @@ test('real human review is blocked without prior four-view Cycles preview',()=>{
  rejecting(()=>advance(state,f.plan,f.evidence('human_review',{reviewer:'Actual Person',
  human_attestation:true,eyes:'approve'}),f.root),'WRONG_OR_OUT_OF_ORDER_STAGE');
  assert.equal(state.release_allowed,false);
+ }finally{f.cleanup();}
+});
+
+test('protect human skin exposure when improving hair darkness',()=>{
+ const f=fixture();try{
+ const e=f.evidence('calibration',f.calibration({face_reference_luminance:150,face_luminance:60}));
+ rejecting(()=>advance(f.initial(),f.plan,e,f.root),'SKIN_UNDEREXPOSED_BY_HAIR_FIX');
  }finally{f.cleanup();}
 });
