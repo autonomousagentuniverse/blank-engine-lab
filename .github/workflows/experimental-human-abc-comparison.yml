@@ -1,8 +1,5 @@
 name: Experimental full-human A/B/C concurrent single-pass comparison
 on:
-  push:
-    branches:
-      - experiment/human-abc-correlated-fields-20261017
   workflow_dispatch:
 permissions:
   contents: read
