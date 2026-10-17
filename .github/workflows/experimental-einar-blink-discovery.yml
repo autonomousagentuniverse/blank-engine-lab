@@ -1,5 +1,8 @@
 name: Experimental Einar blink driver anatomy diagnostic
 on:
+  push:
+    branches:
+      - experiment/einar-evaluated-pose-20261017
   workflow_dispatch:
 permissions:
   contents: read
@@ -26,6 +29,17 @@ jobs:
         run: |
           python3 -m pip install --no-cache-dir --disable-pip-version-check bpy==4.5.3
           timeout -k 15s 500s python3 -u experiments/einar-pose/inspect_blink_drivers.py
+      - name: Exercise exact source rig driver-bone targets and measure resulting anatomical motion
+        run: |
+          python3 -m py_compile experiments/einar-pose/probe_authored_rig_blink.py
+          timeout -k 15s 600s python3 -u experiments/einar-pose/probe_authored_rig_blink.py
+          python3 - <<'PY'
+          import json,pathlib
+          d=json.loads(pathlib.Path('artifacts/einar-rig-blink/authored-rig-blink.json').read_text())
+          assert 'combined_rig_blink' in d['probe_cases']
+          assert d['source_unchanged'] and not d['release_allowed']
+          print('REAL_RIG_CONTROL_PROBE_REPORT_SAVED')
+          PY
       - name: Validate and preserve driver mappings without asserting realism
         run: |
           python3 - <<'PY'
@@ -41,7 +55,9 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: einar-blink-driver-diagnostic
-          path: artifacts/einar-driver-inspection/
+          name: einar-authored-blink-controls-diagnostic
+          path: |
+            artifacts/einar-driver-inspection/
+            artifacts/einar-rig-blink/
           retention-days: 7
           if-no-files-found: warn
