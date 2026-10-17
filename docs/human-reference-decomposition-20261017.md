@@ -46,3 +46,15 @@ This directly proves **no attachment to the head object's transform** in these n
 - Preserve full one-shot generation intent: one coherent reference-conditioned anatomical mesh/rig/material/hair system per job, rather than component-by-component cosmetic fixes.
 
 **State:** Source-based comparison and head-transform probe verified. No source-hair physics benchmarking, Einar pose test or measured real-photo skin comparison completed by this run. No new human; no GLB parity; release and deployment blocked.
+
+
+## Additional verified evaluated-blink deformation test — supersedes earlier pending caveat
+
+Real source/pose experiment [GitHub run 39077561840](https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/39077561840) **SUCCESS**, archive artifact 12117263900. `experiments/reference-decomposition/blink_probe.py` reopened exact frozen MIRA05 A .blend with verified SHA256 `9b57bc2aaa1ba0cfec213eb1035f517dfbcebf5fb43443cc85618f42bb39791e`; evaluated its actual head Blender mesh at `Eyes_Closed_Max=0` and `Eyes_Closed_Max=1`, never saving the modified source.
+
+- 17,161 evaluated face vertices, 1,996 orbital-region sampled vertices within 52mm of either globe center.
+- Maximum orbital movement **10.56995mm**, median orbital-region movement **1.04694mm**.
+- `MIRA05_SourceFittedLidContact` four curve-root positions: **0.0mm** movement; `MIRA05_IndividualBrowStrands` 2,600 curve-root positions: **0.0mm** movement, despite face shape changes.
+- The generated contact and brow systems are static snapshots, not driven by the actual blink deformation.
+
+**Verified conclusion:** a real expression moves skin geometry while derived eye-contact and eyebrow roots remain stationary, confirming a deformation-coupling defect in addition to the existing hair/skin material weaknesses. **Limits:** testing root positions does not measure where the entire lid edge should be, actual globe/cornea contact clearance, meniscus meniscus dynamics, or photograph-level realism. The test does not establish that simply parenting curves repairs the neutral look. Do not patch MIRA05; require evaluated expression-bound anatomy as part of the NEXT full one-shot generation architecture. Manual-only CI restored; release/deployment disabled.
