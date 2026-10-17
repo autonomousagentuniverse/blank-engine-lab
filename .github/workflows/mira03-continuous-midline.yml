@@ -1,8 +1,5 @@
 name: MIRA-03 — continuous midline isolate
 on:
-  push:
-    branches: [experiment/mira03-continuous-midline]
-    paths: ['.github/workflows/mira03-continuous-midline.yml']
   workflow_dispatch:
 permissions:
   contents: read
