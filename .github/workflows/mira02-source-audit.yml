@@ -1,8 +1,5 @@
 name: MIRA-02 diagnostic — same-scene original vs MIRA-01
 on:
-  push:
-    branches: [experiment/mira02-original-vs-variant-diagnostic]
-    paths: ['.github/workflows/mira02-source-audit.yml']
   workflow_dispatch:
 permissions:
   contents: read
