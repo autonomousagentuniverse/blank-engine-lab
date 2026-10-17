@@ -261,8 +261,16 @@
     "new_deconstruction_branch": "experiment/einar-structural-deconstruction-v1",
     "new_deconstruction_commit": "2ee68a716f60f492ae2c62070c36722dda29c820",
     "new_deconstruction_run": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38992142171",
-    "new_run_state": "IN_PROGRESS_NOT_VERIFIED",
+    "new_run_state": "SUCCESS",
     "licensor": "Einar Rig (CC-BY) Blender Foundation | studio.blender.org",
-    "no_production_deployment": true
+    "no_production_deployment": true,
+    "source_blend_sha256": "1c6663da0a2e9d6822978467c244e9186edc76083bae2414e02f9e695e711f7b",
+    "latest_structural_report": "https://github.com/autonomousagentuniverse/blank-engine-lab/blob/experiment/einar-structural-deconstruction-v1/docs/einar-source-deconstruction-v1.md",
+    "full_graph_metadata": "https://github.com/autonomousagentuniverse/blank-engine-lab/blob/experiment/einar-structural-deconstruction-v1/docs/source-audits/einar-source-graph.json.gz",
+    "persistent_report_commit": "b2ef409e6dfe9caafafe39a3c2c66d9554d7e1ca",
+    "skin_material_node_count": 301,
+    "skin_material_link_count": 379,
+    "eyelid_modifiers_verified": true,
+    "no_new_photoreal_human_yet": true
   }
 }
