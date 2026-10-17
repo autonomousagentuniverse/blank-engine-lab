@@ -1,8 +1,5 @@
 name: MIRA-05 structural reconstruction — source-aware batch
 on:
-  push:
-    branches: [experiment/mira05-structural-rebuild-batch]
-    paths: ['.github/workflows/mira05-structural-batch.yml']
   workflow_dispatch:
 permissions:
   contents: read
