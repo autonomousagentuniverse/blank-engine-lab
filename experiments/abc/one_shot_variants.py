@@ -10,6 +10,7 @@ import bpy, sys, os, math, json, hashlib, random, statistics, traceback
 from pathlib import Path
 from mathutils import Vector
 from mathutils.bvhtree import BVHTree
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'mira05'))
 from geometry import build_hair,build_brows
 from reconstruction import eyes,skin,identity
 
