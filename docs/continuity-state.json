@@ -9,7 +9,7 @@
   "automatic_deployment_enabled": false,
   "source_of_truth": "GitHub main for shared handoff, with latest implementation on linked experimental branches (NOT merged)",
   "priority": "P0",
-  "priority_task": "Deconstruct authentic Blender Studio Einar source facial anatomy and shader/UV/rig dependency graphs from publisher-pinned .blend, verify source-to-WebGL loss, then use methods to create a new human; no more unmeasured HUMAN-01 eye offset fixes",
+  "priority_task": "Replace Einar source identity with independently created/licensed distinct high-fidelity anatomical head, then preserve deconstructed eye/cornea/meniscus, facial deformation, skin/hair workflow; Cycles first. Existing Einar-derived HUMAN-A01 rendered but visually rejected.",
   "owner_decisions": [
     "hardest problems first",
     "one visually excellent isolated hero before scaling",
@@ -272,5 +272,46 @@
     "skin_material_link_count": 379,
     "eyelid_modifiers_verified": true,
     "no_new_photoreal_human_yet": true
+  },
+  "human_a01_first_real_cycles": {
+    "date": "2026-10-16",
+    "experiment_branch": "experiment/human-a01-einar-derived-cycles",
+    "script_commit": "5823a940745d0938b05716ac226e6a9aff168f4d",
+    "findings_commit": "eab910530b1480b62686e247d562efe619f35f0c",
+    "workflow_run_url": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/38993936500",
+    "workflow_conclusion": "success",
+    "original_source": "Einar Rig CC-BY Blender Foundation",
+    "identity_new_and_distinct": false,
+    "result_kind": "source-derived_face_morph_not_independent_anatomical_generation",
+    "render_engine": "Blender Cycles",
+    "render_views": [
+      "front",
+      "three_quarter",
+      "profile",
+      "eyes_macro"
+    ],
+    "render_resolution": [
+      700,
+      700
+    ],
+    "rendered_png_count": 4,
+    "original_blend_modified": false,
+    "new_derived_blend_bytes": 92358625,
+    "blend_source_texture_dependency": "external_source_image_paths; not packed standalone",
+    "face_vertices": 4596,
+    "retained_shape_keys": 66,
+    "peak_face_vertex_shift_mm": 12.56,
+    "cycled_film_shader_nodes": 301,
+    "technical_gate": "PASS",
+    "visual_gate": "FAIL",
+    "visual_blockers": [
+      "face still recognizable Einar identity",
+      "black mouth slit",
+      "ruddy/worn source skin and source hairstyle",
+      "detached strap props"
+    ],
+    "new_approved_photorealistic_human": false,
+    "gltf_export_attempted": false,
+    "production_deployed": false
   }
 }
