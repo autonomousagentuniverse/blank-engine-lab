@@ -1,8 +1,5 @@
 name: HUMAN-A06 — offline real Blender scalp geometry diagnostic from A05
 on:
-  push:
-    branches: [experiment/human-a06-scalp-geometry-proof]
-    paths: ['.github/workflows/blank-human-a06-geometry.yml']
   workflow_dispatch:
 permissions:
   contents: read
