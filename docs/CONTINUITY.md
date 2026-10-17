@@ -309,3 +309,5 @@ Geometry artifacts are **data**, not merely screenshots or untracked instruction
 - 2026-10-17 [COMMITTED] HUMAN-A07 one-shot source-derived evaluated-scalp/guide Cycles run 39036649311 STARTED from 8e8ca5a. After initial launch restored experimental workflow to manual-only; render and actual visual result PENDING, no unverified success claim. No production deploy.
 
 - 2026-10-17 [FAILED GATE NOT MODEL] First HUMAN-A07 test run 39036649311 recovered original A05 Blender derivative and opened Blender successfully, but source evaluated-head vertex gate incorrectly hardcoded >=5000 even though Einar film base face is approximately 4596 vertices; raised AssertionError before sampling or render. Correct gate >=3000, log actual evaluated verts/polygons. Test retry to run; no prior visual success claimed. Experimental branch only, no deploy.
+
+- 2026-10-17 [COMMITTED] Corrected A07 source vertex gate run 39036792357 STARTED; restored manual-only GitHub workflow immediately. Real Blender render pending visual review, user quality criteria not yet met.
