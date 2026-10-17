@@ -1,8 +1,5 @@
 name: HUMAN-A03 corrected original-source hair shader and parenting
 on:
-  push:
-    branches: [experiment/human-a03-neutral-expression-hair]
-    paths: ['.github/workflows/blank-human-a03-cycles.yml']
   workflow_dispatch:
 permissions:
   contents: read
