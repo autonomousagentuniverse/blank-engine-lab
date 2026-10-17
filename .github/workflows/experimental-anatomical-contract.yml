@@ -1,8 +1,5 @@
 name: Experimental human anatomical dependency contract
 on:
-  push:
-    branches:
-      - experiment/anatomical-dependency-contract-20261017
   workflow_dispatch:
 permissions:
   contents: read
