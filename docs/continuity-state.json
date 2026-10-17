@@ -542,7 +542,7 @@
   "one_shot_quality_first_reset": {
     "date": "2026-10-17",
     "branch": "refactor/one-shot-quality-first",
-    "status": "REAL_BLENDER_SWEEP_SUCCESS_NODE_TEST_FIXTURES_CORRECTED_CI_PENDING",
+    "status": "STAGED_GATES_TESTED_14_OF_14_AND_REAL_BLENDER_LIGHT_SWEEP_VERIFIED",
     "controller": "character-pipeline/one-shot/quality-gates.mjs",
     "cli": "character-pipeline/one-shot/quality-cli.mjs",
     "tests": "character-pipeline/one-shot/quality-gates.test.mjs",
@@ -585,6 +585,14 @@
       "original": 1
     },
     "example_limit_hair_ratio": 1.8,
-    "workflow_manual_only": true
+    "workflow_manual_only": true,
+    "successful_contract_ci_run": 39067029559,
+    "successful_contract_tests": 14,
+    "failed_contract_tests": 0,
+    "real_light_sweep_run": 39066589038,
+    "real_light_sweep_job": "success",
+    "combined_initial_workflow_conclusion": "failure_old_fixture",
+    "workflows_manual_only": true,
+    "hair_32pct_ratio_still_exceeds_experimental_limit": true
   }
 }

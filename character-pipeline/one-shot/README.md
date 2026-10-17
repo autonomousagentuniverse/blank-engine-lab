@@ -38,3 +38,9 @@ Original lamps Mira_Key 46, Mira_Fill 23, Mira_Rim 38 (arbitrary Blender area-li
 The Python light-measurement script now writes cheek face luminance and retention alongside hair ratios to avoid approving a character by darkening its entire face. The user-facing one-shot controller itself still requires a new human source and manual image review; no new human was generated or deployed.
 
 Corrected unit tests: pending second isolated GitHub run at this commit; the earlier lighting job is not unnecessarily rerun.
+
+## Verified completion — 2026-10-17
+
+Source-aware staged quality gate implemented and **14/14 Node negative regression tests passed** in GitHub Actions [39067029559](https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/39067029559). Staged synthetic fixture tests are logic-only, not photoreal proof. Actual frozen-source Blender lighting run [39066589038](https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/39066589038) produced 3 genuine 500px matched Cycles portraits, with image/measurement artifact **12114115005**; that combined workflow is marked **failure** because its old Node fixtures omitted the existing face-retention contract. The corrected Node-only CI is green. Preserve both historical statuses accurately.
+
+Measured lit hair vs dark emission at studio area lamp scale 32%: 134.76/62.84 = 2.145; 65%: 166.36/62.84=2.647; 100%:181.39/62.84=2.887. Fixed-camera cheek ROI luminance at 100% 214.02, 65% 201.37 (94.1% retained), 32% 175.66 (82.1% retained). **Lighting reduction alone does not fix unnatural hair geometry or hit the preliminary 1.8 ratio target.** This is measured source calibration, not a model release. Both testing workflows are back to manual-only. No new original face generator, automatic image-quality model, or production deployment exists yet.

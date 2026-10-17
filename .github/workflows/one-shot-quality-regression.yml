@@ -1,8 +1,5 @@
 name: Quality-first one-shot regression tests — no rendering or deployment
 on:
-  push:
-    branches: [refactor/one-shot-quality-first]
-    paths: ['.github/workflows/one-shot-quality-regression.yml']
   workflow_dispatch:
 permissions:
   contents: read
