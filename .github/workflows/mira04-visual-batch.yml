@@ -1,0 +1,64 @@
+name: MIRA-04 parallel visual quality batch (8 real Cycles views)
+on:
+  push:
+    branches: [experiment/mira04-parallel-visual-batch]
+    paths: ['.github/workflows/mira04-visual-batch.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  isolate-and-compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Install exact tested Blender bpy engine
+        run: python3 -m pip install --no-cache-dir --disable-pip-version-check bpy==4.5.3
+      - name: Retrieve frozen packed MIRA-03 from verified successful run, no CC0 or Einar downloads
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p baseline-mira03 artifacts/mira04-batch
+          gh run download 39045175123 --repo autonomousagentuniverse/blank-engine-lab --name mira03-matched-midline-isolate --dir baseline-mira03
+          python3 - <<'PY'
+          import hashlib,pathlib
+          p=pathlib.Path('baseline-mira03/mira03-continuous-midline.blend')
+          assert p.is_file() and p.stat().st_size>20000000
+          h=hashlib.sha256(p.read_bytes()).hexdigest()
+          assert h=='1809398d604efa567a063697f34d84dc10c6db95914f38a31ac5bd6912e5e96d',h
+          print('MIRA03_PINNED_IMMUTABLE_PACKED_SOURCE',h)
+          PY
+          python3 -m py_compile experiments/mira04/batch_variants.py
+      - name: Render eight matched Cycles views across four independent modifications
+        env:
+          OMP_NUM_THREADS: '4'
+        run: |
+          timeout -k 15s 780s python3 -u experiments/mira04/batch_variants.py
+          python3 - <<'PY'
+          import json,pathlib,hashlib
+          d=pathlib.Path('artifacts/mira04-batch')
+          r=json.loads((d/'report.json').read_text())
+          assert r['status']=='EIGHT_REAL_CYCLES_VARIANT_RENDERS_SUCCESS_REVIEW_REQUIRED',r['errors']
+          assert len(r['frames'])==8
+          assert r['human_visual_approval'] is False and r['production_deployed'] is False
+          assert set(r['modifications'])=={'baseline','eyes','hair_brows','skin','combined'}
+          assert (d/'mira04-batch-combined-candidate.blend').stat().st_size>1500000
+          for f in r['frames']:
+            p=d/f['file']
+            assert p.is_file() and p.stat().st_size>12000
+            assert hashlib.sha256(p.read_bytes()).hexdigest()==f['sha256']
+            assert f['width']==700 and f['height']==700 and f['samples']==20
+          print('MIRA04_EIGHT_MATCHED_CYCLES_TECHNICAL_PASS_VISUAL_REVIEW_PENDING')
+          PY
+      - name: Archive independent variant renders, packed Blender candidate, provenance
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: mira04-eight-way-visual-batch
+          path: artifacts/mira04-batch/
+          retention-days: 7
+          if-no-files-found: warn
