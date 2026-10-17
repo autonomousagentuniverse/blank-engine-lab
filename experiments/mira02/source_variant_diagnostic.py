@@ -286,7 +286,7 @@ def main():
  print("MIRA02_MATCHED_SIX_RENDER_PASS",json.dumps({
   "frames":len(DATA["frames"]),"variant_vertices":sculpt["changed_vertices"],
   "source_mesh_vertices":len(head.data.vertices),
-  "shader_nodes":m["skin_nodes"]}),flush=True)
+  "shader_nodes":DATA["shading"]["skin_nodes"]}),flush=True)
  sys.stdout.flush();os._exit(0)
 try:main()
 except BaseException as exc:
