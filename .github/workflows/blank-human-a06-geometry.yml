@@ -1,0 +1,54 @@
+name: HUMAN-A06 — offline real Blender scalp geometry diagnostic from A05
+on:
+  push:
+    branches: [experiment/human-a06-scalp-geometry-proof]
+    paths: ['.github/workflows/blank-human-a06-geometry.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  geometry-debug:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Install source-compatible Blender without re-downloading huge source ZIP
+        run: python3 -m pip install --disable-pip-version-check --no-cache-dir bpy==4.5.3
+      - name: Retrieve verified 89MB A05 derivative from prior GitHub Actions artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p baseline-a05 artifacts/human-a06-debug
+          gh run download 39026642127 --repo autonomousagentuniverse/blank-engine-lab \
+            --name human-a05-rig-neutral-clothing-isolation --dir baseline-a05
+          test -s baseline-a05/human-a05-rig-neutral-no-strap.blend
+          test -s baseline-a05/report.json
+          python3 -m py_compile experiments/human-a06/debug_groom_from_a05.py
+      - name: Render hair geometry in real Blender Cycles with CLAY skin
+        env:
+          OMP_NUM_THREADS: '4'
+        run: |
+          timeout -k 15s 540s python3 -u experiments/human-a06/debug_groom_from_a05.py
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          p=Path('artifacts/human-a06-debug')
+          d=json.loads((p/'report.json').read_text())
+          assert d['status']=='DEBUG_TWO_REAL_CYCLES_RENDERS_DONE_NOT_PHOTOREAL'
+          assert d['groom']['strands_created']>=11000
+          assert len(d['renders'])==2
+          assert (p/'hair_macro.png').stat().st_size>5000
+          print('DEBUG_GROOM_GEOMETRY_PASS_NOT_PHOTOREAL_APPROVAL')
+          PY
+      - name: Save actual geometry-only images and report (do not claim finished character)
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: human-a06-scalp-geometry-clay-proof
+          path: artifacts/human-a06-debug/
+          retention-days: 7
+          if-no-files-found: warn
