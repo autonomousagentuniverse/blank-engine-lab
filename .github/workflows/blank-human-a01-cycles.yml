@@ -1,8 +1,5 @@
 name: HUMAN-A01 direct Blender Cycles first prototype
 on:
-  push:
-    branches: [experiment/human-a01-einar-derived-cycles]
-    paths: ['.github/workflows/blank-human-a01-cycles.yml']
   workflow_dispatch:
 permissions:
   contents: read
