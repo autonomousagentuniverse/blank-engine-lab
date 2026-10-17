@@ -1,8 +1,5 @@
 name: HUMAN-A04 — targeted brow drivers and shoulder strap Cycles proof
 on:
-  push:
-    branches: [experiment/human-a04-brow-strap-forensics]
-    paths: ['.github/workflows/blank-human-a04-forensics.yml']
   workflow_dispatch:
 permissions:
   contents: read
