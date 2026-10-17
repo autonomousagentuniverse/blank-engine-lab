@@ -1,0 +1,116 @@
+name: Experimental full-human A/B/C concurrent single-pass comparison
+on:
+  push:
+    branches:
+      - experiment/human-abc-correlated-fields-20261017
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  generate:
+    name: Whole human candidate arm ${{ matrix.arm }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        arm: [A, B, C]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Install genuine Blender 4.5.3
+        run: python3 -m pip install --no-cache-dir --disable-pip-version-check bpy==4.5.3
+      - name: Retrieve immutable pre-experiment generator components
+        run: |
+          git fetch --no-tags --depth=1 origin 43ceb2869df0419ed3989c3d3ccc849084ff6902
+          mkdir -p experiments/mira05
+          for part in geometry.py reconstruction.py; do
+            git show FETCH_HEAD:experiments/mira05/$part > experiments/mira05/$part
+          done
+          python3 -m py_compile experiments/mira05/*.py experiments/abc/*.py
+      - name: Download and verify exact shared CC0-derived source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p baseline-mira03 artifacts/abc/${{ matrix.arm }}
+          gh run download 39045175123 --repo autonomousagentuniverse/blank-engine-lab \
+            --name mira03-matched-midline-isolate --dir baseline-mira03
+          python3 - <<'PY'
+          import hashlib,pathlib
+          p=pathlib.Path('baseline-mira03/mira03-continuous-midline.blend')
+          assert p.stat().st_size>20000000
+          assert hashlib.sha256(p.read_bytes()).hexdigest()=='1809398d604efa567a063697f34d84dc10c6db95914f38a31ac5bd6912e5e96d'
+          print('ABC_EXACT_FROZEN_SOURCE_VERIFIED')
+          PY
+      - name: One complete construction and four real Cycles views for ${{ matrix.arm }}
+        env:
+          OMP_NUM_THREADS: '4'
+        run: timeout -k 12s 2400s python3 -u experiments/abc/one_shot_variants.py ${{ matrix.arm }}
+      - name: Validate source, whole-character and authentic image evidence
+        env:
+          ARM: ${{ matrix.arm }}
+        run: |
+          python3 - <<'PY'
+          import pathlib,json,hashlib,os
+          arm=os.environ['ARM'];base=pathlib.Path('artifacts/abc')/arm
+          report=json.loads((base/'report.json').read_text())
+          assert report['variant']==arm
+          assert report['source_hash']=='1809398d604efa567a063697f34d84dc10c6db95914f38a31ac5bd6912e5e96d'
+          assert report['status']=='GENERATED_UNAPPROVED_AWAITING_COMPARISON'
+          assert not report['release_allowed'] and report['no_visual_approval']
+          assert len(report['frames'])==4
+          assert [f['view'] for f in report['frames']]==['front','three_quarter','profile','eyes_macro']
+          for f in report['frames']:
+            p=base/(f['view']+'.png')
+            assert hashlib.sha256(p.read_bytes()).hexdigest()==f['sha256']
+          blend=base/('complete_'+arm+'.blend')
+          assert blend.stat().st_size>15000000
+          assert hashlib.sha256(blend.read_bytes()).hexdigest()==report['full_blend_sha256']
+          assert report['hair']['hair_curves']>=11000
+          assert report['brows']['eyebrow_strands']>=2000
+          print('ABC_ONE_PASS_COMPLETE_CHARACTER_AND_CYCLES_VERIFIED',arm)
+          PY
+      - name: Preserve full source, four renders and errors for each candidate
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: abc-human-${{ matrix.arm }}
+          path: artifacts/abc/${{ matrix.arm }}/
+          if-no-files-found: warn
+          retention-days: 7
+  compare:
+    name: Compare A/B/C evidence after all three jobs
+    if: always()
+    needs: generate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Install comparison dependencies
+        run: python3 -m pip install --no-cache-dir --disable-pip-version-check Pillow==11.3.0
+      - name: Retrieve each arm's real unapproved Blender evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for arm in A B C; do
+            mkdir -p comparisons/$arm
+            gh run download "$GITHUB_RUN_ID" --repo autonomousagentuniverse/blank-engine-lab \
+              --name "abc-human-$arm" --dir "comparisons/$arm"
+          done
+      - name: Verify source and compare all three blinded visual sets
+        run: python3 experiments/abc/summarize.py
+      - name: Archive blinded comparison report and image
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: abc-human-comparison
+          path: artifacts/abc-comparison/
+          if-no-files-found: warn
+          retention-days: 7
