@@ -137,7 +137,10 @@ def identity(head,eye_center):
   dx=mask*(-.0060*cheek+.0113*jaw)*math.tanh(x/.026)
   dy=mask*(-.0042*cheek-.0104*chin-.003*bridge)
   dz=mask*(.0030*jaw-.0045*chin)
-  d=invr@Vector((dx,dy,dz))
+  # Geometry-only identity amplitude calibrated from actual first Blender
+  # result: maximum 4.6569mm was below 7mm significant-variation threshold.
+  # Preserve the same orbital/lip falloff and smooth midline invariants.
+  d=invr@Vector((dx*2.20,dy*2.20,dz*2.20))
   mag=d.length
   if mag>.00012:changed+=1
   maximum=max(maximum,mag)
@@ -152,4 +155,5 @@ def identity(head,eye_center):
   "shape_keys_preserved":len(keys.key_blocks),
   "lateral_symmetry":"smooth tanh, zero at x=0",
   "eye_socket_protected":True,"mouth_lip_area_protected":True,
-  "identity_source":"CC0 Vitruvian-derived, no independent topology claim"}
+  "identity_source":"CC0 Vitruvian-derived, no independent topology claim",
+  "amplitude_vs_original_first_batch":2.20}

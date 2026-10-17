@@ -1,5 +1,8 @@
-name: MIRA-05 measured scalp frontness — resume authentic batch
+name: MIRA-05 completed structural batch — corrected authentic fiber shader
 on:
+  push:
+    branches: [experiment/mira05-structural-rebuild-batch]
+    paths: ['.github/workflows/mira05-structural-batch.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -30,27 +33,43 @@ jobs:
           print('FROZEN_MIRA03_SOURCE_VERIFIED',sha)
           PY
           python3 -m py_compile experiments/mira05/*.py
-      - name: Reuse three verified previous baseline and eye frames
+      - name: Reuse four verified baseline, eyes and skin frames; archive rejected hair
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh run download 39050817482 --repo autonomousagentuniverse/blank-engine-lab --name mira05-structural-reconstruction-batch --dir artifacts/mira05-batch
+          gh run download 39051269558 --repo autonomousagentuniverse/blank-engine-lab --name mira05-resumed-structural-batch --dir artifacts/mira05-batch
           python3 - <<'PY'
           import pathlib,hashlib,json
           d=pathlib.Path('artifacts/mira05-batch')
           r=json.loads((d/'report.json').read_text())
           assert r['baseline_sha256']=='1809398d604efa567a063697f34d84dc10c6db95914f38a31ac5bd6912e5e96d'
-          assert set(r['variants'])=={'baseline','eyes'}
-          assert len(r['frames'])==3
+          assert set(r['variants'])=={'baseline','eyes','hair_brows','skin'}
+          assert len(r['frames'])==6
           for f in r['frames']:
             assert hashlib.sha256((d/f['file']).read_bytes()).hexdigest()==f['sha256']
-          print('MIRA05_FIRST_THREE_CYCLES_FRAMES_VERIFIED_REUSED')
+          # Hair geometry succeeded; its shader was wrongly left in MELANIN
+          # mode, so archive rejected photos instead of silently discarding.
+          rejected=d/'rejected_hair_melanin_first_pass'
+          rejected.mkdir(exist_ok=True)
+          for f in r['frames']:
+            if f['mode']=='hair_brows':
+              (d/f['file']).rename(rejected/f['file'])
+          r['frames']=[f for f in r['frames'] if f['mode']!='hair_brows']
+          r['variants'].pop('hair_brows')
+          r.setdefault('recovery_history',[]).append({
+            'rejected_variant':'hair_brows',
+            'cause':'ShaderNodeBsdfHairPrincipled default MELANIN ignored requested RGB dark brown',
+            'fix':'explicit COLOR parametrization and revised front-sweep guide'
+          })
+          (d/'report.json').write_text(json.dumps(r,indent=2)+'\n')
+          assert len(r['frames'])==4 and set(r['variants'])=={'baseline','eyes','skin'}
+          print('MIRA05_FOUR_PREVIOUS_REAL_FRAMES_VERIFIED; TWO_HAIR_IMAGES_ARCHIVED_AS_REJECTED')
           PY
-      - name: Four remaining structural modes from separate Blender processes
+      - name: Rebuild hair, identity and integrated variants from corrected source
         env:
           OMP_NUM_THREADS: '4'
         run: |
-          for variant in hair_brows skin identity integrated; do
+          for variant in hair_brows identity integrated; do
             echo "MIRA05_STRUCTURAL_BATCH_PROCESS $variant"
             timeout -k 10s 450s python3 -u experiments/mira05/batch.py "$variant"
           done
@@ -80,7 +99,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: mira05-resumed-structural-batch
+          name: mira05-finished-structural-reconstruction
           path: artifacts/mira05-batch/
           if-no-files-found: warn
           retention-days: 7

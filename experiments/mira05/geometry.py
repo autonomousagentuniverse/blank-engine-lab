@@ -29,7 +29,11 @@ def make_fiber_material(name,color,roughness=.49):
  output=nodes.new("ShaderNodeOutputMaterial")
  try:
   hair=nodes.new("ShaderNodeBsdfHairPrincipled")
-  if hair.inputs.get("Color"):hair.inputs["Color"].default_value=color
+  # Blender Hair BSDF defaults to MELANIN. Its visible Color input is not
+  # used under that setting; switch the parametrization explicitly.
+  hair.parametrization="COLOR"
+  if not hair.inputs.get("Color"):raise RuntimeError("Hair color input absent")
+  hair.inputs["Color"].default_value=color
   if hair.inputs.get("Roughness"):hair.inputs["Roughness"].default_value=roughness
   m.node_tree.links.new(hair.outputs[0],output.inputs["Surface"])
  except Exception:
@@ -115,7 +119,9 @@ def build_hair(head,eye_center,seed=51729,count=12500):
   side=1 if root.x+(rng.random()-.5)*.016>0 else -1
   frac=min(1.,max(0.,abs(root.x)/max(halfwidth,.06)))
   length=rng.uniform(.145,.205)*(1-.11*frac)
-  dside=rng.uniform(.045,.068)*(1-.20*frac)
+  scalp_f=max(0.,min(1.,(back_y-root.y)/span))
+  # Front fibers must clear the orbit while preserving the crown density.
+  dside=rng.uniform(.075,.100) if scalp_f>.60 else rng.uniform(.040,.068)*(1-.20*frac)
   dback=rng.uniform(.006,.024)
   path=[]
   for k in range(7):
@@ -139,7 +145,7 @@ def build_hair(head,eye_center,seed=51729,count=12500):
   "root_frontness":"scalp-relative normalized longitude, not eye-relative",
   "eligible_source_polygons":len(candidates),
   "original_hair_cards_hidden":source.hide_render,"fibers_object":obj.name,
-  "fiber_radius_m":.00011,"length_m":[.145,.205],"head_top_m":top}
+  "fiber_radius_m":.00011,"length_m":[.145,.205],"head_top_m":top,"hair_bsdf_parametrization":"COLOR","front_lateral_sweep_m":[.075,.100]}
 
 def build_brows(head,eye_center,seed=533,count_per_brow=1300):
  rng=random.Random(seed)
