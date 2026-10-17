@@ -1,8 +1,5 @@
 name: One-shot quality gates + frozen MIRA05 studio light calibration
 on:
-  push:
-    branches: [refactor/one-shot-quality-first]
-    paths: ['.github/workflows/quality-first-one-shot.yml']
   workflow_dispatch:
 permissions:
   contents: read
