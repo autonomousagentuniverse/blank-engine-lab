@@ -1,0 +1,111 @@
+{
+  "schema": "blank.human.anatomical-dependency-contract.v1",
+  "intent": "One complete coherent deformable human in one construction, never patched candidate",
+  "source_policy": "Every evidence record must bind a pinned source identity and preserve license",
+  "verdict_policy": "Fail closed: static object counts and source modifiers never qualify as dynamic visual acceptance",
+  "states": [
+    "dynamic_pass",
+    "dynamic_fail",
+    "structural_evidence",
+    "unverified"
+  ],
+  "nodes": [
+    "facial_rig",
+    "facial_mesh",
+    "eyelid_margin",
+    "eyeball",
+    "cornea",
+    "tear_meniscus",
+    "eyelashes",
+    "eyebrow_follicles",
+    "hair_roots",
+    "scalp_surface",
+    "hair_guides",
+    "epidermal_material",
+    "export_character"
+  ],
+  "relationships": [
+    {
+      "id": "head_rig_expression",
+      "from": "facial_rig",
+      "to": "facial_mesh",
+      "required": true,
+      "proof": "Evaluate neutral, blink, jaw and head poses; verify expected regions move"
+    },
+    {
+      "id": "lid_deform_attachment",
+      "from": "facial_mesh",
+      "to": "eyelid_margin",
+      "required": true,
+      "proof": "Evaluate lid margin during blink; verify attachment to skin and contact"
+    },
+    {
+      "id": "lid_globe_contact",
+      "from": "eyelid_margin",
+      "to": "eyeball",
+      "required": true,
+      "proof": "Evaluate signed lid-border to cornea and eyeball clearance across several expressions"
+    },
+    {
+      "id": "cornea_eye_optics",
+      "from": "cornea",
+      "to": "eyeball",
+      "required": true,
+      "proof": "Separate fitted optical surfaces, matched normal and refractive/iris-depth validation"
+    },
+    {
+      "id": "meniscus_lid_coupling",
+      "from": "tear_meniscus",
+      "to": "eyelid_margin",
+      "required": true,
+      "proof": "Tear film follows deforming eyelid, nonpenetration across blink"
+    },
+    {
+      "id": "eyelash_lid_coupling",
+      "from": "eyelashes",
+      "to": "eyelid_margin",
+      "required": true,
+      "proof": "Lash roots follow evaluated upper/lower eyelids during blink"
+    },
+    {
+      "id": "brow_face_coupling",
+      "from": "eyebrow_follicles",
+      "to": "facial_mesh",
+      "required": true,
+      "proof": "Root-to-skin and follow ratio stable under head movement and brow expressions"
+    },
+    {
+      "id": "scalp_hair_coupling",
+      "from": "hair_roots",
+      "to": "scalp_surface",
+      "required": true,
+      "proof": "Roots remain on scalp under neutral, scalp deformation and head rotation"
+    },
+    {
+      "id": "hair_regional_groom",
+      "from": "hair_guides",
+      "to": "hair_roots",
+      "required": true,
+      "proof": "Source-derived regional guide tangents, clumps, length, taper and collision"
+    },
+    {
+      "id": "skin_regional_reflectance",
+      "from": "epidermal_material",
+      "to": "facial_mesh",
+      "required": true,
+      "proof": "Mapped albedo normals roughness and scattering plus region-wise matched-light calibration"
+    },
+    {
+      "id": "rigged_export_parity",
+      "from": "export_character",
+      "to": "facial_rig",
+      "required": true,
+      "proof": "Matched Blender and Blank Engine posed visuals and bound components"
+    }
+  ],
+  "separate_acceptance": [
+    "visual_photoreal_review",
+    "license_review",
+    "production_authorization"
+  ]
+}
