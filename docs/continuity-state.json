@@ -9,7 +9,7 @@
   "automatic_deployment_enabled": false,
   "source_of_truth": "GitHub main for shared handoff, with latest implementation on linked experimental branches (NOT merged)",
   "priority": "P0",
-  "priority_task": "HUMAN-A06: stop random scalp hair scatters. Evaluate scalp geometry and build groom guides / density masks before trying skin-film Cycles. Publisher Einar ZIP 503/504; best current film material baseline A05. No WebGL or deployment.",
+  "priority_task": "HUMAN-A07 scalp hairline: correct front follicle mask (1/16500 front classified), add asymmetric natural edge, preserve BVH scalp-hugging strands. Material film source and WebGL remains blocked; A05 best original skin.",
   "owner_decisions": [
     "hardest problems first",
     "one visually excellent isolated hero before scaling",
@@ -384,5 +384,25 @@
     "next": "evaluated scalp/groom guides and follicle density mask with root clearance; no random uniform scattering",
     "new_human_approved": false,
     "no_deploy": true
+  },
+  "human_a07_experiment": {
+    "status": "REAL_CYCLES_CLAY_GEOMETRY_SUCCESS_HAIR_IMPROVED_BUT_VISUAL_NOT_ACCEPTED",
+    "branch": "experiment/human-a07-evaluated-scalp-guides",
+    "report": "docs/human-a07-findings.md",
+    "initial_failed_run": 39036649311,
+    "verified_successful_run": 39036792357,
+    "artifact_id": 12102751438,
+    "strands": 16500,
+    "evaluated_face_vertices": 4596,
+    "evaluated_faces": 4522,
+    "scalp_polygons_eligible": 395,
+    "frontal_strands_classified": 1,
+    "backward_strands_classified": 16499,
+    "max_sample_surface_error_mm": 0.6204,
+    "source_textures_loaded": false,
+    "full_photoreal_blender_pass": false,
+    "visual_issue": "uniform combed cap and incorrect front hairline follicle distribution",
+    "next": "Normalize frontness using scalp polygon longitudinal min and max, enforce front coverage; irregular hairline and temple guides",
+    "production_deployed": false
   }
 }

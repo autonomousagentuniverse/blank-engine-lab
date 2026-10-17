@@ -115,6 +115,17 @@ Owner approved next step after A03: correct source-driven frown and eliminate ha
 
 **Root cause to investigate next:** fitted evaluated scalp and directional authored hair guides, density soft masks, attachment/root clearance, realistic crown direction and fade. Cannot pass from strand count alone. Preserve A05 mouth/eye/shader/rig/strap cleanup. The full-material A06 shader code resides on branch `experiment/human-a06-visible-scalp-clean-skin`; do not promote unrendered material modifications to main. Source original Einar CC-BY licensing remains required. [Detailed experiments and verdict](https://github.com/autonomousagentuniverse/blank-engine-lab/blob/experiment/human-a06-scalp-geometry-proof/docs/human-a06-findings.md). All A06 CI runs now workflow_dispatch-only, **no deployment**.
 
+
+### HUMAN-A07 real guided scalp test — 2026-10-17
+
+**Status:** REAL Blender rendered evidence succeeded; hair visually improved relative to HUMAN-A06 but **NOT artistically accepted**, no photoreal Cycles film shader pass. Uses A05 edited .blend source with Einar CC-BY attribution, clay diagnostic only.
+
+- Source experiment: `experiment/human-a07-evaluated-scalp-guides`, verified report [docs/human-a07-findings.md](https://github.com/autonomousagentuniverse/blank-engine-lab/blob/experiment/human-a07-evaluated-scalp-guides/docs/human-a07-findings.md), evidence [GitHub Actions successful run 39036792357](https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/39036792357), artifact `human-a07-surface-guided-groom` ID 12102751438: genuine `front_clay.png`, `hair_macro.png`, `human-a07-guided-scalp.blend`, `report.json`.
+- 16,500 scalp mesh curves 17–32mm long, evaluated 4596-vertex / 4522-face head, BVH nearest-surface root clearance max 0.62mm. Source curve distribution **flawed**: 395 eligible polygons all back-side/back-center; only 1 "front" root out of 16,500. Despite coherent-looking swept hair from front camera, the edge remains symmetrical wig cap. Fitting and guided rendering achieved; frontal follicle and mask distribution FAIL.
+- Earlier first run 39036649311 failed erroneously requiring evaluated mesh >=5000 vertices (real source has 4596); fixed and rerun with successful results. No concealment of failed first run.
+- Next bounded test: calibrate scalp frontness from the **scalp's own min/max longitudinal range**, create hairline/temple masks with meaningfully nonzero front root samples and irregular edges, and compare identical Cycles geometry macro; do not increase hair count as a substitute.
+- Original source and external textures remain unavailable for this offline render; skin was deliberately clay. **HUMAN-A05 still best full photoreal-material reference**. No independent new human, no WebGL, no Vercel production deployment.
+
 ## 1. Concept and product vision
 
 **Blank Box** is the eventual AI-native gaming/console vision; **Blank Engine** is its creation and runtime technology. The goal is an engine in which people describe or direct games, specialized agents collaborate on validated game designs, and builders produce reusable characters, objects, scenes and complete worlds. Agents do not bypass schema validation or human visual acceptance.
@@ -371,3 +382,6 @@ Geometry artifacts are **data**, not merely screenshots or untracked instruction
 
 - 2026-10-17 [PROPOSED] Capture HUMAN-A06 real scalp Cycles clay render work, 2 publisher source download failures and 2 successful-but-visually-failed groom proofs; do not overclaim full skin material or photoreal results.
 - 2026-10-17 [COMMITTED] Recorded A06 technical scalp rendering, false confidence of counts, source 503/504 outage, continuity and AGENTS P0; A05 still best real film shader asset. No user-facing new render of photoreal A06, no production merge/deploy.
+
+- 2026-10-17 [PROPOSED] Record verified HUMAN-A07 guided scalp Cycles geometry results, first gate failure and subsequent successful 16500-strand proof, preserve actual front-root mask defect, and reject unwarranted claims of full photorealism.
+- 2026-10-17 [COMMITTED] Main continuity, structured state and AGENTS updated with A07 evidence run 39036792357, max root BVH clearance, scalp region counts (all rear), over-regular wig edge, priority frontal follicle recalibration; source code remains experimental manual CI, no production deployment.
