@@ -1,9 +1,5 @@
 name: Blank Engine - Einar source deconstruction (temporary one-shot)
 on:
-  push:
-    branches: [experiment/einar-structural-deconstruction-v1]
-    paths:
-      - '.github/workflows/blank-einar-deconstruction.yml'
   workflow_dispatch:
 permissions:
   contents: read
