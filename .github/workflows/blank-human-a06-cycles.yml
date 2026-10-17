@@ -1,5 +1,8 @@
 name: HUMAN-A06 — source-derived visible scalp and less weathered skin
 on:
+  push:
+    branches: [experiment/human-a06-visible-scalp-clean-skin]
+    paths: ['.github/workflows/blank-human-a06-cycles.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -17,9 +20,16 @@ jobs:
       - name: Restore exact publisher Einar v1 textures and source
         run: |
           mkdir -p .ci-einar artifacts/human-a06
-          curl --fail --location --retry 3 --connect-timeout 30 --max-time 540 --silent --show-error \
-            'https://studio.blender.org/download-source/files/41/419e83fb75f30b989adf7920dec7a21c/419e83fb75f30b989adf7920dec7a21c.zip' \
-            -o .ci-einar/einar-official.zip
+          # Official source can reset HTTP/2 streams around 300MB; resume safely via HTTP/1.1.
+          url='https://studio.blender.org/download-source/files/41/419e83fb75f30b989adf7920dec7a21c/419e83fb75f30b989adf7920dec7a21c.zip'
+          for attempt in 1 2 3 4 5; do
+            if curl --http1.1 --fail --location --connect-timeout 30 --max-time 540 --silent --show-error --continue-at - "$url" -o .ci-einar/einar-official.zip; then
+              break
+            fi
+            if [ "$attempt" -eq 5 ]; then echo "Publisher download unavailable after five attempts"; exit 1; fi
+            echo "Retry source transfer attempt $attempt"
+            sleep 5
+          done
           python3 experiments/hero-v4/restore_textures.py
           python3 -m py_compile experiments/human-a06/generate_and_render.py
       - name: Source-derived scalp and complexion control, one real Cycles render
