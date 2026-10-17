@@ -9,7 +9,7 @@
   "automatic_deployment_enabled": false,
   "source_of_truth": "GitHub main for shared handoff, with latest implementation on linked experimental branches (NOT merged)",
   "priority": "P0",
-  "priority_task": "MIRA05 one-shot failure root cause VERIFIED by four Blender material-control renders: actual fiber material assignment and BSDF Color parametrization were correct, but physically lit dark materials render pale (brightness 177 hair, 148 dark standard Principled vs 60 dark emission). Geometric groom still produces parallel curtain, exposed scalp patches, weak generic eyebrows/eyelid arcs; one-shot has no image quality gate. Do not repeat shader color guesses or deploy.",
+  "priority_task": "Quality-first one-shot redesign: five gated stages calibration→construction→Cycles preview→real human visual review→WebGL parity; Blender-light sweep source SHA pinned to MIRA05. No new character/version; CI first run pending; do not promote visuals or production.",
   "owner_decisions": [
     "hardest problems first",
     "one visually excellent isolated hero before scaling",
@@ -538,5 +538,27 @@
     "photoreal_approved": false,
     "no_new_human_generated": true,
     "production_unchanged": true
+  },
+  "one_shot_quality_first_reset": {
+    "date": "2026-10-17",
+    "branch": "refactor/one-shot-quality-first",
+    "status": "COMMITTED_TEST_PENDING",
+    "controller": "character-pipeline/one-shot/quality-gates.mjs",
+    "cli": "character-pipeline/one-shot/quality-cli.mjs",
+    "tests": "character-pipeline/one-shot/quality-gates.test.mjs",
+    "light_sweep_script": "character-pipeline/one-shot/blender-light-sweep.py",
+    "source_blend_sha256": "07806e89a1ad2389bb7c216144b57878748d0f54536fe2a47f026f229e2db076",
+    "source_provenance": "CC0 Vitruvian derived not independently sculpted",
+    "stage_gate_names": [
+      "calibration",
+      "construction",
+      "preview",
+      "human_review",
+      "webgl_parity"
+    ],
+    "cyclic_cosmetic_iterations_disabled": true,
+    "human_visual_review_required": true,
+    "production_deployed": false,
+    "autonomous_photoreal_human_generated": false
   }
 }

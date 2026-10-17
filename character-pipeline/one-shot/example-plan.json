@@ -1,0 +1,57 @@
+{
+  "schema": "blank.one-shot.plan.v1",
+  "id": "future-human-replace-source",
+  "source": {
+    "file": "ORIGINAL_CANDIDATE.blend",
+    "sha256": "REPLACE_REAL_SHA",
+    "origin": "cc0_derived",
+    "ancestors": [
+      "REPLACE_WITH_ACTUAL_CC0_SOURCE"
+    ],
+    "license": "CC0",
+    "creator": "REPLACE_WITH_KNOWN_CREATOR",
+    "license_verified": false
+  },
+  "targets": {
+    "hair_style": "Varied, source-anatomical layered hair",
+    "hairline": "Measured scalp hairline with proper temples",
+    "brow_growth": "Separate brow growth field mapped to skin",
+    "eye_anatomy": "Physically fitted eyelid and tearline",
+    "skin_reference": "Rights-verified skin texture and light calibration",
+    "identity_goal": "Distinct source-derived proportions"
+  },
+  "mechanical_limits": {
+    "max_hair_light_ratio": 1.8,
+    "min_scalp_coverage": 0.9,
+    "min_direction_entropy": 0.65,
+    "max_hair_head_penetration": 0.02,
+    "max_eye_intersection_mm": 0.25,
+    "max_lip_midline_jump_mm": 0.1
+  },
+  "views": [
+    {
+      "id": "front",
+      "camera": "CAM_FRONT"
+    },
+    {
+      "id": "three_quarter",
+      "camera": "CAM_3Q"
+    },
+    {
+      "id": "profile",
+      "camera": "CAM_PROFILE"
+    },
+    {
+      "id": "eyes_macro",
+      "camera": "CAM_EYES"
+    }
+  ],
+  "render": {
+    "engine": "CYCLES",
+    "resolution": [
+      700,
+      700
+    ],
+    "samples": 32
+  }
+}

@@ -69,6 +69,13 @@ function verifiedFiles(e,base){
   assert(file.startsWith(path.resolve(base)+path.sep),'EVIDENCE_PATH_ESCAPE');
   assert(fs.existsSync(file)&&fs.statSync(file).isFile(),'EVIDENCE_NOT_FOUND:'+item.name);
   assert(hashFile(file)===item.sha256,'EVIDENCE_HASH_CHANGED:'+item.name);
+  if(item.name.toLowerCase().endsWith('.png')){
+    const data=fs.readFileSync(file);
+    assert(data.length>=12000&&data.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])) &&
+      data.toString('ascii',12,16)==='IHDR','INVALID_PNG_EVIDENCE');
+    const width=data.readUInt32BE(16),height=data.readUInt32BE(20);
+    assert(width===700&&height===700,'EVIDENCE_CAMERA_RESOLUTION_CHANGED');
+  }
   result[item.name]=item.sha256;
  }
  return result;

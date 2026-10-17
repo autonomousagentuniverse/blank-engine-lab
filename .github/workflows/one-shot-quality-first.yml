@@ -1,0 +1,77 @@
+name: Quality-first one-shot character gates and real light-sweep A/B
+on:
+  push:
+    branches: [refactor/one-shot-quality-first]
+    paths: ['.github/workflows/one-shot-quality-first.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Test provenance, geometry rejection, stage sequencing and human gate
+        run: |
+          node --test character-pipeline/one-shot/quality-gates.test.mjs
+          node --check character-pipeline/one-shot/quality-cli.mjs
+          node --check character-pipeline/one-shot/quality-gates.mjs
+          python3 -m py_compile character-pipeline/one-shot/blender-light-sweep.py character-pipeline/one-shot/measure-light-sweep.py
+  actual-cycles-light-sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 23
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Install real Blender and numerical analysis
+        run: python3 -m pip install --no-cache-dir --disable-pip-version-check bpy==4.5.3 pillow numpy
+      - name: Retrieve original MIRA05 Blender and verified hair emission A/B
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p baseline-mira05 baseline-hair-ab artifacts/one-shot-light-sweep
+          gh run download 39051879470 --repo autonomousagentuniverse/blank-engine-lab --name mira05-finished-structural-reconstruction --dir baseline-mira05
+          gh run download 39058571227 --repo autonomousagentuniverse/blank-engine-lab --name mira05-hair-material-forensics --dir baseline-hair-ab
+          python3 - <<'PY'
+          import pathlib,hashlib,json
+          p=pathlib.Path('baseline-mira05/mira05-integrated-structural.blend')
+          assert hashlib.sha256(p.read_bytes()).hexdigest()=='07806e89a1ad2389bb7c216144b57878748d0f54536fe2a47f026f229e2db076'
+          r=json.loads(pathlib.Path('baseline-hair-ab/report.json').read_text())
+          assert r['source_sha256']=='07806e89a1ad2389bb7c216144b57878748d0f54536fe2a47f026f229e2db076'
+          assert len(r['renders'])==4
+          for im in r['renders']:
+            assert hashlib.sha256((pathlib.Path('baseline-hair-ab')/im['file']).read_bytes()).hexdigest()==im['sha256']
+          print('FROZEN_SOURCE_AND_PREVIOUS_HAIR_EVIDENCE_VERIFIED')
+          PY
+      - name: Change only original studio lamp energy, three new authentic Cycles renders
+        env:
+          OMP_NUM_THREADS: '4'
+        run: |
+          for mode in dim medium original; do
+            timeout -k 10s 240s python3 -u character-pipeline/one-shot/blender-light-sweep.py "$mode"
+          done
+          python3 character-pipeline/one-shot/measure-light-sweep.py
+          python3 - <<'PY'
+          import pathlib,json
+          p=pathlib.Path('artifacts/one-shot-light-sweep')
+          d=json.loads((p/'calibration-report.json').read_text())
+          assert d['three_true_cycles_renders'] and d['hair_mask_pixel_count']>4000
+          assert len(d['results'])==3 and d['same_source_geometry_and_camera']
+          assert d['calibrated_photorealism'] is False
+          print('BLENDER_CALIBRATION_THREE_TRUE_CYCLES_RENDER_TESTS_SUCCESS')
+          PY
+      - name: Save all Cycles images and quantitative calibration even on failure
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: quality-first-one-shot-light-sweep
+          path: artifacts/one-shot-light-sweep/
+          if-no-files-found: warn
+          retention-days: 7

@@ -1,37 +1,25 @@
-# Quality-first one-shot orchestrator (architecture revision)
+# Quality-first one-shot human generator: staged validation
 
-**This is a fail-closed replacement for the MIRA-05 build-green / human-look-bad pattern, not a new approved human generator.** Actual anatomy, materials and geometry are still produced by Blender modules; the orchestrator coordinates and stops those modules when their evidence is inadequate. Nothing automatically approves photorealism or deploys.
+Status: new fail-closed quality controller implemented, CI and real light-sweep pending. NOT an autonomous finished original photoreal human generator.
 
-## What changes in the one-shot design
+## Why rebuild
+One-shot MIRA05 completed 10 real Cycles images and passed counts and hashes, but remained visually rejected: hair-curtain geometry, artificial eyelids, weak brows and waxy skin. The subsequent true Cycles material forensic run 39058571227 confirmed correct hair Color assignment, yet display luminance 177 under original Hair BSDF, 148 under dark standard Principled, vs 60 under dark emission. Generic scene lighting or BSDF response and silhouette must be diagnosed before approving anything.
 
-Prior: source -> run 6 separate arbitrary parameter/geometry functions -> successful Cycles renders -> save packed blend. Checks counted 12,500 hair curves, 2,600 eyebrow fibers and 10 files but ignored the obviously pale helmet/curtain, visible scalp, weak brows, washed eyes and copied identity.
+## Five sequential states
+1. CALIBRATION: source-pinned light-sweep evidence, real image mask and lit-to-emission ratio below a predeclared experimental limit. Numbers are not photographic realism scores.
+2. CONSTRUCTION: source-pinned physical tests for follicle scalp coverage, strand-direction diversity, collisions, separate brow growth field, 100-plus eyelid contacts, UV texture map integrity, smooth lip midline and intact expression controls.
+3. PREVIEW: four exact Blender Cycles camera views front, three-quarter, profile and eye macro, with hashed 700-pixel PNG evidence; no structural stage is accepted from strand/object counts alone.
+4. HUMAN REVIEW: human inspects all four evidence-bound renders and explicitly approves eyes, hair, eyebrows, skin, identity and overall result. Human identity is an attestation; the tool cannot cryptographically establish who provided the review.
+5. WEBGL PARITY: separate Three.js/GLB rendering compared at identical lighting and cameras; legal ancestry acknowledged and explicit deployment authorization still required. Every stage returns release_allowed false.
 
-Now: **source rights/provenance and semantic target -> calibrated studio material response -> source-measured geometry and physical constraints -> real same-camera four-view Cycles preview -> human-reviewed image evidence -> separate Three.js parity -> explicit external deployment authorization**. On failure, keep stage evidence and block later integration, not another unbounded self-repair loop.
+## API/CLI
+Files: quality-gates.mjs (pure validations), quality-cli.mjs (init, check-plan, advance), quality-gates.test.mjs (negative regressions), blender-light-sweep.py (real bpy 4.5.3 from frozen source), measure-light-sweep.py (actual image pixel controls), example-plan.json (intentionally invalid until source populated).
+Commands: node --test character-pipeline/one-shot/quality-gates.test.mjs; node character-pipeline/one-shot/quality-cli.mjs check-plan <plan>; node character-pipeline/one-shot/quality-cli.mjs init <plan> <new-job-folder>; node character-pipeline/one-shot/quality-cli.mjs advance <plan> <job-folder> <evidence-file>.
+The CLI never claims to generate new head geometry; it is an evidence controller for any upstream producer. It cannot substantiate model likeness from raw data. Visual acceptance remains human-controlled.
 
-The file `quality-gates.mjs` is a functional deterministic stage machine. It fingerprints the plan/source and checks evidence files against SHA-256 on each promotion. It insists on **all six anatomical subsystems** in construction evidence (hair, brows, eyes, skin, identity plus source), rather than counting hair splines alone. It tests scalp coverage, guide direction distribution, head collisions, measured contact/intersection, source UVs, facial lip continuity and FACS preservation. Front/three-quarter/profile/macro Cycles comparisons are tied to camera names and actual file hashes. A separately authored human review must approve eyes, hair, brows, skin, facial identity and overall impression for **those exact four images**. Real WebGL parity is a later gate; `release_allowed` remains **false regardless of outcome**, and no code changes production.
+## Real calibration
+The isolated workflow uses original successful MIRA05 .blend SHA256 07806e89a1ad2389bb7c216144b57878748d0f54536fe2a47f026f229e2db076 and actual hair AB proof 39058571227. Three authentic same-camera 500px Cycles portraits with identical geometry/materials and only area light energies set to 32%, 65%, 100%. A magenta-emission mask from the prior proof anchors which pixel region is hair, and recorded dark-emission controls normalize the measured brightness. The values are DISPLAY RGB, not calibrated scientific reflectance; the experiment isolates light energy but does not itself approve a hairstyle or physical skin.
 
-**Important measurement caveats:** The software cannot guarantee that numbers describing "scalp coverage", "direction entropy" or human-review signatures are truthful; trusted Blender probe implementation must produce and be audited with images. The example thresholds are **provisional operator-defined screening parameters, NOT scientifically validated photorealism cutoffs**. The stage machine never asserts realistic hair just because it passes metrics. External human reviewer attestation is presently a recorded declaration, not a cryptographic identity signature. Source-derived CC0 characters cannot be automatically reclassified as independently sculpted original humans.
+Engineering thresholds such as target ratio 1.8, minimum scalp coverage .90, hair-direction diversity .65 and lip jump <0.1mm are preliminary veto controls, not independently validated universal anatomical criteria. They must be calibrated against a rights-cleared visually approved exemplar. The MIRA05 current ratio ~2.93 would fail the default example plan, as desired.
 
-## Running it
-
-```bash
-node --test character-pipeline/one-shot/quality-gates.test.mjs
-node character-pipeline/one-shot/cli.mjs validate my-character-plan.json
-node character-pipeline/one-shot/cli.mjs init my-character-plan.json /tmp/new-human-run
-node character-pipeline/one-shot/cli.mjs submit /tmp/new-human-run /trusted/calibration/evidence.json
-node character-pipeline/one-shot/cli.mjs status /tmp/new-human-run
-```
-
-The `init` command checks the **actual source .blend hash**; the provided example deliberately fails until replaced with an actual rights-cleared file. A stage `submit` with missing files, wrong source, uncalibrated brightness, missing scalp coverage, unreviewed preview, or an attempt to skip directly to integration exits nonzero without advancing state.
-
-Calibration requires an authenticated `light_sweep` from the same source/camera and actual lit-vs-emission hair luminance, then checks against the **plan's provisional ratio limit**. MIRA05 measured 177.0 vs 60.4, ratio ~2.93, so a plan with provisional max 1.8 will **correctly block** the real historical failure. The user/artist can select their own tolerances and should review comparative images; the ratio alone does not establish physically realistic hair.
-
-## Real stage-0 lighting test (no new face)
-
-The separate Blender script `lighting_probe.py` opens the exact frozen, SHA256 verified integrated MIRA05 .blend from [run 39051879470](https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/39051879470). It compares original studio key/fill/rim illumination against 35% and 10% studio light energies, with the same original hair BSDF, source meshes and camera. The world remains unchanged. Three fresh Blender processes avoid earlier bpy segfaults. The four material A/B images from [run 39058571227](https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/39058571227) provide magenta pixel segmentation and a dark-emission reference. `measure_lighting.py` reports actual hair brightness and central face brightness for each setting. This determines whether lowering lights solves the hair color **without destroying the skin**; it does not change the saved character or authorize promotion.
-
-## Bounded future construction
-
-The next generator implementation must produce authored growth fields, multiple shape families, collision/coverage probes and actual scalp mask imagery. Hairline silhouette and brow patterns require qualitative review as well as numeric checks. Don't retry MIRA's same 7-point downward drape with different strand counts. If the face/asset foundation fails after two properly controlled structural batches, choose a higher-quality, rights-cleared source rather than indefinite repairs.
-
-No linked GitHub action in this branch deploys, merges, or changes production.
+No production deployment, no new independent anatomical source, no GLB export or human visual approval in this phase. New pipeline remains an isolated branch until reviewed and explicitly authorized.
