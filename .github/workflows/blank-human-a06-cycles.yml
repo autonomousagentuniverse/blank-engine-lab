@@ -1,8 +1,5 @@
 name: HUMAN-A06 — source-derived visible scalp and less weathered skin
 on:
-  push:
-    branches: [experiment/human-a06-visible-scalp-clean-skin]
-    paths: ['.github/workflows/blank-human-a06-cycles.yml']
   workflow_dispatch:
 permissions:
   contents: read
