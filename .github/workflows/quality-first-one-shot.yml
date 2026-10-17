@@ -1,0 +1,87 @@
+name: One-shot quality gates + frozen MIRA05 studio light calibration
+on:
+  push:
+    branches: [refactor/one-shot-quality-first]
+    paths: ['.github/workflows/quality-first-one-shot.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  stage-gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '22'}
+      - name: Test fail-closed one-shot source, stage, preview, human and release gates
+        run: |
+          node --test character-pipeline/one-shot/quality-gates.test.mjs
+          if node character-pipeline/one-shot/cli.mjs validate character-pipeline/one-shot/example.plan.json; then
+            echo 'ERROR: intentionally source-less example was incorrectly accepted'
+            exit 1
+          else
+            echo 'PASS: empty/source-less placeholder plan cannot run'
+          fi
+          python3 -m py_compile character-pipeline/one-shot/lighting_probe.py character-pipeline/one-shot/measure_lighting.py
+  measured-cycles-calibration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with: {python-version: '3.11'}
+      - name: Install real Blender Cycles and pixel analysis libraries
+        run: python3 -m pip install --disable-pip-version-check --no-cache-dir bpy==4.5.3 pillow numpy
+      - name: Load unchanged SHA-locked MIRA05 source and original 4 shader-forensic controls
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p source-mira05 reference-hair-forensics artifacts/one-shot-light-sweep
+          gh run download 39051879470 --repo autonomousagentuniverse/blank-engine-lab --name mira05-finished-structural-reconstruction --dir source-mira05
+          gh run download 39058571227 --repo autonomousagentuniverse/blank-engine-lab --name mira05-hair-material-forensics --dir reference-hair-forensics
+          python3 - <<'PY'
+          import pathlib,hashlib,json
+          p=pathlib.Path('source-mira05/mira05-integrated-structural.blend')
+          h=hashlib.sha256(p.read_bytes()).hexdigest()
+          assert h=='07806e89a1ad2389bb7c216144b57878748d0f54536fe2a47f026f229e2db076',h
+          d=pathlib.Path('reference-hair-forensics')
+          r=json.loads((d/'report.json').read_text())
+          assert len(r['renders'])==4
+          for frame in r['renders']:
+            assert hashlib.sha256((d/frame['file']).read_bytes()).hexdigest()==frame['sha256']
+          print('FROZEN_REAL_CYCLES_MODEL_AND_MATERIAL_CONTROLS_VERIFIED')
+          PY
+      - name: Three exact-scene lighting ablations — no model/material edits
+        env:
+          OMP_NUM_THREADS: '4'
+        run: |
+          for level in original lights_35pct lights_10pct; do
+            timeout -k 10s 160s python3 -u character-pipeline/one-shot/lighting_probe.py "$level"
+          done
+          python3 character-pipeline/one-shot/measure_lighting.py
+          python3 - <<'PY'
+          import json,pathlib
+          from PIL import Image,ImageDraw
+          p=pathlib.Path('artifacts/one-shot-light-sweep')
+          r=json.loads((p/'render-evidence.json').read_text())
+          a=json.loads((p/'pixel-audit.json').read_text())
+          assert len(r['frames'])==3 and len(a['lights'])==3 and a['hair_mask_pixels']>10000
+          assert [x['light_scale'] for x in r['frames']]==[1.,.35,.1]
+          img=Image.new('RGB',(1500,544),(23,26,30))
+          d=ImageDraw.Draw(img)
+          for i,f in enumerate(r['frames']):
+            img.paste(Image.open(p/f['file']).convert('RGB'),(i*500,36))
+            d.text((i*500+12,10),f['id']+' | original MIRA05 hair shader',fill=(235,235,235))
+          img.save(p/'studio-lighting-ab.jpg',quality=91)
+          print('THREE_REAL_CYCLES_LIGHTING_AB_RENDERS_AND_MEASURED_HAIR_LUMINANCE_ARCHIVED')
+          PY
+      - name: Preserve rendering evidence even after any failure
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: one-shot-quality-light-calibration
+          path: artifacts/one-shot-light-sweep/
+          if-no-files-found: warn
+          retention-days: 7

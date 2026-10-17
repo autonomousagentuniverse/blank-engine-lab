@@ -1,0 +1,57 @@
+{
+  "schema": "blank.one-shot.plan.v1",
+  "id": "example-cc0-human-unapproved",
+  "source": {
+    "file": "REPLACE_ME_WITH_REAL_PACKED_CC0_HUMAN.blend",
+    "sha256": "REPLACE_WITH_ACTUAL_SOURCE_SHA256",
+    "origin": "cc0_derived",
+    "creator": "VERIFY_CREATOR",
+    "license": "CC0",
+    "license_verified": false,
+    "ancestors": [
+      "Vitruvian CC0"
+    ]
+  },
+  "targets": {
+    "hair_style": "Layered mid-length hairstyle with individually authored clumps and gravity variation",
+    "hairline": "Irregular continuous frontal boundary with temporal falloff and no scalp holes",
+    "brow_growth": "Map follicle growth direction root-to-tip independently for each brow",
+    "eye_anatomy": "Continuous upper and lower eyelid surfaces fitted to original cornea and tearline",
+    "skin_reference": "Source albedo, normal and roughness maps physically calibrated against photo",
+    "identity_goal": "Visually distinguishable head in neutral front, 3q and profile"
+  },
+  "mechanical_limits": {
+    "max_hair_light_ratio": 1.8,
+    "min_scalp_coverage": 0.94,
+    "min_direction_entropy": 0.45,
+    "max_hair_head_penetration": 0.02,
+    "max_eye_intersection_mm": 0.55,
+    "max_lip_midline_jump_mm": 0.1
+  },
+  "render": {
+    "engine": "CYCLES",
+    "resolution": [
+      700,
+      700
+    ],
+    "samples": 32
+  },
+  "views": [
+    {
+      "id": "front",
+      "camera": "CAM_HUMAN_FRONT"
+    },
+    {
+      "id": "three_quarter",
+      "camera": "CAM_HUMAN_THREE_QUARTER"
+    },
+    {
+      "id": "profile",
+      "camera": "CAM_HUMAN_PROFILE"
+    },
+    {
+      "id": "eyes_macro",
+      "camera": "CAM_HUMAN_EYES_MACRO"
+    }
+  ]
+}
