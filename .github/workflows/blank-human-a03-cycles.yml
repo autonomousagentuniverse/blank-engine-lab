@@ -1,4 +1,4 @@
-name: HUMAN-A03 real neutral brow and short scalp groom
+name: HUMAN-A03 corrected original-source hair shader and parenting
 on:
   push:
     branches: [experiment/human-a03-neutral-expression-hair]

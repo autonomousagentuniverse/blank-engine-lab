@@ -254,16 +254,14 @@ def a03_short_groom(head, ec, height, front):
   lengths.append(length)
  hair=bpy.data.objects.new("HumanA03_AutomatedShortScalpHair",crv)
  bpy.context.scene.collection.objects.link(hair)
- hair.parent=head;hair.matrix_parent_inverse=head.matrix_world.inverted()
- # No external hair image; physically based Cycles hair BSDF.
- m=bpy.data.materials.new("HumanA03_ShortHairMelanin")
- m.use_nodes=True
- nd=m.node_tree.nodes;nd.clear()
- out=nd.new("ShaderNodeOutputMaterial")
- bs=nd.new("ShaderNodeBsdfHair");bs.parametrization="MELANIN"
- if bs.inputs.get("Melanin"):bs.inputs["Melanin"].default_value=.25
- if bs.inputs.get("Melanin Redness"):bs.inputs["Melanin Redness"].default_value=.14
- m.node_tree.links.new(bs.outputs[0],out.inputs["Surface"])
+ # Strands use the head's LOCAL mesh vertices. Let parenting apply the
+ # head world transform ONCE; inverse-parent would incorrectly cancel it.
+ hair.parent=head
+ hair.matrix_parent_inverse.identity()
+ # Reuse the verified film hair shader graph, not an unsupported Blender BSDF API.
+ m=bpy.data.materials.get("einar.hair")
+ if not m or not m.use_nodes or len(m.node_tree.nodes)<20:
+  raise AssertionError("original source hair shader not restored")
  crv.materials.append(m)
  return hair,{
    "source_scalp_polygons":len(polylist),"procedural_strands":len(lengths),
@@ -271,7 +269,7 @@ def a03_short_groom(head, ec, height, front):
    "original_long_hair_disabled":True,"scalp_geometry_unchanged":True,
    "eye_eyelash_eyebrow_source_curves_preserved":True,
    "strand_source":"deterministic scalp polygon sampling",
-   "material":"Cycles Principled Hair melanin"
+   "material":"Source Einar film hair material retained, render-only derivative"
  }
 
 def main():
