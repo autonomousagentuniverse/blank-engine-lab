@@ -25,17 +25,21 @@ def a06_visible_groom(head, ec, height, front):
  for p in head.data.polygons:
   world=head.matrix_world@p.center
   nW=(head.matrix_world.to_3x3()@p.normal).normalized()
-  if world.z < eZ+height*.14 or nW.z<0.12 or p.area<=1e-9:continue
+  if world.z < eZ+height*.085 or nW.z<0.12 or p.area<=1e-9:continue
   crown.append((p,max(1e-10,p.area)))
  if len(crown)<120:raise AssertionError("No scalp polys for a proper groom")
  polygons=[z[0] for z in crown];weights=[z[1] for z in crown]
  c=bpy.data.curves.new("HumanA06_ScalpHairCurve","CURVE")
- c.dimensions="3D";c.resolution_u=1;c.bevel_depth=.00022;c.bevel_resolution=1
+ c.dimensions="3D";c.resolution_u=1;c.bevel_depth=.00015;c.bevel_resolution=1
  c.use_fill_caps=False
  backwards=(head.matrix_world.inverted().to_3x3()@(-front)).normalized()
- nstrands=11500
+ nstrands=13000
  bounds=[]
  for poly in rng.choices(polygons,weights=weights,k=nstrands):
+  # Fade the lower hairline instead of stopping at a hard polygon band.
+  worldz=(head.matrix_world@poly.center).z
+  fade=max(0.0,min(1.0,(worldz-(eZ+height*.085))/(height*.10)))
+  if rng.random()>fade:continue
   coords=[head.data.vertices[i].co.copy() for i in poly.vertices]
   if len(coords)<3:continue
   if len(coords)>3 and rng.random()<.5:coords=[coords[0],coords[2],coords[3]]
@@ -44,11 +48,11 @@ def a06_visible_groom(head, ec, height, front):
   if u+v>1:u,v=1-u,1-v
   root=coords[0]*(1-u-v)+coords[1]*u+coords[2]*v
   n=poly.normal.normalized()
-  f=(n*.5+backwards*.8+Vector((rng.uniform(-.12,.12),rng.uniform(-.12,.12),0))).normalized()
-  length=rng.uniform(.015,.036)
+  f=(n*.14+backwards*.95+Vector((rng.uniform(-.12,.12),rng.uniform(-.12,.12),0))).normalized()
+  length=rng.uniform(.007,.020)
   # Evaluated head includes subdivision/displacement, so offset 2.5mm
   # above un-evaluated root before extending the visible shaft.
-  points=[root+n*.0025,root+n*.003+f*length*.56,root+n*.003+f*length]
+  points=[root+n*.0013,root+n*.0014+f*length*.56,root+n*.0014+f*length]
   sp=c.splines.new("POLY");sp.points.add(2)
   for i,pt in enumerate(points):
    sp.points[i].co=(pt.x,pt.y,pt.z,1)
@@ -72,9 +76,9 @@ def a06_visible_groom(head, ec, height, front):
  world_points=[groom.matrix_world@c.splines[i].points[0].co.xyz for i in (0,len(c.splines)//2,len(c.splines)-1)]
  return groom,{
   "strands_requested":nstrands,"strands_created":len(c.splines),
-  "root_source":"source head scalp polygons (un-evaluated), lifted 2.5mm",
+  "root_source":"source head scalp polygons (un-evaluated), lifted 1.3mm",
   "scalp_polygon_count":len(crown),
-  "length_m":[.015,.036],"strand_radius_m":.00022,
+  "length_m":[.007,.020],"strand_radius_m":.00015,
   "material_type":"Cycles node-based Principled BSDF no source curve attributes",
   "world_root_samples":[list(p) for p in world_points],
   "crown_bounds_z":[min(x[0] for x in bounds),max(x[0] for x in bounds)],
@@ -116,7 +120,11 @@ def main():
  groom.hide_render=False
  scene=bpy.context.scene
  scene.use_nodes=False
- scene.render.engine="CYCLES";scene.cycles.samples=10;scene.cycles.device="CPU"
+ # In the A06 clay diagnostic, imported A05 film lights are still present.
+ # Disable them; otherwise new lights stack on top and blow out all colors.
+ for existing in bpy.data.objects:
+  if existing.type=="LIGHT": existing.hide_render=True
+ scene.render.engine="CYCLES";scene.cycles.samples=12;scene.cycles.device="CPU"
  scene.render.resolution_x=700;scene.render.resolution_y=700;scene.render.resolution_percentage=100
  scene.render.image_settings.file_format="PNG"
  scene.render.threads_mode="FIXED";scene.render.threads=4
@@ -124,7 +132,7 @@ def main():
  except Exception:pass
  world=bpy.data.worlds.new("HumanA06_DebugWorld");world.use_nodes=True
  world.node_tree.nodes["Background"].inputs["Color"].default_value=(.14,.16,.20,1)
- world.node_tree.nodes["Background"].inputs["Strength"].default_value=.9
+ world.node_tree.nodes["Background"].inputs["Strength"].default_value=.4
  scene.world=world
  def point(o,location,target):
   o.location=location;o.rotation_euler=(target-location).to_track_quat("-Z","Y").to_euler()
@@ -132,8 +140,8 @@ def main():
   m=bpy.data.lights.new(name,"AREA");m.energy=energy;m.shape="DISK";m.size=size
   obj=bpy.data.objects.new(name,m);scene.collection.objects.link(obj);point(obj,location,target)
  mid=ec+Vector((0,0,-height*.12))
- light("A06_Debug_Key",mid+front*1.1+Vector((.4,.2,.5)),mid,550,1.5)
- light("A06_Debug_Fill",mid+front*.65+Vector((-.6,.1,.1)),mid,350,1.8)
+ light("A06_Debug_Key",mid+front*1.1+Vector((.4,.2,.5)),mid,135,1.7)
+ light("A06_Debug_Fill",mid+front*.65+Vector((-.6,.1,.1)),mid,75,2.)
  camera=bpy.data.objects.get("HumanA05_PortraitCamera")
  if not camera:
   camera=bpy.data.objects.new("A06_DebugCamera",bpy.data.cameras.new("A06_DebugCamera"))

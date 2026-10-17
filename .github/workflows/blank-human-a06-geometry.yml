@@ -1,5 +1,8 @@
-name: HUMAN-A06 — offline real Blender scalp geometry diagnostic from A05
+name: HUMAN-A06 — corrected natural hairline and clay illumination
 on:
+  push:
+    branches: [experiment/human-a06-scalp-geometry-proof]
+    paths: ['.github/workflows/blank-human-a06-geometry.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -36,7 +39,7 @@ jobs:
           p=Path('artifacts/human-a06-debug')
           d=json.loads((p/'report.json').read_text())
           assert d['status']=='DEBUG_TWO_REAL_CYCLES_RENDERS_DONE_NOT_PHOTOREAL'
-          assert d['groom']['strands_created']>=11000
+          assert d['groom']['strands_created']>=8000
           assert len(d['renders'])==2
           assert (p/'hair_macro.png').stat().st_size>5000
           print('DEBUG_GROOM_GEOMETRY_PASS_NOT_PHOTOREAL_APPROVAL')
