@@ -9,7 +9,7 @@
   "automatic_deployment_enabled": false,
   "source_of_truth": "GitHub main for shared handoff, with latest implementation on linked experimental branches (NOT merged)",
   "priority": "P0",
-  "priority_task": "HUMAN-A07 scalp hairline: correct front follicle mask (1/16500 front classified), add asymmetric natural edge, preserve BVH scalp-hugging strands. Material film source and WebGL remains blocked; A05 best original skin.",
+  "priority_task": "ARCHITECTURE RESET: freeze HUMAN-A05 as CC-BY Einar-derived reference; source-locked independent new-human Cycles rendering, photo evidence and human approval before new work. Do not develop A08 patch loop.",
   "owner_decisions": [
     "hardest problems first",
     "one visually excellent isolated hero before scaling",
@@ -404,5 +404,23 @@
     "visual_issue": "uniform combed cap and incorrect front hairline follicle distribution",
     "next": "Normalize frontness using scalp polygon longitudinal min and max, enforce front coverage; irregular hairline and temple guides",
     "production_deployed": false
+  },
+  "character_pipeline_reset": {
+    "date": "2026-10-17",
+    "branch": "refactor/character-pipeline-quality-reset",
+    "status": "CODE_COMPOSED_CI_PENDING",
+    "frozen_reference": "HUMAN-A05",
+    "reference_kind": "licensed_Einar_derivative_not_new_human",
+    "reference_blend_sha256": "6c5d1236c0a9bae7746014f515b7d480cd644aa21799ae0435fabf521e2368ac",
+    "reference_front_sha256": "1435d4d4433746f8ed8c03910ef3702145fe6bd90dc2369343cc6cac4cbbe25a",
+    "source_contract": "character-pipeline/contract.mjs",
+    "blender_renderer": "character-pipeline/render-cycles.py",
+    "sample_plan": "character-pipeline/example-new-human.plan.json",
+    "visual_approval": "HUMAN_REVIEW_REQUIRED_WITH_PINNED_RENDER_FINGERPRINT",
+    "webgl_parity": "NOT_IMPLEMENTED",
+    "independent_new_human_generated": false,
+    "source_cache_persistent": false,
+    "source_downloads_in_pipeline": false,
+    "no_production_deployment": true
   }
 }

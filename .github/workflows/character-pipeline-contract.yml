@@ -1,0 +1,29 @@
+name: Character pipeline — fail-closed contract tests (no assets or deploy)
+on:
+  push:
+    branches: [refactor/character-pipeline-quality-reset]
+    paths: ['character-pipeline/**', '.github/workflows/character-pipeline-contract.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Test source, proof, and human-review blockers
+        run: |
+          node --test character-pipeline/contract.test.mjs
+          python3 -m py_compile character-pipeline/render-cycles.py
+      - name: Reject intentionally incomplete template
+        run: |
+          if node character-pipeline/gate-cli.mjs check-plan character-pipeline/example-new-human.plan.json; then
+            echo 'ERROR: missing new human source was accidentally accepted'
+            exit 1
+          else
+            echo 'PASS: source-less independent human template blocked'
+          fi

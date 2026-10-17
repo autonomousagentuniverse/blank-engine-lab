@@ -1,0 +1,45 @@
+{
+  "schema": "blank.character.plan.v1",
+  "id": "new-human-001",
+  "source": {
+    "origin": "TO_BE_CREATED_INDEPENDENTLY",
+    "derived_from_einar": false,
+    "ancestors": [],
+    "creator": "REPLACE_WITH_ACTUAL_AUTHOR",
+    "license": "REPLACE_WITH_VERIFIED_LICENSE",
+    "rights_verified": false,
+    "file": "new-human.blend",
+    "sha256": "REPLACE_WITH_REAL_64_CHARACTER_SHA"
+  },
+  "render": {
+    "engine": "CYCLES",
+    "profile": "blank-head-v1",
+    "samples": 32,
+    "resolution": [
+      700,
+      700
+    ]
+  },
+  "views": [
+    {
+      "id": "front",
+      "camera": "CAM_FACE_FRONT"
+    },
+    {
+      "id": "three_quarter",
+      "camera": "CAM_FACE_THREE_QUARTER"
+    },
+    {
+      "id": "profile",
+      "camera": "CAM_FACE_PROFILE"
+    },
+    {
+      "id": "eyes_macro",
+      "camera": "CAM_EYES_MACRO"
+    }
+  ],
+  "reference": {
+    "blend": "6c5d1236c0a9bae7746014f515b7d480cd644aa21799ae0435fabf521e2368ac",
+    "front": "1435d4d4433746f8ed8c03910ef3702145fe6bd90dc2369343cc6cac4cbbe25a"
+  }
+}

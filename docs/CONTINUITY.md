@@ -126,6 +126,17 @@ Owner approved next step after A03: correct source-driven frown and eliminate ha
 - Next bounded test: calibrate scalp frontness from the **scalp's own min/max longitudinal range**, create hairline/temple masks with meaningfully nonzero front root samples and irregular edges, and compare identical Cycles geometry macro; do not increase hair count as a substitute.
 - Original source and external textures remain unavailable for this offline render; skin was deliberately clay. **HUMAN-A05 still best full photoreal-material reference**. No independent new human, no WebGL, no Vercel production deployment.
 
+
+### Architectural stop on redundancy: character quality reset — 2026-10-17
+
+The owner explicitly paused A01–A07 iteration after finding repeated morphology and hair attempts that did not fulfill the original **automated independent photorealistic human** goal. **HUMAN-A05 is frozen as the best verified full-film-material Einar-derived baseline**, not a new independent identity. Its actual locally verified Blender SHA256 is `6c5d1236c0a9bae7746014f515b7d480cd644aa21799ae0435fabf521e2368ac`; front Cycles PNG SHA256 `1435d4d4433746f8ed8c03910ef3702145fe6bd90dc2369343cc6cac4cbbe25a`; provenance [Actions run 39026642127](https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/39026642127) / CC-BY Blender Studio Einar. A06/A07 are **visual failures** for hair realism, not promoted builds. Stop copying A0x generator scripts and stop automated Einar publisher ZIP download attempts.
+
+**New source-contract implementation** on isolated `refactor/character-pipeline-quality-reset`: `character-pipeline/contract.mjs` and `gate-cli.mjs` enforce SHA256-locked independent human source declaration, provenance/rights, fixed four Cycles views, real PNG integrity and separate *manual* review tied to an evidence fingerprint; `render-cycles.py` renders a supplied human .blend via bpy without replacing missing materials with clay. Frozen `reference-a05.json`, intentionally failing `example-new-human.plan.json`, unit tests, README and GitHub Actions workflow are part of the same experiment. A technically passing render **cannot authorize deployment** and even manual Cycles acceptance explicitly returns `release_allowed:false`. No Einar derivative can pass as independent human by renaming and known asset hashes are blacklisted. Human source identity assessment still requires judgment beyond metadata.
+
+**Honest limit:** This commit supplies an actual shared validation/render pipeline, **not yet** an automatic generator of a new distinct anatomical head, a fully cached licensed film texture library or a matched WebGL parity render. Those goals stay OPEN and BLOCK release. Project continues at existing manually deployed Alpha 0.5. This architecture change is branch-only; no production deploy.
+
+**Experimental contract QA:** first GitHub Actions run pending as of code commit. CI only uses Node and Python bytecode, no expensive asset download/render; workflow is reverted to manual-only after the one-shot test. No A08 hair test or original source file changed.
+
 ## 1. Concept and product vision
 
 **Blank Box** is the eventual AI-native gaming/console vision; **Blank Engine** is its creation and runtime technology. The goal is an engine in which people describe or direct games, specialized agents collaborate on validated game designs, and builders produce reusable characters, objects, scenes and complete worlds. Agents do not bypass schema validation or human visual acceptance.
@@ -385,3 +396,6 @@ Geometry artifacts are **data**, not merely screenshots or untracked instruction
 
 - 2026-10-17 [PROPOSED] Record verified HUMAN-A07 guided scalp Cycles geometry results, first gate failure and subsequent successful 16500-strand proof, preserve actual front-root mask defect, and reject unwarranted claims of full photorealism.
 - 2026-10-17 [COMMITTED] Main continuity, structured state and AGENTS updated with A07 evidence run 39036792357, max root BVH clearance, scalp region counts (all rear), over-regular wig edge, priority frontal follicle recalibration; source code remains experimental manual CI, no production deployment.
+
+- 2026-10-17 [PROPOSED] Owner authorized freeze/A05 anti-circling reset. Consolidate new-human source gates, shared Cycles runner, visual approval contract and source/cache provenance. Do not create A08, duplicate Einar scripts, or deploy.
+- 2026-10-17 [COMMITTED] Added branch-only character-pipeline source/render/human-review gate, frozen A05 SHA256 reference and failing new-human template, tests and manual-first GitHub CI. Technical QA PENDING at commit; new independent human NOT GENERATED, visual approval/ WebGL/production remain BLOCKED.

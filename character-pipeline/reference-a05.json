@@ -1,0 +1,14 @@
+{
+  "schema": "blank.character.reference.v1",
+  "id": "HUMAN-A05",
+  "role": "reference_only",
+  "origin": "Blender Studio Einar derivative (not new independent identity)",
+  "license": "CC-BY",
+  "credit": "Einar Rig (CC-BY) Blender Foundation | studio.blender.org",
+  "blend_sha256": "6c5d1236c0a9bae7746014f515b7d480cd644aa21799ae0435fabf521e2368ac",
+  "front_sha256": "1435d4d4433746f8ed8c03910ef3702145fe6bd90dc2369343cc6cac4cbbe25a",
+  "source_run": 39026642127,
+  "source_artifact_id": 12097934128,
+  "texture_status": "externally referenced; source archive not portable",
+  "acceptance": "REFERENCE_ONLY_NOT_PHOTOREAL_NEW_IDENTITY"
+}
