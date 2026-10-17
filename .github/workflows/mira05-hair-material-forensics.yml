@@ -1,0 +1,58 @@
+name: MIRA05 hair shader forensic renders
+on:
+  push:
+    branches: [diagnostic/mira05-hair-material-causality]
+    paths: ['.github/workflows/mira05-hair-material-forensics.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Install actual Blender
+        run: python3 -m pip install --no-cache-dir --disable-pip-version-check bpy==4.5.3
+      - name: Retrieve frozen MIRA05 integrated Blender file
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p baseline-mira05 artifacts/mira05-material-diagnostic
+          gh run download 39051879470 --repo autonomousagentuniverse/blank-engine-lab --name mira05-finished-structural-reconstruction --dir baseline-mira05
+          python3 - <<'PY'
+          import pathlib,hashlib
+          p=pathlib.Path('baseline-mira05/mira05-integrated-structural.blend')
+          assert p.stat().st_size>20000000
+          assert hashlib.sha256(p.read_bytes()).hexdigest()=='07806e89a1ad2389bb7c216144b57878748d0f54536fe2a47f026f229e2db076'
+          print('FROZEN_MIRA05_SOURCE_VERIFIED')
+          PY
+          python3 -m py_compile diagnostics/mira05/hair_material_diagnostic.py
+      - name: Inspect binding, emission and diffuse in separate Blender processes
+        env:
+          OMP_NUM_THREADS: '4'
+        run: |
+          for mode in source_hair_bsdf magenta_binding_probe dark_emission dark_principled; do
+            timeout -k 10s 180s python3 -u diagnostics/mira05/hair_material_diagnostic.py "$mode"
+          done
+          python3 - <<'PY'
+          import json,pathlib,hashlib
+          p=pathlib.Path('artifacts/mira05-material-diagnostic')
+          r=json.loads((p/'report.json').read_text())
+          assert len(r['renders'])==4 and r['status']=='FOUR_MATERIAL_TESTS_COMPLETE_NEEDS_IMAGE_ANALYSIS'
+          assert len(r['original_material_inventory'])==6
+          for im in r['renders']:
+            assert hashlib.sha256((p/im['file']).read_bytes()).hexdigest()==im['sha256']
+          print('FOUR_REAL_CYCLES_DIAGNOSTIC_FRAMES_COMPLETE')
+          PY
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: mira05-hair-material-forensics
+          path: artifacts/mira05-material-diagnostic/
+          if-no-files-found: warn
+          retention-days: 7
