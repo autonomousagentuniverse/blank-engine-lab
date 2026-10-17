@@ -1,0 +1,73 @@
+name: MIRA-05 structural reconstruction — source-aware batch
+on:
+  push:
+    branches: [experiment/mira05-structural-rebuild-batch]
+    paths: ['.github/workflows/mira05-structural-batch.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  reconstruct-six-variants:
+    runs-on: ubuntu-latest
+    timeout-minutes: 36
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Install real Blender Python, not a synthetic rendering emulator
+        run: python3 -m pip install --no-cache-dir --disable-pip-version-check bpy==4.5.3
+      - name: Retrieve exact MIRA-03 packed source — never Einar
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p baseline-mira03 artifacts/mira05-batch
+          gh run download 39045175123 --repo autonomousagentuniverse/blank-engine-lab --name mira03-matched-midline-isolate --dir baseline-mira03
+          python3 - <<'PY'
+          import hashlib,pathlib
+          p=pathlib.Path('baseline-mira03/mira03-continuous-midline.blend')
+          assert p.is_file() and p.stat().st_size>20000000
+          sha=hashlib.sha256(p.read_bytes()).hexdigest()
+          assert sha=='1809398d604efa567a063697f34d84dc10c6db95914f38a31ac5bd6912e5e96d',sha
+          print('FROZEN_MIRA03_SOURCE_VERIFIED',sha)
+          PY
+          python3 -m py_compile experiments/mira05/*.py
+      - name: One batch, six independent bpy processes and ten real Cycles images
+        env:
+          OMP_NUM_THREADS: '4'
+        run: |
+          for variant in baseline eyes hair_brows skin identity integrated; do
+            echo "MIRA05_STRUCTURAL_BATCH_PROCESS $variant"
+            timeout -k 10s 450s python3 -u experiments/mira05/batch.py "$variant"
+          done
+          python3 - <<'PY'
+          import hashlib,json,pathlib
+          p=pathlib.Path('artifacts/mira05-batch')
+          r=json.loads((p/'report.json').read_text())
+          assert r['status']=='TEN_REAL_CYCLES_IMAGES_TECHNICAL_SUCCESS_VISUAL_REVIEW_REQUIRED',r.get('error')
+          assert len(r['frames'])==10
+          assert set(r['variants'])=={'baseline','eyes','hair_brows','skin','identity','integrated'}
+          assert not r['photoreal_approved'] and not r['deployed'] and not r['independently_original']
+          assert r['variants']['hair_brows']['modifications']['hair_geometry']['hair_curves']>=11250
+          assert r['variants']['hair_brows']['modifications']['brow_geometry']['eyebrow_strands']>=500
+          assert r['variants']['eyes']['modifications']['eye_assembly']['eyelid_contact']['anatomical_curves']>=3
+          assert r['variants']['identity']['modifications']['identity']['max_displacement_mm']>=7
+          assert r['variants']['skin']['modifications']['skin_graph']['uv_color_roughness_normal_maps_preserved']
+          for f in r['frames']:
+            photo=p/f['file']
+            assert photo.stat().st_size>12000
+            assert hashlib.sha256(photo.read_bytes()).hexdigest()==f['sha256']
+          blend=p/r['integrated_blend']['path']
+          assert blend.stat().st_size>=15000000
+          assert hashlib.sha256(blend.read_bytes()).hexdigest()==r['integrated_blend']['sha256']
+          print('MIRA05_TEN_AUTHENTIC_CYCLES_RENDERS_GEOMETRY_AND_SOURCE_AUDITED_AESTHETIC_REVIEW_PENDING')
+          PY
+      - name: Archive all actual intermediate evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: mira05-structural-reconstruction-batch
+          path: artifacts/mira05-batch/
+          if-no-files-found: warn
+          retention-days: 7
