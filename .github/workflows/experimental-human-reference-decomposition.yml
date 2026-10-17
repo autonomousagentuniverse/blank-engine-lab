@@ -1,8 +1,5 @@
 name: Experimental Einar vs MIRA anatomical-dependency decomposition
 on:
-  push:
-    branches:
-      - experiment/human-reference-decomposition-20261017
   workflow_dispatch:
 permissions:
   contents: read
