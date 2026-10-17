@@ -1,5 +1,8 @@
 name: Experimental Einar tear modifier and anatomical eye-surface test
 on:
+  push:
+    branches:
+      - experiment/einar-tear-contact-20261017
   workflow_dispatch:
 permissions:
   contents: read
@@ -45,11 +48,30 @@ jobs:
           assert 'object_modifier_chains' in d and 'contact_surface_proxy' in d
           print('EINAR_TEAR_CONTACT_REAL_BLENDER_DIAGNOSTIC_RECORDED',p.stat().st_size)
           PY
+      - name: Ablate viewport visibility and match render modifier flags without saving source
+        env:
+          OMP_NUM_THREADS: '4'
+        run: |
+          python3 -m py_compile experiments/einar-pose/ablate_visibility.py
+          timeout -k 15s 600s python3 -u experiments/einar-pose/ablate_visibility.py
+          python3 - <<'PY'
+          import json,pathlib
+          p=pathlib.Path('artifacts/einar-visibility-ablation/visibility-ablation.json')
+          d=json.loads(p.read_text())
+          assert d['blend_sha256']=='1c6663da0a2e9d6822978467c244e9186edc76083bae2414e02f9e695e711f7b'
+          assert not d['actual_lid_margin_identified'] and not d['certified_signed_eye_collision']
+          assert not d['new_human_generated'] and not d['release_allowed']
+          for condition in ('original_hidden_viewport','viewport_enabled','viewport_enabled_render_flags'):
+            assert condition in d['conditions']
+          print('REFERENCE_VISIBILITY_CONTACT_ABLATION_VERIFIED')
+          PY
       - name: Preserve only text diagnostic, never original publisher meshes or textures
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: einar-tear-contact-blender-evidence
-          path: artifacts/einar-tear-contact/
+          name: einar-tear-visibility-and-contact-ablation
+          path: |
+            artifacts/einar-tear-contact/
+            artifacts/einar-visibility-ablation/
           retention-days: 7
           if-no-files-found: warn
