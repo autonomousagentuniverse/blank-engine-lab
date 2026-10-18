@@ -1,0 +1,71 @@
+name: EXPERIMENTAL Exact Camera Blender Chrome Silhouette Parity
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/human-reference-atlas-20261018
+    paths:
+      - .github/workflows/experimental-afro-matched-camera-once.yml
+permissions:
+  contents: read
+  actions: read
+jobs:
+  source-camera-match:
+    runs-on: ubuntu-latest
+    timeout-minutes: 27
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Recover exact mask-respected original .blend and exported GLB
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p source artifacts/afro-matched-camera
+          gh run download 39143615834 --repo autonomousagentuniverse/blank-engine-lab --name afro-mask-respected-geometry-and-glb --dir source
+          printf 'a1c38165ae2d8d100e04919e4e57b35623ac9fabc1b0d2cb44bdfb7829fef570  source/afro_mask_respected_uv_pbr.blend\n' | sha256sum -c -
+          printf '1040b6330559865801b67ac57c293ddc07b94328cc735476ff4da47464c3399d  source/afro_mask_respected_rigged.glb\n' | sha256sum -c -
+          cp source/afro_mask_respected_rigged.glb artifacts/afro-matched-camera/input.glb
+      - name: Real Blender exact camera source, color and emission silhouette renders
+        env:
+          OMP_NUM_THREADS: '4'
+        run: |
+          python3 -m pip install --disable-pip-version-check --no-cache-dir bpy==4.5.3 numpy pillow
+          python3 -m py_compile character-pipeline/references/audit_matched_camera_reference.py character-pipeline/references/compare_chrome_cycles_projection.py
+          timeout -k 20s 650s python3 -u character-pipeline/references/audit_matched_camera_reference.py
+      - name: Real Chrome with pinned Three.js and GLTFLoader
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm install --no-save --ignore-scripts --no-audit --no-fund three@0.186.1 playwright@1.56.1
+          npx playwright install chrome
+          timeout -k 20s 470s node scripts/audit-afro-matched-camera-chrome.mjs
+      - name: Compute real no-registration silhouette IoU and qualitative color difference
+        run: |
+          python3 character-pipeline/references/compare_chrome_cycles_projection.py
+          python3 - <<'PY'
+          import pathlib,json,hashlib
+          p=pathlib.Path("artifacts/afro-matched-camera")
+          j=json.loads((p/"camera-and-light-reference.json").read_text())
+          m=json.loads((p/"matched-camera-report.json").read_text())
+          assert j["input_sha256"]=="a1c38165ae2d8d100e04919e4e57b35623ac9fabc1b0d2cb44bdfb7829fef570"
+          assert j["no_source_or_geometric_changes"] and not j["photorealism_approved"]
+          assert m["silhouette"]["union_count"]>10000
+          assert not m["quality"]["cycles_webgl_photometric_parity_approved"]
+          for name,item in m["images"].items():
+              q=p/name
+              assert hashlib.sha256(q.read_bytes()).hexdigest()==item["sha256"]
+          print("REAL_SOURCE_CAMERA_PARITY_MEASURED_WITHOUT_IMAGE_REGISTRATION",m["silhouette"])
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: afro-matched-camera-cycles-chrome-20261018
+          path: |
+            artifacts/afro-matched-camera/*.png
+            artifacts/afro-matched-camera/*.json
+          retention-days: 7
+          if-no-files-found: warn
