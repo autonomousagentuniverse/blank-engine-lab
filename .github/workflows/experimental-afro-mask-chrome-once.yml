@@ -1,11 +1,6 @@
 name: EXPERIMENTAL Mask-Respected Afro Chrome Visual A/B
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - research/human-reference-atlas-20261018
-    paths:
-      - .github/workflows/experimental-afro-mask-chrome-once.yml
 permissions:
   contents: read
   actions: read
