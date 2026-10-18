@@ -32,9 +32,10 @@ def main():
  material=bpy.data.materials["Dark_Brown_Skin_Microstructure"]
  assert material.use_nodes
  indices=[i for i,x in enumerate(body.data.materials) if x==material]
- assert len(indices)==1,("NOT_ONE_SKIN_SLOT",indices)
- index=indices[0]
- polys=[p for p in body.data.polygons if p.material_index==index]
+ assert len(indices)>=1,("NO_SKIN_MATERIAL_SLOT",indices)
+ # This MPFB source reuses one procedural skin material across five slots.
+ # Bake every polygon referencing precisely that MATERIAL DATABLOCK.
+ polys=[p for p in body.data.polygons if p.material_index in set(indices)]
  assert len(polys)>1000,("SKIN_POLYGONS_NOT_IDENTIFIED",len(polys))
  bsdf=next(n for n in material.node_tree.nodes if n.type=="BSDF_PRINCIPLED")
  base=bsdf.inputs["Base Color"]
@@ -169,7 +170,7 @@ def main():
  data={
   "schema":"blank.engine.pbr-bake.uv-material.v1","blender":bpy.app.version_string,
   "input_sha256":EXPECTED,"source_unchanged":sha(SRC)==EXPECTED,
-  "skin_polygons":len(polys),"uv_name":uv.name,
+  "skin_polygons":len(polys),"skin_material_slots":indices,"uv_name":uv.name,
   "skin_material":material.name,"old_links":orig_nodes,
   "basecolor_and_normal_bake_pass":True,"images":images,
   "glb":{"path":glb.name,"sha256":sha(glb),"bytes":glb.stat().st_size,
