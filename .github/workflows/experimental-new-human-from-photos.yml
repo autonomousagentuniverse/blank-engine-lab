@@ -1,0 +1,98 @@
+name: Experimental one-shot NEW MPFB whole human from human photo research
+on:
+  push:
+    branches:
+      - experiment/real-photo-to-new-human-mpfb-20261017
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  whole-human-one-shot:
+    name: New independent human Blender Cycles complete candidate
+    runs-on: ubuntu-latest
+    timeout-minutes: 58
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Verify old actual real-human photo measurement, no implied anatomy scan
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p reference artifacts/new-human-from-photos
+          gh run download 39081645078 --repo autonomousagentuniverse/blank-engine-lab \
+            --name real-human-photographic-decomposition-v1 --dir reference
+          python3 - <<'PY'
+          import json,pathlib
+          d=json.loads(pathlib.Path('reference/photo-versus-mira-metrics.json').read_text())
+          assert len(d['reference_photographs'])==6
+          assert len(d['generated_control'])==3
+          assert d['geometric_anatomy_measurement'].startswith('NOT_MEASURED')
+          assert not d['generator_photoreal_pass'] and not d['release_allowed']
+          print('PHOTO_REFERENCE_MEASUREMENTS_INPUT_PINNED')
+          PY
+      - name: Clone exact third-party MPFB 2.0.18 source for this build only
+        run: |
+          git clone --filter=blob:none --depth=1 \
+            https://github.com/makehumancommunity/mpfb2.git upstream-mpfb
+          test "$(git -C upstream-mpfb rev-parse HEAD)" = '3af0cd5a2ffba072e93a34e5f6f494fdc4813ddf'
+          test -f upstream-mpfb/src/mpfb/blender_manifest.toml
+          python3 -m py_compile experiments/real-human-reference/generate_new_mpfb.py
+          echo 'UPSTREAM_MPFBI_SOURCE_HASH_VERIFIED'
+      - name: Download original CC0 MakeHuman system asset pack for complete eyes hair rig clothes
+        run: |
+          mkdir -p mpfb-assets .ci-mpfb
+          curl -fL --retry 3 --retry-all-errors --connect-timeout 30 --max-time 1000 \
+            'https://files2.makehumancommunity.org/asset_packs/makehuman_system_assets/makehuman_system_assets_cc0.zip' \
+            -o .ci-mpfb/system-assets.zip
+          python3 - <<'PY'
+          import zipfile,pathlib,os
+          p=pathlib.Path('.ci-mpfb/system-assets.zip')
+          assert p.stat().st_size>150000000, 'Core pack too small or absent'
+          with zipfile.ZipFile(p) as z:
+            assert z.testzip() is None
+            for f in z.infolist():
+              path=pathlib.PurePosixPath(f.filename)
+              assert not path.is_absolute() and '..' not in path.parts, f.filename
+            z.extractall('mpfb-assets')
+          for f in ['young_caucasian_female.mhmat','bob01.mhclo','eyebrow001.mhclo',
+                    'high-poly.mhclo','eyelashes01.mhclo','teeth_base.mhclo']:
+            found=list(pathlib.Path('mpfb-assets').rglob(f))
+            assert len(found)==1,(f,found)
+          print('CC0_CORE_ASSET_INPUTS_VERIFIED',p.stat().st_size)
+          PY
+      - name: Install genuine Blender 4.5.3 Python API
+        run: python3 -m pip install --no-cache-dir --disable-pip-version-check bpy==4.5.3
+      - name: One complete brand-new human, rig, bodyparts, skin and real Blender Cycles
+        env:
+          OMP_NUM_THREADS: '4'
+        run: timeout -k 15s 2100s python3 -u experiments/real-human-reference/generate_new_mpfb.py
+      - name: Validate editable original, images and explicit no-photoreal acceptance
+        run: |
+          python3 - <<'PY'
+          import pathlib,json,hashlib
+          p=pathlib.Path('artifacts/new-human-from-photos')
+          d=json.loads((p/'report.json').read_text())
+          assert d['new_human_source'] and not d['mira_fallback_used']
+          assert len(d['cycles_images'])==4
+          assert set(d['bodyparts'])=={'Eyes','Eyebrows','Eyelashes','Hair','Teeth','Tongue','Clothes'}
+          assert d['rig_bones']>20 and d['body_mesh_vertices']>5000
+          assert not d['photorealism_approved'] and not d['release_allowed']
+          for item in d['cycles_images']:
+            f=p/item['file']
+            assert hashlib.sha256(f.read_bytes()).hexdigest()==item['sha256']
+          blend=p/'new_human_cc0_pilot.blend'
+          assert blend.stat().st_size>300000
+          assert hashlib.sha256(blend.read_bytes()).hexdigest()==d['blend_sha256']
+          print('TECHNICALLY_COMPLETE_NEW_SYNTHETIC_HUMAN_READY_FOR_HUMAN_VISUAL_REVIEW')
+          PY
+      - name: Archive ONLY new generated character (core CC0) and evidence, never MPFB GPL code
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: new-independent-cc0-human-one-shot-cycles
+          path: artifacts/new-human-from-photos/
+          retention-days: 7
+          if-no-files-found: warn
