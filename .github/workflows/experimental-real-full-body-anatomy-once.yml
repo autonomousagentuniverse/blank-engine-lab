@@ -100,6 +100,17 @@ jobs:
                   'changed_png_sha256':hashlib.sha256((root/'changed'/file).read_bytes()).hexdigest()}
           (root/'body-ab-verification.json').write_text(json.dumps(output,indent=2)+'\n')
           print('REAL_FULL_BODY_3D_MORPHOLOGY_AND_CYCLES_A_B_PASS',json.dumps(output))
+          # Also publish compact independently verifiable PNG-derived side-by-side
+          # previews to the runner log for forensic inspection.
+          import io,base64
+          for name in ('front','three_quarter_27','profile_90'):
+              file='actual_blender_full_body_'+name+'.png'
+              left=Image.open(root/'neutral'/file).convert('RGB').resize((288,432))
+              right=Image.open(root/'changed'/file).convert('RGB').resize((288,432))
+              preview=Image.new('RGB',(576,432))
+              preview.paste(left,(0,0));preview.paste(right,(288,0))
+              b=io.BytesIO();preview.save(b,format='JPEG',quality=63,optimize=True)
+              print('BODY_AB_JPEG_'+name.upper()+'::'+base64.b64encode(b.getvalue()).decode())
           PY
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
