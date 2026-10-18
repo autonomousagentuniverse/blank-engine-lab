@@ -1,0 +1,56 @@
+name: EXPERIMENTAL Anatomical Semantic Tagging (One Shot)
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/human-reference-atlas-20261018
+    paths:
+      - .github/workflows/experimental-anatomy-semantic-once.yml
+permissions:
+  contents: read
+  actions: read
+jobs:
+  semantic-tags:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Recover exact, immutable Blender source for morphology
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p source artifacts/semantic-tags
+          gh run download 39090435514 --repo autonomousagentuniverse/blank-engine-lab --name user-afro-woman-body-final-real-blender --dir source
+          printf '26fbbab775771a197482d7baffb89decbbf4f821dd3cfaa69fac28ee52e1fc2a  source/afro_woman_darkskin_medium_build_final.blend\n' | sha256sum -c -
+      - name: Install actual Blender 4.5.3 and tag source-derived anatomy
+        env:
+          OMP_NUM_THREADS: '4'
+        run: |
+          python3 -m pip install --disable-pip-version-check --no-cache-dir bpy==4.5.3
+          python3 -m py_compile character-pipeline/references/tag_and_measure_afro_blender.py
+          timeout -k 12s 540s python3 -u character-pipeline/references/tag_and_measure_afro_blender.py
+      - name: Preserve anatomy failures and derivative source manifest
+        run: |
+          python3 - <<'PY'
+          import pathlib,json,hashlib
+          d=pathlib.Path('artifacts/semantic-tags')
+          j=json.loads((d/'provisional-tag-measures.json').read_text())
+          assert j['source_unmodified'] and j['source_sha256']=='26fbbab775771a197482d7baffb89decbbf4f821dd3cfaa69fac28ee52e1fc2a'
+          assert j['scalp_hair']['roots']==4450 and j['rest_pose_vertices']==19158
+          assert j['manual_anatomical_validation'] is False and not j['ready_for_one_shot'] and not j['photorealism_approved'] and not j['release_allowed']
+          assert all('NOT_' in k or k.startswith('spine') for k in j['rig_endpoints'])
+          p=d/'afro_woman_semantic_provisional.blend'
+          assert p.stat().st_size>1000000
+          assert hashlib.sha256(p.read_bytes()).hexdigest()==j['derivative_blend_sha256']
+          print('ACTUAL_BLENDER_SEMANTIC_EVIDENCE_VERIFIED')
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: verified-provisional-afro-anatomical-tags
+          path: artifacts/semantic-tags/
+          retention-days: 7
+          if-no-files-found: warn
