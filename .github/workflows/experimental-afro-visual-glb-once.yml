@@ -1,0 +1,58 @@
+name: EXPERIMENTAL Blender Skinbound Hair Visual and GLB One-Shot
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/human-reference-atlas-20261018
+    paths:
+      - .github/workflows/experimental-afro-visual-glb-once.yml
+permissions:
+  contents: read
+  actions: read
+jobs:
+  cycles-and-gltf:
+    runs-on: ubuntu-latest
+    timeout-minutes: 27
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Recover SHA-pinned verified skinbound Blender source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p source artifacts/afro-visual-glb
+          gh run download 39139909059 --repo autonomousagentuniverse/blank-engine-lab --name afro-skinbound-geometry-regression-20261018 --dir source
+          printf '0eca41c5f0175e50df18914bb87cc007184ddcf55f2dd84ea3640645ddac2f52  source/afro_skinbound_hair_derivative.blend\n' | sha256sum -c -
+      - name: Real Blender 4.5.3 Cycles views, pose and GLB export
+        env:
+          OMP_NUM_THREADS: '4'
+        run: |
+          python3 -m pip install --disable-pip-version-check --no-cache-dir bpy==4.5.3
+          python3 -m py_compile character-pipeline/references/audit_skinbound_visual_glb.py
+          timeout -k 20s 1250s python3 -u character-pipeline/references/audit_skinbound_visual_glb.py
+      - name: Preserve evidence and reject corrupt unskinned GLB
+        run: |
+          python3 - <<'PY'
+          import pathlib,hashlib,json
+          d=pathlib.Path('artifacts/afro-visual-glb')
+          r=json.loads((d/'visual-export-report.json').read_text())
+          assert r['source_sha256']=='0eca41c5f0175e50df18914bb87cc007184ddcf55f2dd84ea3640645ddac2f52'
+          assert r['source_unchanged'] and r['hair_strands']==4450
+          assert len(r['visual_renders'])==4 and len(r['collision_proxies'])==2
+          assert r['glb']['structural_export_pass'] and all(r['glb']['hair_skin_nodes'].values())
+          assert not r['photorealism_approved'] and not r['webgl_parity'] and not r['release_allowed']
+          for item in r['visual_renders']+[r['glb']]:
+              p=d/item['filename']
+              assert p.stat().st_size==item['bytes']
+              assert hashlib.sha256(p.read_bytes()).hexdigest()==item['sha256']
+          print('REAL_BLENDER_VISUAL_MULTIVIEW_GLB_STRUCTURE_PASSED')
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: afro-skinbound-cycles-glb-real-20261018
+          path: artifacts/afro-visual-glb/
+          retention-days: 7
+          if-no-files-found: warn
