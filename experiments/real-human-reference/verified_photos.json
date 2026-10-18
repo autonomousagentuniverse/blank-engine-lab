@@ -1,0 +1,120 @@
+{
+  "schema": "blank.real-human.photo-reference.v1",
+  "date": "2026-10-17",
+  "rules": {
+    "only_photographs": true,
+    "no_same_identity_geometry_copy": true,
+    "no_real_identity_training_claim": true,
+    "rights_verify_by_commons_filepage": true,
+    "attribution_required": [
+      "CC-BY-4.0",
+      "CC-BY-2.0"
+    ],
+    "license_note": "Copyright licenses cover images; not necessarily publicity/privacy rights; use textures statistics and nonidentity template only.",
+    "no_photo_anatomical_inference_without_camera_calibration": true
+  },
+  "sources": [
+    {
+      "id": "eye_macro",
+      "file": "Female_eye_close_up.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/0/03/Female_eye_close_up.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Female_eye_close_up.jpg",
+      "author": "Grauvision",
+      "license": "CC-BY-4.0",
+      "kind": "eye",
+      "rect": [
+        0.08,
+        0.13,
+        0.92,
+        0.88
+      ],
+      "photometry": "camera flash, eye close-up",
+      "limits": "Not identity matched; flash and depth of field"
+    },
+    {
+      "id": "hair_macro",
+      "file": "Light_brown_hair.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/f/fa/Light_brown_hair.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Light_brown_hair.jpg",
+      "author": "Dominique Lyon",
+      "license": "CC0-1.0",
+      "kind": "hair",
+      "rect": [
+        0.05,
+        0.05,
+        0.95,
+        0.95
+      ],
+      "photometry": "ambient handheld macro",
+      "limits": "One light-brown straight hairstyle and high ISO"
+    },
+    {
+      "id": "skin_macro",
+      "file": "Human_skin_close-up.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/5/5f/Human_skin_close-up.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Human_skin_close-up.jpg",
+      "author": "Montavius Howard (TongCreator)",
+      "license": "CC0-1.0",
+      "kind": "skin",
+      "rect": [
+        0.15,
+        0.28,
+        0.85,
+        0.82
+      ],
+      "photometry": "shallow-depth-of-field skin macro",
+      "limits": "Not facial skin; depth of field varies"
+    },
+    {
+      "id": "eye_hair_unposed",
+      "file": "Close-Up_Face.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/f/f9/Close-Up_Face.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Close-Up_Face.jpg",
+      "author": "Mortification7",
+      "license": "PD-self",
+      "kind": "real_face_eye_hair",
+      "rect": [
+        0.28,
+        0.11,
+        0.88,
+        0.65
+      ],
+      "photometry": "on-camera flash and tilted subject",
+      "limits": "Oblique angle, low shutter, flash, no matched CG camera"
+    },
+    {
+      "id": "face_dark_exposure",
+      "file": "Portrait_with_natural_light_(Creative_Commons).jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/6/6f/Portrait_with_natural_light_%28Creative_Commons%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Portrait_with_natural_light_(Creative_Commons).jpg",
+      "author": "Wendelin Jacober",
+      "license": "CC-BY-2.0",
+      "kind": "real_face_lowkey",
+      "rect": [
+        0.48,
+        0.065,
+        0.8,
+        0.53
+      ],
+      "photometry": "dark side-lit editorial portrait",
+      "limits": "Underexposure and creative processing confound skin texture"
+    },
+    {
+      "id": "face_high_exposure",
+      "file": "Face-1511873.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/d/df/Face-1511873.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Face-1511873.jpg",
+      "author": "Engin_Akyurt",
+      "license": "CC0-1.0",
+      "kind": "real_face_highkey",
+      "rect": [
+        0.72,
+        0.05,
+        0.99,
+        0.88
+      ],
+      "photometry": "bright high-key overexposure",
+      "limits": "Strongly clipped highlights; not a valid skin material calibration reference"
+    }
+  ]
+}
