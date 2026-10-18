@@ -1,0 +1,91 @@
+{
+  "schema": "blank.engine.afro.skinbound.verified.v1",
+  "date": "2026-10-18",
+  "run_id": 39139909059,
+  "run_url": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/39139909059",
+  "status": "BLENDER_DYNAMIC_ROOT_ATTACHMENT_PASS",
+  "blender_version": "4.5.3 LTS",
+  "source_blend_sha256": "327befea50b2961d1ff3341fdf2e7b6bb173f7c74c09212c68061677a974b3f2",
+  "derivative_blend_sha256": "0eca41c5f0175e50df18914bb87cc007184ddcf55f2dd84ea3640645ddac2f52",
+  "source_unmodified": true,
+  "artifact_id": 12141366563,
+  "artifact_name": "afro-skinbound-geometry-regression-20261018",
+  "root_count": 4450,
+  "hair_meshes": 3,
+  "tube_sides": 3,
+  "original_nurbs_retained": true,
+  "binding": "per-follicle scalp triangle barycentric interpolated true ARMATURE bone-group weights applied to each strand's tube mesh",
+  "tolerances_mm": {
+    "p95": 2,
+    "max": 5
+  },
+  "poses": [
+    {
+      "name": "neutral",
+      "degrees": [
+        0,
+        0,
+        0
+      ],
+      "p05_mm": 0,
+      "p50_mm": 0.00005,
+      "p95_mm": 0.00024,
+      "max_mm": 0.00048,
+      "pass": true
+    },
+    {
+      "name": "head_local_x_15",
+      "degrees": [
+        15,
+        0,
+        0
+      ],
+      "p05_mm": 0.00001,
+      "p50_mm": 0.00012,
+      "p95_mm": 0.06215,
+      "max_mm": 0.17626,
+      "pass": true
+    },
+    {
+      "name": "head_local_y_22",
+      "degrees": [
+        0,
+        22,
+        0
+      ],
+      "p05_mm": 0,
+      "p50_mm": 0.00012,
+      "p95_mm": 0.05793,
+      "max_mm": 0.27968,
+      "pass": true
+    },
+    {
+      "name": "head_local_z_22",
+      "degrees": [
+        0,
+        0,
+        22
+      ],
+      "p05_mm": 0.00001,
+      "p50_mm": 0.00012,
+      "p95_mm": 0.09233,
+      "max_mm": 0.25164,
+      "pass": true
+    }
+  ],
+  "previous_max_separation_mm": 18.73221,
+  "new_max_separation_mm": 0.27968,
+  "reduction_pct": 98.507,
+  "results": {
+    "geometry_pose_pass": true,
+    "head_motion_only_three_poses": true,
+    "physical_collision_tested": false,
+    "source_scalp_independently_validated": false,
+    "photorealism_approved": false,
+    "glb_export_verified": false,
+    "production_deployed": false,
+    "release_allowed": false
+  },
+  "manual_only_workflow": ".github/workflows/experimental-afro-skinbound-measure-20261018.yml",
+  "next": "True human visual inspection of skinbound mesh with same Cycles cameras, head pose collisions and scalp/hairline. Then export GLB and quantify armature skinning parity in Blank Engine WebGL. Do not equate mechanical root pass with photorealism."
+}
