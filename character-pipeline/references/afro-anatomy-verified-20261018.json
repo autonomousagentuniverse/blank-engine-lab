@@ -1,0 +1,96 @@
+{
+  "schema": "blank.engine.anatomy.semantic-gates.verified.v1",
+  "date": "2026-10-18",
+  "source": {
+    "blend_sha256": "26fbbab775771a197482d7baffb89decbbf4f821dd3cfaa69fac28ee52e1fc2a",
+    "blender_version": "4.5.3 LTS",
+    "body_vertices": 19158,
+    "bones": 53,
+    "afro_root_count": 4450,
+    "source_mutated": false
+  },
+  "tests": [
+    {
+      "run_id": 39128198243,
+      "conclusion": "success",
+      "artifact_id": 12136996279,
+      "operation": "read-only mesh/armature source inspection"
+    },
+    {
+      "run_id": 39128636316,
+      "conclusion": "success",
+      "operation": "bone-weighted provisional region tagging"
+    },
+    {
+      "run_id": 39128863071,
+      "conclusion": "success",
+      "artifact_id": 12137116756,
+      "operation": "one-pass real Blender derivative, semantic tags and scalp-triangle BVH"
+    }
+  ],
+  "torso_proxies_mm": {
+    "hip": {
+      "center_z_m": 0.983,
+      "vertices": 33,
+      "span_mm": 382.407,
+      "certified_anatomical": false
+    },
+    "waist": {
+      "center_z_m": 1.114,
+      "vertices": 97,
+      "span_mm": 339.315,
+      "certified_anatomical": false
+    },
+    "chest": {
+      "center_z_m": 1.308,
+      "vertices": 271,
+      "span_mm": 384.629,
+      "certified_anatomical": false
+    }
+  },
+  "previous_measurement_error": {
+    "generic_slice_at_relative_z_061_mm": 978.32024,
+    "issue": "A-pose arm geometry included; not a clinical waist circumference or breadth"
+  },
+  "hair_contact": {
+    "scalp_mask_vertices": 376,
+    "scalp_faces": 334,
+    "root_count": 4450,
+    "nearest_scalp_triangle_mm": {
+      "p05": 2.426,
+      "p50": 21.2,
+      "p95": 48.491,
+      "max": 81.842
+    },
+    "fraction_over_5mm": 0.8962,
+    "fraction_over_10mm": 0.7726,
+    "surface_signed_proxy": {
+      "p05_mm": -47.392,
+      "p50_mm": 5.245,
+      "p95_mm": 41.102,
+      "sign_ambiguous": true
+    },
+    "evidence_qualification": "Only scalp-labeled surface triangles included; local normals not proof of watertight signed distances; no follicle anchors; requires anatomical mask review"
+  },
+  "derivative": {
+    "blend_sha256": "b5e9c6f792eb9f1b2bfb0d08629525e883d8c054d6e973e05d2d9b4a322eb473",
+    "bytes": 21356973,
+    "artifact_id": 12137116756
+  },
+  "missing": [
+    "certified clinical waist/hip girths",
+    "body acromial landmarks",
+    "intercanthal and orbital landmarks",
+    "eyelid-globe signed contact and blink",
+    "scalp anchored follicle direction field",
+    "consented same-subject calibrated 3D reference",
+    "photoreal Cycles render human approval",
+    "GLB/WebGL parity"
+  ],
+  "comparison_allowed": false,
+  "ready_for_one_shot": false,
+  "manual_visual_acceptance": false,
+  "release_allowed": false,
+  "production_deployed": false,
+  "next": "Validate scalp mask topology and reconstruct root positions on actual scalp surface, then measure true anatomical landmarks via manually validated tags, maintain independent reference/likeness licensing."
+}
