@@ -1,0 +1,79 @@
+name: Experimental actual Blender medium-build afro woman rebuild (no MPFB asset download)
+on:
+  push:
+    branches:
+      - experiment/afro-woman-body-rebuild-blender-20261018
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  rebuild-existing-character:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Download exact already-generated Blender source, NO original MPFB pack
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p source artifacts/afro_woman_body_rebuild
+          gh run download 39085823937 \
+            --repo autonomousagentuniverse/blank-engine-lab \
+            --name afro-woman-28-dark-skin-blender-cycles \
+            --dir source
+          python3 - <<'PY'
+          import hashlib,pathlib,json
+          p=pathlib.Path('source/afro_woman_full_body.blend')
+          h=hashlib.sha256(p.read_bytes()).hexdigest()
+          assert h == '6d62b24389ffa41ec4dac3ea57518c25941979f45d0799a9b9a089c24f827713',h
+          previous=json.loads(pathlib.Path('source/report.json').read_text())
+          assert previous['blend_sha256']==h
+          assert len(previous['cycles_images'])==4 and previous['afro_strand_count']==4450
+          print('EXACT_PREVIOUS_SUCCESSFUL_BLENDER_ASSET_VERIFIED',h,flush=True)
+          PY
+      - name: Install actual Blender 4.5.3 Python API only
+        run: |
+          python3 -m pip install --disable-pip-version-check --no-cache-dir bpy==4.5.3
+          python3 -m py_compile experiments/real-human-reference/rebuild_existing_afro_body.py
+      - name: Change actual mesh geometry, reduce rooted Afro, fit full-body cameras, save new Blend
+        env:
+          OMP_NUM_THREADS: '4'
+        run: |
+          timeout -k 15s 900s python3 -u experiments/real-human-reference/rebuild_existing_afro_body.py
+      - name: Fail unless measured new body, camera framing and render bytes are all verified
+        run: |
+          python3 - <<'PY'
+          import json,pathlib,hashlib
+          p=pathlib.Path('artifacts/afro_woman_body_rebuild')
+          j=json.loads((p/'report.json').read_text())
+          assert j['no_image_generator_used'] and j['source_unchanged']
+          assert j['actual_blender_bpy_version'].startswith('4.5')
+          assert j['measured_anatomical_width_change']['hip']['width_change_pct'] > 16
+          assert j['measured_anatomical_width_change']['waist']['width_change_pct'] > 8
+          assert j['total_coiled_strands']==4450
+          assert len(j['output_pngs'])==3
+          assert len(j['body_morph'])==2
+          assert not j['photorealism_approved']
+          b=p/'afro_woman_rebuilt_medium_body.blend'
+          assert b.stat().st_size>300000
+          assert hashlib.sha256(b.read_bytes()).hexdigest()==j['output_blend_sha256']
+          for frame in j['output_pngs']:
+            image=p/frame['filename']
+            assert image.stat().st_size>25000
+            assert hashlib.sha256(image.read_bytes()).hexdigest()==frame['sha256']
+            loX,hiX,loY,hiY=frame['projection_uv_bounds']
+            assert min(loX,loY)>=.065 and max(hiX,hiY)<=.935,frame
+          print('VERIFIED_NEW_BLENDER_BODY_SHAPE_AND_FULL_BODY_RENDER_DELIVERABLES',flush=True)
+          PY
+      - name: Upload actual Blender rebuilt scene and actual PNGs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: afro-woman-rebuilt-body-actual-blender
+          path: artifacts/afro_woman_body_rebuild/
+          retention-days: 7
+          if-no-files-found: warn
