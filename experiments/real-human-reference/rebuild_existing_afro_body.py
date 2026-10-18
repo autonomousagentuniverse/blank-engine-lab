@@ -129,8 +129,13 @@ def main():
  assert sum(v["strand_count"] for v in curls.values())==4450
  # Extract exact world body coordinates from newly evaluated shape key.
  bpy.context.view_layer.update()
- outv=geometry_points(body)
- assert len(outv)>5000
+ # Read the actual edited shape-key coordinates, not the render-evaluated mesh:
+ # MakeHuman masks the body underneath clothing so evaluated hip/waist geometry
+ # is intentionally absent even while its original body vertex data persists.
+ deformed=body.data.shape_keys.key_blocks.get('RebuiltMediumBuild_WaistHipShoulder')
+ assert deformed and abs(deformed.value-1.0)<1e-7
+ outv=[body.matrix_world@v.co for v in deformed.data]
+ assert len(outv)==len(snapshot)
  def region(t):
   world_old=[v for v in snapshot if abs((v.z-zmin)/(zmax-zmin)-t)<.018 and abs(v.x-cx)<.55]
   world_new=[v for v in outv if abs((v.z-zmin)/(zmax-zmin)-t)<.018 and abs(v.x-cx)<.55]
