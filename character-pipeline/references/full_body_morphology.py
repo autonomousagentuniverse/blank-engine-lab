@@ -105,15 +105,25 @@ def apply_blender_body_widths(*, body, rig, scene, values):
     def band_widths():
         # Real Basis shape-key vertex positions from the authored 3D body.
         # This is a 3D source-space width check, not an image-space proxy.
-        basis = body.data.shape_keys.key_blocks["Basis"].data
-        world = body.matrix_world
-        samples = [world @ item.co for item in basis]
         measurements = {}
+        # A deliberately masked body can lack skin vertices underneath clothes.
+        # Measure the assembled, skinned character (body + garment source meshes)
+        # rather than asserting that an exposed-only body mesh is watertight.
+        sample_cloud = []
+        for mesh in targets:
+            keys = mesh.data.shape_keys.key_blocks if mesh.data.shape_keys else None
+            stream = keys["Basis"].data if keys and "Basis" in keys else mesh.data.vertices
+            matrix = mesh.matrix_world
+            for item in stream:
+                point = matrix @ item.co
+                sample_cloud.append((point.x, (point.z - bounds[2]) / height, mesh.name))
         for name, (level, _) in BANDS.items():
-            xs = [p.x for p in samples if abs((p.z - bounds[2]) / height - level) < .032]
+            chosen = [(x, obj_name) for x, t, obj_name in sample_cloud if abs(t - level) < .040]
+            xs = [x for x, _ in chosen]
             if len(xs) < 10:
-                raise ValueError("BODY_MORPH_MISSING_SLICE:" + name)
+                raise ValueError("BODY_MORPH_MISSING_ASSEMBLED_SLICE:" + name)
             measurements[name] = {"source_sample_vertices": len(xs),
+                                   "sources": sorted({obj for _, obj in chosen}),
                                    "span_m": max(xs) - min(xs)}
         return measurements
 
