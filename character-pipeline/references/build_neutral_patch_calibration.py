@@ -99,3 +99,40 @@ spec={
  "photorealism_approved":False,"production_deployed":False}
 (OUT/"blender-neutral-patch.json").write_text(json.dumps(spec,indent=2)+"\n")
 print("BLENDER_NEUTRAL_DISK_PATCH",json.dumps({"median_srgb":med.tolist(),"target_display_linear":target,"lights":lamp}),flush=True)
+
+# Held-out character views, NEVER used to derive calibrated light intensity.
+bpy.ops.wm.open_mainfile(filepath=str(SRC.resolve()),load_ui=False)
+scene=bpy.context.scene
+cam=bpy.data.objects["CAM_face_closeup"]
+scene.render.engine="CYCLES";scene.cycles.device="CPU";scene.cycles.samples=24
+scene.render.threads_mode="FIXED";scene.render.threads=4
+scene.render.resolution_x=720;scene.render.resolution_y=960
+scene.render.resolution_percentage=100;scene.render.image_settings.file_format="PNG"
+focus=cam.location+cam.matrix_world.to_quaternion()@__import__("mathutils").Vector((0,0,-3.821))
+# Facial reference plane is Blender x0,y0,z1.639, not a fitted image focus.
+focus=__import__("mathutils").Vector((0.0,0.0,1.6390173435211182))
+views=[]
+for name,angle in [("front",0),("three_quarter_40",40)]:
+ if angle==0:
+  viewcam=cam
+ else:
+  from mathutils import Vector
+  offset=cam.location-focus
+  rotated=Matrix.Rotation(__import__("math").radians(angle),4,"Z")@offset
+  viewcam=bpy.data.objects.new("EXPERIMENT_40DEG_CYCLES_CAMERA",cam.data.copy())
+  scene.collection.objects.link(viewcam)
+  viewcam.location=focus+rotated
+  viewcam.rotation_euler=(focus-viewcam.location).to_track_quat("-Z","Y").to_euler()
+ scene.camera=viewcam
+ image=OUT/("blender-character-"+name+".png")
+ scene.render.filepath=str(image.resolve())
+ bpy.ops.render.render(write_still=True)
+ assert image.stat().st_size>30000
+ mat=up@viewcam.matrix_world
+ views.append({"name":name,"angle_degrees":angle,
+  "matrix_yup":[float(mat[i][j]) for j in range(4) for i in range(4)],
+  "file":image.name,"sha256":sha(image),"bytes":image.stat().st_size})
+assert sha(SRC)==SHA
+spec["heldout_character_views"]=views
+(OUT/"blender-neutral-patch.json").write_text(json.dumps(spec,indent=2)+"\n")
+print("BLENDER_HELD_OUT_HUMAN_VIEWS",json.dumps(views),flush=True)
