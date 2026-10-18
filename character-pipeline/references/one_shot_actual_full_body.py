@@ -9,6 +9,7 @@ Automatically frame whole model at front, 25-degree and 90-degree views.
 import bpy, hashlib, json, pathlib, math, statistics, os
 from mathutils import Vector, Matrix
 from PIL import Image
+from full_body_morphology import CONTROL_DEFAULTS, apply_blender_body_widths
 import numpy as np
 
 SOURCE=pathlib.Path("source/afro_mask_respected_uv_pbr.blend")
@@ -20,6 +21,7 @@ MARGIN=.075
 EV=-3.3500195136193742  # Verified scene-linear EXR experiment, Actions run 39153621026
 SAMPLES=28
 THREE_QUARTER_DEGREES=25
+BODY_VALUES=CONTROL_DEFAULTS.copy()
 RENDER_CONFIG_FILE=os.environ.get("BLANK_HUMAN_RENDER_CONFIG")
 if RENDER_CONFIG_FILE:
  cfg=json.loads(pathlib.Path(RENDER_CONFIG_FILE).read_text())
@@ -28,10 +30,9 @@ if RENDER_CONFIG_FILE:
  assert cfg.get("release_allowed") is False and cfg.get("image_generation_used") is False, "NO_RELEASE_OR_IMAGEGEN_MISLABELING"
  assert cfg.get("actual_geometry_changed") is False, "CONFIG_CANNOT_PREAPPROVE_GEOMETRY_CHANGES"
  values=cfg.get("controls")
- assert isinstance(values,dict) and set(values)=={
-   "camera.margin","camera.three_quarter_orbit_degrees","render.cycles_samples","render.exposure_ev",
-   "morphology.jaw_width","morphology.cheek_fullness","morphology.brow_ridge_strength"
- }, "UNKNOWN_OR_MISSING_VARIABLE_BINDINGS"
+ basic_keys={"camera.margin","camera.three_quarter_orbit_degrees","render.cycles_samples","render.exposure_ev",
+   "morphology.jaw_width","morphology.cheek_fullness","morphology.brow_ridge_strength"}
+ assert isinstance(values,dict) and set(values) in (basic_keys,basic_keys|set(CONTROL_DEFAULTS)), "UNKNOWN_OR_MISSING_VARIABLE_BINDINGS"
  def bounded(name,low,high,integer=False):
   value=values[name]
   assert type(value) in (int,float) and math.isfinite(value) and low<=value<=high, "INVALID_CONTROL_"+name
@@ -44,6 +45,8 @@ if RENDER_CONFIG_FILE:
  JAW_WIDTH=bounded("morphology.jaw_width",0,1)
  CHEEK_FULLNESS=bounded("morphology.cheek_fullness",0,1)
  BROW_RIDGE=bounded("morphology.brow_ridge_strength",0,1)
+ for name in BODY_VALUES:
+  if name in values:BODY_VALUES[name]=bounded(name,0,1)
  print("BLANK_EXECUTABLE_HUMAN_VARIABLES",json.dumps(values,sort_keys=True),flush=True)
 
 def digest(p):
@@ -69,10 +72,14 @@ assert all(o.data.type=="AREA" and o.data.shape=="DISK" for o in scene.objects i
 face_data={}
 face_keys={}
 if RENDER_CONFIG_FILE:
- from human_face_morph_bindings import apply_face_controls
- face_data,face_keys=apply_face_controls(body,values)
- # Control values at defaults yield no actual change even though keys exist.
- print("BLANK_REAL_FACE_SHAPE_KEYS_CREATED",json.dumps(face_data),flush=True)
+ from human_face_morph_bindings import DEFAULTS as FACE_DEFAULTS, apply_face_controls
+ if any(abs(values[k]-d)>1e-10 for k,d in FACE_DEFAULTS.items()):
+  face_data,face_keys=apply_face_controls(body,values)
+  print("BLANK_REAL_FACE_SHAPE_KEYS_CREATED",json.dumps(face_data),flush=True)
+# Body and skinned garments get same controlled rest-geometry warp.
+# Apply after any face shape-key creation so expression keys are preserved.
+BODY_RESULT=apply_blender_body_widths(body=body,rig=rig,scene=scene,values=BODY_VALUES)
+print("BLANK_REAL_BODY_GEOMETRY",json.dumps(BODY_RESULT,sort_keys=True),flush=True)
 
 # Bound all actually visible human meshes and visible curves; never use source
 # portrait camera crop or rough guessed character height.
@@ -229,14 +236,15 @@ report={
  "source_is_existing_3d_character":True,
  "source_character_reconstructed_from_2d_generated_images":False,
  "image_generation_tool_used":False,
- "human":"Existing Blender 3D synthetic MPFB-derived dark-skinned woman; hair, face, rig, clothes, geometry unchanged",
+ "human":"Existing Blender 3D synthetic MPFB-derived dark-skinned woman; optionally adjusted torso/garment morphology from original 3D source; not independent identity generation",
  "single_blender_process_multiple_views":True,
- "mesh_geometry_changed":bool(face_keys),
- "morphs_changed":bool(face_keys),"light_powers_changed":False,
+ "mesh_geometry_changed":bool(face_keys) or BODY_RESULT["applied"],
+ "morphs_changed":bool(face_keys) or BODY_RESULT["applied"],"light_powers_changed":False,
  "bone_count":53,"source_light_names_watts":lights,
  "source_world_model_bounds_m":world_extent,
  "model_height_m":height,
  "actual_face_geometry_morphs":face_data,
+ "body_morphology":{"values":BODY_VALUES,**BODY_RESULT},
  "controlled_face_render_AB":face_comparison,
  "control_provenance":{"contract":"blank.human.visual-variables.v1",
   "compiled_config_applied":bool(RENDER_CONFIG_FILE),
@@ -244,6 +252,7 @@ report={
   "three_quarter_degrees":THREE_QUARTER_DEGREES,
   "cycles_samples":SAMPLES,
   "exposure_ev":EV,
+  "body_controls_applied":BODY_VALUES if BODY_RESULT["applied"] else {},
   "unimplemented_controls_applied":[],
   "bound_face_shape_key_names":face_keys},
  "blender_version":bpy.app.version_string,
