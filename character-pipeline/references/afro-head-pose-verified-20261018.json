@@ -1,0 +1,81 @@
+{
+  "schema": "blank.engine.hair.pose-anatomy.verified.v1",
+  "date": "2026-10-18",
+  "source_sha256": "327befea50b2961d1ff3341fdf2e7b6bb173f7c74c09212c68061677a974b3f2",
+  "lineage": "MPFB-derived synthetic human, not independently newly generated",
+  "run_id": 39131673597,
+  "workflow_conclusion": "success",
+  "artifact_id": 12137598461,
+  "body_vertices": 19158,
+  "rig_bones": 53,
+  "root_count": 4450,
+  "scalp_triangle_count": 668,
+  "baseline_p95_mm": 0.000126,
+  "head_pose_tests": [
+    {
+      "name": "neutral",
+      "degrees": [
+        0,
+        0,
+        0
+      ],
+      "p95_mm": 0.000127,
+      "max_mm": 0.00036,
+      "pass": true
+    },
+    {
+      "name": "head_local_x_15",
+      "degrees": [
+        15,
+        0,
+        0
+      ],
+      "p95_mm": 6.028253,
+      "max_mm": 13.45854,
+      "pass": false
+    },
+    {
+      "name": "head_local_y_22",
+      "degrees": [
+        0,
+        22,
+        0
+      ],
+      "p95_mm": 10.22782,
+      "max_mm": 18.73221,
+      "pass": false
+    },
+    {
+      "name": "head_local_z_22",
+      "degrees": [
+        0,
+        0,
+        22
+      ],
+      "p95_mm": 4.201779,
+      "max_mm": 12.12928,
+      "pass": false
+    }
+  ],
+  "thresholds_mm": {
+    "p95": 2,
+    "max": 5
+  },
+  "dynamic_follicle_contact_pass": false,
+  "method": "Pose-evaluated ARMATURE deform on true scalp barycentric material points vs evaluated rigid head-bone-parented NURBS follicle roots; two MASK modifiers excluded.",
+  "views": [
+    "neutral_front.png",
+    "neutral_three_quarter.png",
+    "neutral_profile.png",
+    "head_local_y_22_front.png"
+  ],
+  "inspection_blend_sha256": "c188435b6a7a7ccce355ed5d07b1da62f454f9e7e7e1980a0700dbf0051b0397",
+  "visual_verdict": "Rounded Afro persists in profile but unnatural hairline, pale waxy skin, artificial eye materials and facial proportions remain.",
+  "next": "Replace rigid bone parenting with per-follicle deforming scalp barycentric binding; rerun all poses before any hair/cosmetic changes.",
+  "visual_approved": false,
+  "photorealism_approved": false,
+  "webgl_parity": false,
+  "release_allowed": false,
+  "production_deployed": false,
+  "source_unchanged": true
+}
