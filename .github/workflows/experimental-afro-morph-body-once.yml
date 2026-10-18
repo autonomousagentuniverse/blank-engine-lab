@@ -1,11 +1,6 @@
 name: EXPERIMENTAL Chrome Body Morph Rig Audit One Time
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - research/human-reference-atlas-20261018
-    paths:
-      - .github/workflows/experimental-afro-morph-body-once.yml
 permissions:
   contents: read
   actions: read
