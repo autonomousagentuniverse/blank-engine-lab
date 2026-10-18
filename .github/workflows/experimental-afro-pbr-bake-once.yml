@@ -1,11 +1,6 @@
 name: EXPERIMENTAL Blender UV Skin PBR Bake One Shot
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - research/human-reference-atlas-20261018
-    paths:
-      - .github/workflows/experimental-afro-pbr-bake-once.yml
 permissions:
   contents: read
   actions: read
