@@ -1,0 +1,71 @@
+name: EXPERIMENTAL UV Baked Skin Chrome WebGL A/B
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/human-reference-atlas-20261018
+    paths:
+      - .github/workflows/experimental-afro-pbr-chrome-once.yml
+permissions:
+  contents: read
+  actions: read
+jobs:
+  chrome-skin-pbr:
+    runs-on: ubuntu-latest
+    timeout-minutes: 21
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Recover UV-baked rigged GLB from real Blender bake, verify recorded SHA
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p artifacts/afro-pbr-bake artifacts/afro-visual-glb artifacts/afro-browser
+          gh run download 39142378127 --repo autonomousagentuniverse/blank-engine-lab --name afro-uv-baked-pbr-blender-20261018 --dir artifacts/afro-pbr-bake
+          python3 - <<'PY'
+          import json,hashlib,pathlib,shutil
+          p=pathlib.Path('artifacts/afro-pbr-bake')
+          j=json.loads((p/'uv-bake-report.json').read_text())
+          assert j['input_sha256']=='0eca41c5f0175e50df18914bb87cc007184ddcf55f2dd84ea3640645ddac2f52'
+          assert j['source_unchanged'] and j['basecolor_and_normal_bake_pass']
+          assert j['glb']['skin_basecolor_texture'] is not None and j['glb']['skin_normal_texture'] is not None
+          src=p/'afro_skinbound_uv_pbr.glb'
+          assert hashlib.sha256(src.read_bytes()).hexdigest()==j['glb']['sha256']
+          dst=pathlib.Path('artifacts/afro-visual-glb/afro_skinbound_rigged.glb')
+          shutil.copyfile(src,dst)
+          print('PINNED_SKIN_BAKED_GLB_FOR_WEBGL',j['glb']['sha256'])
+          PY
+      - name: Install pinned real Chromium and Three.js GLTF loader
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm install --no-save --ignore-scripts --no-audit --no-fund three@0.186.1 playwright@1.56.1
+          npx playwright install chrome
+      - name: Chrome WebGL 2 hardware-independent rig + baked texture render
+        run: |
+          node scripts/audit-afro-rigged-glb-browser.mjs
+      - name: Attach export provenance and explicit no-parity approval to Chrome report
+        run: |
+          python3 - <<'PY'
+          import json,pathlib
+          a=pathlib.Path('artifacts/afro-pbr-bake/uv-bake-report.json')
+          b=pathlib.Path('artifacts/afro-browser/webgl-report.json')
+          j=json.loads(a.read_text());r=json.loads(b.read_text())
+          assert r['chrome_webgl_pass'] and len(r['hair'])==3 and r['head_bone_found']
+          assert not r['cycles_webgl_pixel_parity_verified'] and not r['photorealism_approved']
+          r['baked_glb_sha256']=j['glb']['sha256']
+          r['baked_skin_basecolor_texture']=True
+          r['baked_skin_normal_texture']=True
+          r['reference_cycles_face_sha256']=j['preview']['sha256']
+          r['experimental_visual_parity_status']='VISUAL_REVIEW_REQUIRED_NOT_AUTO_PASSED'
+          b.write_text(json.dumps(r,indent=2)+'\n')
+          print('REAL_CHROME_UV_SKIN_PBR_TECHNICAL_GATES_PASSED')
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: afro-uv-pbr-real-chrome-webgl-20261018
+          path: artifacts/afro-browser/
+          retention-days: 7
+          if-no-files-found: warn
