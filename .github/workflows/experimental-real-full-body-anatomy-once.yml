@@ -1,0 +1,109 @@
+name: EXPERIMENTAL Real Full-Body Geometry A/B Once
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  isolated-body-morphology:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Test numerical morphology and fail-closed JSON contract
+        run: |
+          python3 -m unittest discover -s character-pipeline/references -p test_full_body_morphology.py -v
+          python3 -m py_compile character-pipeline/references/full_body_morphology.py character-pipeline/references/one_shot_actual_full_body.py
+          node --test character-pipeline/one-shot/human-visual-variables.test.mjs
+          node character-pipeline/one-shot/human-variables-cli.mjs validate-contracts
+          mkdir -p artifacts/full-body-variants/neutral artifacts/full-body-variants/changed
+          node character-pipeline/one-shot/human-variables-cli.mjs compile character-pipeline/one-shot/full-body-neutral.request.json artifacts/full-body-variants/neutral/config.json
+          node character-pipeline/one-shot/human-variables-cli.mjs compile character-pipeline/one-shot/full-body-variation.request.json artifacts/full-body-variants/changed/config.json
+          python3 - <<'PY'
+          import json
+          a=json.load(open('artifacts/full-body-variants/neutral/config.json'))
+          b=json.load(open('artifacts/full-body-variants/changed/config.json'))
+          assert not a['geometry_change_requested'] and b['geometry_change_requested']
+          assert not a['actual_geometry_changed'] and not b['actual_geometry_changed']
+          assert len(a['controls'])==len(b['controls'])==10
+          assert a['source_sha256']==b['source_sha256']
+          assert all(a['controls'][key]==b['controls'][key] for key in ('camera.margin','camera.three_quarter_orbit_degrees','render.cycles_samples','render.exposure_ev'))
+          print('INDEPENDENT_NEUTRAL_VS_BODY_CONTROLLED_CONFIGS_PASS')
+          PY
+      - name: Recover exact source-pinned 53-bone Blender character
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p source
+          gh run download 39143615834 --repo autonomousagentuniverse/blank-engine-lab --name afro-mask-respected-geometry-and-glb --dir source
+          printf 'a1c38165ae2d8d100e04919e4e57b35623ac9fabc1b0d2cb44bdfb7829fef570  source/afro_mask_respected_uv_pbr.blend\n' | sha256sum -c -
+      - name: Install source-pinned Blender 4.5.3 runtime
+        run: |
+          python3 -m pip install --disable-pip-version-check --no-cache-dir bpy==4.5.3 numpy pillow
+      - name: Generate actual neutral 3D full-body reference in Blender Cycles
+        env:
+          BLANK_HUMAN_RENDER_CONFIG: artifacts/full-body-variants/neutral/config.json
+          BLANK_HUMAN_OUTPUT_DIR: artifacts/full-body-variants/neutral
+          OMP_NUM_THREADS: '4'
+        run: |
+          timeout -k 20s 1000s python3 -u character-pipeline/references/one_shot_actual_full_body.py
+      - name: Generate actually modified same-source 3D full-body geometry in Blender Cycles
+        env:
+          BLANK_HUMAN_RENDER_CONFIG: artifacts/full-body-variants/changed/config.json
+          BLANK_HUMAN_OUTPUT_DIR: artifacts/full-body-variants/changed
+          OMP_NUM_THREADS: '4'
+        run: |
+          timeout -k 20s 1000s python3 -u character-pipeline/references/one_shot_actual_full_body.py
+      - name: Compare measured 3D cross-sections, garments, and genuine 3-angle Cycles images
+        run: |
+          python3 - <<'PY'
+          import json,pathlib,hashlib
+          import numpy as np
+          from PIL import Image
+          root=pathlib.Path('artifacts/full-body-variants')
+          a=json.loads((root/'neutral/actual-full-body-report.json').read_text())
+          b=json.loads((root/'changed/actual-full-body-report.json').read_text())
+          assert a['source_blend_sha256']==b['source_blend_sha256']
+          assert a['source_unchanged'] and b['source_unchanged']
+          assert not a['mesh_geometry_changed'] and b['mesh_geometry_changed']
+          assert a['bone_count']==b['bone_count']==53
+          assert not a['body_morphology']['applied'] and b['body_morphology']['applied']
+          assert len(b['body_morphology']['objects_modified'])>=2, 'Garments must share the body deformation'
+          assert b['body_morphology']['modified_vertex_coordinates']>100
+          assert b['body_morphology']['maximum_displacement_m']>.004
+          assert not b['photoreal_human_approved'] and not b['production_deployed']
+          actual=b['body_morphology']['actual_measured_body_slice_widths']
+          for key,measurement in actual.items():
+              target=b['body_morphology']['values'][key]-a['body_morphology']['values'][key]
+              assert measurement['delta_m']*target>.001
+          output={'source_sha256':a['source_blend_sha256'],'source_unchanged':True,
+                  'independently_measured_widths':actual,'geometry_changed':True,
+                  'body_and_garment_objects':b['body_morphology']['objects_modified'],
+                  'render_pixel_differences':{},'photorealism_approved':False,
+                  'production_deployed':False}
+          for name in ('front','three_quarter_27','profile_90'):
+              file='actual_blender_full_body_'+name+'.png'
+              A=np.asarray(Image.open(root/'neutral'/file).convert('RGB'),dtype=np.int16)
+              B=np.asarray(Image.open(root/'changed'/file).convert('RGB'),dtype=np.int16)
+              assert A.shape==B.shape==(1260,840,3)
+              changed=int(np.count_nonzero(np.any(np.abs(A-B)>16,axis=2)))
+              assert changed>500, (name,changed)
+              output['render_pixel_differences'][name]={'pixels_changed_over_16':changed,
+                  'neutral_png_sha256':hashlib.sha256((root/'neutral'/file).read_bytes()).hexdigest(),
+                  'changed_png_sha256':hashlib.sha256((root/'changed'/file).read_bytes()).hexdigest()}
+          (root/'body-ab-verification.json').write_text(json.dumps(output,indent=2)+'\n')
+          print('REAL_FULL_BODY_3D_MORPHOLOGY_AND_CYCLES_A_B_PASS',json.dumps(output))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: actual-blender-full-body-morphology-ab
+          path: artifacts/full-body-variants/
+          retention-days: 7
+          if-no-files-found: warn
