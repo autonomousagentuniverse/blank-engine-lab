@@ -1,0 +1,51 @@
+name: Afro Woman Full Body Blender Generation
+on:
+  push:
+    branches:
+      - experiment/afro-woman-fullbody-20261017
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Retrieve existing independently generated full body base
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p input artifacts/afro-woman
+          gh run download 39082527374 --repo autonomousagentuniverse/blank-engine-lab --name new-independent-cc0-human-one-shot-cycles --dir input
+          test -s input/new_human_cc0_pilot.blend
+          echo 'ORIGINAL_FULL_HUMAN_BASE_PRESENT'
+      - name: Install Blender 4.5.3
+        run: python3 -m pip install --no-cache-dir bpy==4.5.3
+      - name: Generate new character and two true Blender Cycles renders
+        env:
+          OMP_NUM_THREADS: '4'
+        run: timeout -k 15s 1750s python3 -u experiments/real-human-reference/generate_afro_woman.py
+      - name: Validate actual Blender assets
+        run: |
+          python3 - <<'PY'
+          import json,pathlib,hashlib
+          p=pathlib.Path('artifacts/afro-woman')
+          d=json.loads((p/'report.json').read_text())
+          assert d['actual_blender'] and d['afro_strand_count']>1000
+          assert d['full_body_rendered']==['full_body','three_quarter']
+          assert d['rig_bones']>=50
+          assert hashlib.sha256((p/'afro_woman_full_body.blend').read_bytes()).hexdigest()==d['blend_sha256']
+          for v in d['full_body_rendered']:assert (p/(v+'.png')).stat().st_size>30000
+          print('ACTUAL_BLENDER_CHARACTER_AND_RENDERS_VALIDATED')
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: afro-woman-full-body-blender
+          path: artifacts/afro-woman/
+          retention-days: 7
