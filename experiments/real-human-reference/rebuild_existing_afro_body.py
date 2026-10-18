@@ -99,7 +99,6 @@ def trim_hair(o):
    max_m=max(max_m,(new-old).length)
    p.co[:3]=(new.x,new.y,new.z)
   n+=1
- o.data.update()
  return {"status":"edited","strand_count":n,"length_multiplier":.70,
          "root_position_unchanged":True,"max_tip_delta_m":round(max_m,6)}
 
