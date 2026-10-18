@@ -1,5 +1,8 @@
 name: Experimental Blender full-body dark-skin afro woman
 on:
+  push:
+    branches:
+      - experiment/dark-skin-afro-woman-blender-20261018
   workflow_dispatch:
 permissions:
   contents: read
@@ -71,6 +74,7 @@ jobs:
           python3 - <<'PY'
           import pathlib,json,hashlib
           p=pathlib.Path('artifacts/dark-afro-woman')
+          assert p.is_dir(), 'Blender output directory missing: '+str(p)
           d=json.loads((p/'report.json').read_text())
           assert d['new_human_source'] and not d['mira_fallback_used']
           assert len(d['cycles_images'])==4
@@ -94,4 +98,4 @@ jobs:
           name: afro-woman-28-dark-skin-blender-cycles
           path: artifacts/dark-afro-woman/
           retention-days: 7
-          if-no-files-found: warn
+          if-no-files-found: error
