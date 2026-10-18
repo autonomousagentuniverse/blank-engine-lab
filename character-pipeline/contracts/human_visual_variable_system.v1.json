@@ -122,8 +122,8 @@
       "max": 1,
       "units": "proposed_normalized",
       "binding": {
-        "status": "unimplemented",
-        "target": null
+        "status": "implemented",
+        "target": "character-pipeline/references/full_body_morphology.py:apply_blender_body_widths"
       },
       "meaning": "Explicit desired control; values not learned from proprietary image-generator internals."
     },
@@ -134,8 +134,8 @@
       "max": 1,
       "units": "proposed_normalized",
       "binding": {
-        "status": "unimplemented",
-        "target": null
+        "status": "implemented",
+        "target": "character-pipeline/references/full_body_morphology.py:apply_blender_body_widths"
       },
       "meaning": "Explicit desired control; values not learned from proprietary image-generator internals."
     },
@@ -146,8 +146,8 @@
       "max": 1,
       "units": "proposed_normalized",
       "binding": {
-        "status": "unimplemented",
-        "target": null
+        "status": "implemented",
+        "target": "character-pipeline/references/full_body_morphology.py:apply_blender_body_widths"
       },
       "meaning": "Explicit desired control; values not learned from proprietary image-generator internals."
     },
@@ -462,7 +462,10 @@
         "render.exposure_ev": -3.3500195136193742,
         "morphology.jaw_width": 0.34,
         "morphology.cheek_fullness": 0.61,
-        "morphology.brow_ridge_strength": 0.2
+        "morphology.brow_ridge_strength": 0.2,
+        "morphology.shoulder_width": 0.42,
+        "morphology.waist_width": 0.36,
+        "morphology.hip_width": 0.52
       },
       "provenance": "real_blender_phase16_camera_and_phase15_hdr"
     }
