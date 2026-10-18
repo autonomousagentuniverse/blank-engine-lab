@@ -1,11 +1,6 @@
 name: EXPERIMENTAL Neutral Patch Lamp Calibration with Holdout Views Once
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - research/human-reference-atlas-20261018
-    paths:
-      - .github/workflows/experimental-afro-neutral-light-once.yml
 permissions:
   contents: read
   actions: read
