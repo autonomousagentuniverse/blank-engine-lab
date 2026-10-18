@@ -24,7 +24,7 @@ jobs:
         run: |
           mkdir -p source artifacts/afro-mask-anatomy-audit
           gh run download 39142378127 --repo autonomousagentuniverse/blank-engine-lab --name afro-uv-baked-pbr-blender-20261018 --dir source
-          printf '6fb5fb2b6f353933bbfd90f4b265c8f2023f7191c81cca6f6198f58a596197e3  source/afro_skinbound_uv_pbr.blend\n' | sha256sum -c -
+          printf 'f903f4412bab7d29bdad85c31d21e576b1a6b3fbcbca8daf13c9e17dc5715fdb  source/afro_skinbound_uv_pbr.blend\n' | sha256sum -c -
           printf '0ee083dafd22793112cdbe6c7f30db558e23f198e3afa4d90422f23985c19e93  source/afro_skinbound_uv_pbr.glb\n' | sha256sum -c -
       - name: Run exact Blender modifier/morph source forensic
         run: |
