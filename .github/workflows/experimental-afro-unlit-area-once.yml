@@ -1,0 +1,78 @@
+name: EXPERIMENTAL Source Albedo and RectArea Light Isolation Once
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/human-reference-atlas-20261018
+    paths:
+      - .github/workflows/experimental-afro-unlit-area-once.yml
+permissions:
+  contents: read
+  actions: read
+jobs:
+  color-light-isolation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Recover exact original masked 53-bone character + earlier camera evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p source artifacts/afro-light-isolation
+          gh run download 39143615834 --repo autonomousagentuniverse/blank-engine-lab --name afro-mask-respected-geometry-and-glb --dir source
+          gh run download 39147475141 --repo autonomousagentuniverse/blank-engine-lab --name afro-matched-camera-cycles-chrome-20261018 --dir artifacts/afro-light-isolation
+          printf 'a1c38165ae2d8d100e04919e4e57b35623ac9fabc1b0d2cb44bdfb7829fef570  source/afro_mask_respected_uv_pbr.blend\n' | sha256sum -c -
+          printf '1040b6330559865801b67ac57c293ddc07b94328cc735476ff4da47464c3399d  source/afro_mask_respected_rigged.glb\n' | sha256sum -c -
+          cp source/afro_mask_respected_rigged.glb artifacts/afro-light-isolation/input.glb
+      - name: Render source Principled base-color-only emission in real Blender Cycles
+        env:
+          OMP_NUM_THREADS: '4'
+        run: |
+          python3 -m pip install --disable-pip-version-check --no-cache-dir bpy==4.5.3 numpy pillow
+          python3 -m py_compile character-pipeline/references/audit_unlit_material_light_source.py character-pipeline/references/compare_albedo_illumination.py
+          timeout -k 20s 750s python3 -u character-pipeline/references/audit_unlit_material_light_source.py
+      - name: Render matching Chrome unlit albedo and imported Blender-area-light geometry
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm install --no-save --ignore-scripts --no-audit --no-fund three@0.186.1 playwright@1.56.1
+          npx playwright install chrome
+          node --check scripts/audit-afro-unlit-area-chrome.mjs
+          timeout -k 20s 550s node scripts/audit-afro-unlit-area-chrome.mjs
+      - name: Measure authored base-color versus light-model contribution without fitting
+        run: |
+          python3 character-pipeline/references/compare_albedo_illumination.py
+          python3 - <<'PY'
+          import json,pathlib,hashlib
+          p=pathlib.Path("artifacts/afro-light-isolation")
+          b=json.loads((p/"blender-unlit-reference.json").read_text())
+          c=json.loads((p/"chrome-light-isolation.json").read_text())
+          m=json.loads((p/"albedo-light-metrics.json").read_text())
+          assert b["source_blend_sha256"]=="a1c38165ae2d8d100e04919e4e57b35623ac9fabc1b0d2cb44bdfb7829fef570"
+          assert b["source_unchanged"] and len([x for x in b["authored_lights"] if x["type"]=="AREA"])==3
+          assert c["source_glb_sha256"]=="1040b6330559865801b67ac57c293ddc07b94328cc735476ff4da47464c3399d"
+          assert c["unlit_exported_materials_rendered"] and c["area_lights_source_dimensions_used"]
+          assert not c["radiometrically_matched_to_cycles"] and not m["visual_parity_certified"]
+          assert set(m["scores"])=={"author_basecolor_unlit","previous_approx_point_illumination","fixed_source_size_rectarea_proxy"}
+          for name,item in m["files"].items():
+              q=p/name
+              assert q.stat().st_size==item["bytes"]
+              assert hashlib.sha256(q.read_bytes()).hexdigest()==item["sha256"]
+          print("REAL_CYCLES_CHROME_UNLIT_AND_AREA_PROXIES_MEASURED",{
+            k:v["whole"]["mean_rgb_error"] for k,v in m["scores"].items()})
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: afro-albedo-versus-area-light-isolation-20261018
+          path: |
+            artifacts/afro-light-isolation/*.png
+            artifacts/afro-light-isolation/*.json
+          retention-days: 7
+          if-no-files-found: warn
