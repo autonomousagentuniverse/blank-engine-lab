@@ -2,7 +2,7 @@
 """Read-only face/skin MASK vs morph evaluation audit for pinned baked Afro scene."""
 import bpy, pathlib, hashlib, json, struct
 SRC=pathlib.Path("source/afro_skinbound_uv_pbr.blend")
-SHA="6fb5fb2b6f353933bbfd90f4b265c8f2023f7191c81cca6f6198f58a596197e3"
+SHA="f903f4412bab7d29bdad85c31d21e576b1a6b3fbcbca8daf13c9e17dc5715fdb"
 GLB=pathlib.Path("source/afro_skinbound_uv_pbr.glb")
 GLB_SHA="0ee083dafd22793112cdbe6c7f30db558e23f198e3afa4d90422f23985c19e93"
 OUT=pathlib.Path("artifacts/afro-mask-anatomy-audit");OUT.mkdir(parents=True,exist_ok=True)
