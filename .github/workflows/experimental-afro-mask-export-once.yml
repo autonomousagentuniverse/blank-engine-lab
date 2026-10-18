@@ -1,0 +1,60 @@
+name: EXPERIMENTAL Mask-Respected Morph Rig Export One Shot
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/human-reference-atlas-20261018
+    paths:
+      - .github/workflows/experimental-afro-mask-export-once.yml
+permissions:
+  contents: read
+  actions: read
+jobs:
+  reconstruct:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Recover exact Blender human with UV-baked PBR skin
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p source artifacts/afro-mask-respected
+          gh run download 39142378127 --repo autonomousagentuniverse/blank-engine-lab --name afro-uv-baked-pbr-blender-20261018 --dir source
+          printf 'f903f4412bab7d29bdad85c31d21e576b1a6b3fbcbca8daf13c9e17dc5715fdb  source/afro_skinbound_uv_pbr.blend\n' | sha256sum -c -
+      - name: Build 10756-vertex rigged body preserving 11 morphs, render A/B in real Cycles
+        env:
+          OMP_NUM_THREADS: '4'
+        run: |
+          python3 -m pip install --disable-pip-version-check --no-cache-dir bpy==4.5.3
+          python3 -m py_compile character-pipeline/references/export_mask_respected_body.py
+          timeout -k 20s 1080s python3 -u character-pipeline/references/export_mask_respected_body.py
+      - name: Assert exact Blender mask/morph surface match, GLB skin and source preservation
+        run: |
+          python3 - <<'PY'
+          import json,pathlib,hashlib
+          d=pathlib.Path('artifacts/afro-mask-respected')
+          r=json.loads((d/'mask-respected-report.json').read_text())
+          assert r['source_unchanged'] and r['initial_body_vertices']==19158
+          assert r['masked_body_vertices']==10756 and r['masked_body_faces']==10690
+          assert r['active_shape_keys_preserved']==12
+          assert r['source_mask_vs_rebuild_max_vertex_difference_mm']<.001
+          assert r['source_mask_vs_rebuild_material_face_counts_equal']
+          assert r['gltf']['valid_skin'] and r['gltf']['skin_joint_count']==53
+          assert all(x==11 for x in r['gltf']['morph_targets_each_primitive'])
+          assert not r['photorealism_approved'] and not r['glb_webgl_visual_parity_verified']
+          for a in [*r['blender_images'],r['blend'],r['gltf']]:
+              p=d/a['filename'];assert p.stat().st_size==a['bytes']
+              assert hashlib.sha256(p.read_bytes()).hexdigest()==a['sha256']
+          print('REAL_MASK_RESPECTED_BONE_MORPH_UV_EXPORT_PASS')
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: afro-mask-respected-geometry-and-glb
+          path: artifacts/afro-mask-respected/
+          retention-days: 7
+          if-no-files-found: warn
