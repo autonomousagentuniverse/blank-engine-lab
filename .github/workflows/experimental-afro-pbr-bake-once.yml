@@ -56,3 +56,5 @@ jobs:
           path: artifacts/afro-pbr-bake/
           retention-days: 7
           if-no-files-found: warn
+
+# Retest identical source with actual multi-slot skin material face selection.
