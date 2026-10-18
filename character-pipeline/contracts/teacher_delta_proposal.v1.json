@@ -1,0 +1,41 @@
+{
+  "schema": "blank.human.teacher-delta-proposal.v1",
+  "version": 1,
+  "status": "illustrative_not_executed",
+  "source_sha256": "a1c38165ae2d8d100e04919e4e57b35623ac9fabc1b0d2cb44bdfb7829fef570",
+  "teacher": {
+    "kind": "image_reference_guidance",
+    "reference_ids": [],
+    "rights_verified": false,
+    "method": "visual_comparison_only",
+    "internal_latent_variables_accessible": false
+  },
+  "proposed_changes": [
+    {
+      "control": "morphology.jaw_width",
+      "delta": -0.08,
+      "reason": "Hypothesis for later anatomical morph rig",
+      "evidence_status": "unverified",
+      "review_required": true
+    },
+    {
+      "control": "hair.hairline_irregularity",
+      "delta": 0.12,
+      "reason": "Hypothesis for source-derived scalp root distribution",
+      "evidence_status": "unverified",
+      "review_required": true
+    }
+  ],
+  "application": {
+    "allowed_automatically": false,
+    "requires_source_test": true,
+    "requires_existing_blender_binding": true,
+    "no_release_authority": true
+  },
+  "decision": {
+    "status": "blocked_unimplemented",
+    "applied_changes": [],
+    "source_mesh_modified": false
+  },
+  "release_allowed": false
+}

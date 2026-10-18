@@ -1,0 +1,124 @@
+{
+  "schema": "blank.human.defect-taxonomy.v1",
+  "version": 1,
+  "defects": [
+    {
+      "id": "jaw_structure_mismatch",
+      "domain": "morphology",
+      "description": "Face jaw shape inconsistent with target reference",
+      "acceptance": "requires_evidence_and_review"
+    },
+    {
+      "id": "brow_projection_unconvincing",
+      "domain": "morphology",
+      "description": "Excessive projection or rigid brow from reference comparison",
+      "acceptance": "requires_evidence_and_review"
+    },
+    {
+      "id": "eyes_lack_depth",
+      "domain": "eyes",
+      "description": "Iris, cornea and lid geometry read flat",
+      "acceptance": "requires_evidence_and_review"
+    },
+    {
+      "id": "eyelid_contact_invalid",
+      "domain": "eyes",
+      "description": "Lid/eyeball contact fails posed geometry test",
+      "acceptance": "requires_evidence_and_review"
+    },
+    {
+      "id": "skin_waxy",
+      "domain": "skin",
+      "description": "Low-frequency plastic highlights or uniform subsurface response",
+      "acceptance": "requires_evidence_and_review"
+    },
+    {
+      "id": "skin_texture_missing_uv",
+      "domain": "skin",
+      "description": "Base color, roughness or normal texture not correctly UV mapped",
+      "acceptance": "requires_evidence_and_review"
+    },
+    {
+      "id": "hair_helmet_silhouette",
+      "domain": "hair",
+      "description": "Afro shape is too smooth and uniform",
+      "acceptance": "requires_evidence_and_review"
+    },
+    {
+      "id": "hair_root_detachment",
+      "domain": "hair",
+      "description": "Follicle roots separate from scalp during head motion",
+      "acceptance": "requires_evidence_and_review"
+    },
+    {
+      "id": "hairline_uniform",
+      "domain": "hair",
+      "description": "Unnatural regular front hairline",
+      "acceptance": "requires_evidence_and_review"
+    },
+    {
+      "id": "pose_a_pose_stiff",
+      "domain": "pose",
+      "description": "Hands and arms remain in rigid rig-rest A pose",
+      "acceptance": "requires_evidence_and_review"
+    },
+    {
+      "id": "feet_cropped",
+      "domain": "camera",
+      "description": "One or both feet outside camera frame",
+      "acceptance": "requires_evidence_and_review"
+    },
+    {
+      "id": "hair_cropped",
+      "domain": "camera",
+      "description": "Hair/afro outside full-body image",
+      "acceptance": "requires_evidence_and_review"
+    },
+    {
+      "id": "body_clothing_overlap",
+      "domain": "geometry",
+      "description": "Unmasked body faces obscure clothing after GLB export",
+      "acceptance": "requires_evidence_and_review"
+    },
+    {
+      "id": "overexposed_pixels",
+      "domain": "lighting",
+      "description": "Near-white clipped subject pixels",
+      "acceptance": "requires_evidence_and_review"
+    },
+    {
+      "id": "background_black_crush",
+      "domain": "lighting",
+      "description": "Shadow/background black crush",
+      "acceptance": "requires_evidence_and_review"
+    },
+    {
+      "id": "render_not_blender",
+      "domain": "provenance",
+      "description": "Image-generation reference mislabeled as actual Blender output",
+      "acceptance": "requires_evidence_and_review"
+    },
+    {
+      "id": "source_sha_mismatch",
+      "domain": "provenance",
+      "description": "Input source checksum does not match approved technical baseline",
+      "acceptance": "requires_evidence_and_review"
+    },
+    {
+      "id": "unverified_identity",
+      "domain": "provenance",
+      "description": "Visual identity or realism assessment lacks verified rights/evidence",
+      "acceptance": "requires_evidence_and_review"
+    }
+  ],
+  "evaluation": {
+    "allowed_severity": [
+      "low",
+      "medium",
+      "high",
+      "blocker"
+    ],
+    "none": "No visual proof means not assessed; do not assign a fake realism score."
+  },
+  "release_allowed": false
+}

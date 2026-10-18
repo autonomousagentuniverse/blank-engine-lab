@@ -1,0 +1,56 @@
+{
+  "schema": "blank.human.render-evaluation-report.v1",
+  "version": 1,
+  "job_id": null,
+  "source_sha256": "a1c38165ae2d8d100e04919e4e57b35623ac9fabc1b0d2cb44bdfb7829fef570",
+  "renderer": "Blender Cycles",
+  "evidence": {
+    "image_files": [],
+    "image_sha256": [],
+    "blender_scene_sha256": null,
+    "actual_blender_render_verified": false,
+    "camera_projections_verified": false,
+    "rig_joint_count": null,
+    "source_materials_verified": false,
+    "rights_verified": false,
+    "human_reviewer_attestation": null
+  },
+  "technical_gates": {
+    "source_hash_match": null,
+    "render_finished": null,
+    "full_body_framed": null,
+    "morph_motion_valid": null,
+    "hair_attachment_valid": null,
+    "glb_skinning_valid": null
+  },
+  "perceptual_scores": {
+    "face_realism": null,
+    "eye_realism": null,
+    "skin_realism": null,
+    "hair_realism": null,
+    "body_anatomy": null,
+    "pose_naturalness": null,
+    "overall_realism": null
+  },
+  "score_scale": {
+    "min": 0,
+    "max": 1,
+    "meaning": "Human reviewer evidence-bound assessment only; null until reviewed; NOT derived from source demographics."
+  },
+  "defects": [],
+  "review": {
+    "status": "not_reviewed",
+    "notes": null,
+    "reviewer": null
+  },
+  "disposition": {
+    "technical_status": "unverified",
+    "photoreal_status": "unverified",
+    "release_allowed": false,
+    "production_deployed": false
+  },
+  "provenance": {
+    "teacher_reference_not_blender_evidence": true
+  },
+  "release_allowed": false
+}
