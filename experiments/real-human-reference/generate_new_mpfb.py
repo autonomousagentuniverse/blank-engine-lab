@@ -22,24 +22,43 @@ def find(name):
  if len(matches)!=1:raise RuntimeError("Source asset not unique or absent: "+name+", "+str(matches[:4]))
  return str(matches[0].resolve())
 def setup_mpfb():
- import addon_utils
- path=(UPSTREAM/"src").resolve()
- sys.path.insert(0,str(path))
- # bpy stand-alone extension loading via local source repo.
- # addon_utils.enable makes the actual bpy context AddonPreferences available.
- try:
-  import mpfb
-  addon_utils.enable("mpfb",default_set=False,persistent=False)
-  if "mpfb" not in bpy.context.preferences.addons:
-   raise RuntimeError("Addon registration did not expose MPFB preferences")
- except Exception:
-  # No hidden geometry fallback; exactly one source method must pass.
-  print("MPFB_ADDON_FAILED",traceback.format_exc(),flush=True)
-  raise
- from mpfb.services.humanservice import HumanService
- from mpfb.services.targetservice import TargetService
- from mpfb.entities.objectproperties import HumanObjectProperties
- return HumanService,TargetService,HumanObjectProperties
+ import importlib,zipfile
+ # MPFB 2.x is a Blender 4.2+ EXTENSION, not a legacy Python addon. Build an
+ # ephemeral extension package from the pinned exact upstream source tree.
+ # Never write the GPL zip to the archived artifact directory.
+ source=(UPSTREAM/"src"/"mpfb").resolve()
+ assert (source/"blender_manifest.toml").exists()
+ temp=Path(".ci-mpfb");temp.mkdir(parents=True,exist_ok=True)
+ archive=(temp/"mpfb-pinned-extension.zip").resolve()
+ with zipfile.ZipFile(archive,'w',compression=zipfile.ZIP_DEFLATED) as z:
+  for p in source.rglob('*'):
+   if p.is_file() and "__pycache__" not in p.parts:
+    z.write(p,str(p.relative_to(source)))
+ print("MPFB_EXTENSION_ARCHIVE_READY",archive.stat().st_size,flush=True)
+ result=bpy.ops.extensions.package_install_files(
+    filepath=str(archive),repo="user_default",enable_on_install=True)
+ print("MPFB_EXTENSION_INSTALL",result,flush=True)
+ assert 'FINISHED' in result,result
+ package="bl_ext.user_default.mpfb"
+ assert package in bpy.context.preferences.addons,(
+  "Pinned MPFB extension not enabled: "+str(list(bpy.context.preferences.addons)))
+ # Source assets are a separately CC0 pack; tell extension where extracted files are.
+ roots=list(ASSETS.rglob("young_caucasian_female.mhmat"))
+ assert len(roots)==1,roots
+ skin_path=roots[0].resolve()
+ # Find the nearest user data root that contains data/skins or skins.
+ # MPFB AssetService may use this preference to resolve relative assets.
+ pref=bpy.context.preferences.addons[package].preferences
+ if hasattr(pref,"mpfb_user_data"):
+  candidate=skin_path.parent.parent
+  if candidate.name=="data":candidate=candidate.parent
+  pref.mpfb_user_data=str(candidate)
+  print("MPFB_ASSET_ROOT_PREFERENCE",pref.mpfb_user_data,flush=True)
+ HumanService=importlib.import_module(package+".services.humanservice").HumanService
+ TargetService=importlib.import_module(package+".services.targetservice").TargetService
+ ObjectProperties=importlib.import_module(package+".entities.objectproperties").HumanObjectProperties
+ print("MPFB_VERSIONED_EXTENSION_REGISTERED",package,flush=True)
+ return HumanService,TargetService,ObjectProperties
 
 def camera_at(target,position,name,lens=62):
  cam_data=bpy.data.cameras.new(name)
