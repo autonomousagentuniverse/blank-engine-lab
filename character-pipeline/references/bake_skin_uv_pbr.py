@@ -61,7 +61,10 @@ def main():
  skinmesh.from_pydata(verts,[],faces);skinmesh.update()
  assert len(skinmesh.polygons)==len(polys)
  new_uv=skinmesh.uv_layers.new(name=uv.name)
+ smooth_count=sum(p.use_smooth for p in polys)
+ print("SKIN_SOURCE_SHADE_SMOOTH",smooth_count,"of",len(polys),flush=True)
  for oldpoly,newpoly in zip(polys,skinmesh.polygons):
+  newpoly.use_smooth=oldpoly.use_smooth
   assert len(oldpoly.loop_indices)==len(newpoly.loop_indices)
   for li,lj in zip(oldpoly.loop_indices,newpoly.loop_indices):
    new_uv.data[lj].uv=uv.data[li].uv
