@@ -138,7 +138,7 @@ def run():
     allvertices_by_group.setdefault(name,{}).setdefault(round(weight,6),[]).extend(range(first,end))
   for name,by_weight in allvertices_by_group.items():
    for weight,indices in by_weight.items():groups[name].add(indices,float(weight),"REPLACE")
-  arm=obj.modifiers.new(name="Scalp-weighted armature","ARMATURE")
+  arm=obj.modifiers.new(name="Scalp-weighted armature",type="ARMATURE")
   arm.object=rig
   arm.use_vertex_groups=True
   arm.use_bone_envelopes=False
