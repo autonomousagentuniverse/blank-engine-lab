@@ -49,6 +49,7 @@ const html=[
 const server=createServer(async(req,res)=>{
  try{
   const uri=new URL(req.url,'http://127.0.0.1');
+  if(uri.pathname==='/favicon.ico'){res.writeHead(204);res.end();return;}
   if(uri.pathname==='/'){res.writeHead(200,{'content-type':'text/html'});res.end(html);return;}
   const filename=resolve(root,'.'+decodeURIComponent(uri.pathname));
   if(!filename.startsWith(resolve(root)+sep))throw Error('Traversal');
