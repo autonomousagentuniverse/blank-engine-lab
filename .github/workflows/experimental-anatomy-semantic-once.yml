@@ -32,6 +32,7 @@ jobs:
           python3 -m pip install --disable-pip-version-check --no-cache-dir bpy==4.5.3
           python3 -m py_compile character-pipeline/references/tag_and_measure_afro_blender.py
           timeout -k 12s 540s python3 -u character-pipeline/references/tag_and_measure_afro_blender.py
+          timeout -k 12s 220s python3 -u character-pipeline/references/measure_scalp_contact_bvh.py
       - name: Preserve anatomy failures and derivative source manifest
         run: |
           python3 - <<'PY'
@@ -45,12 +46,17 @@ jobs:
           p=d/'afro_woman_semantic_provisional.blend'
           assert p.stat().st_size>1000000
           assert hashlib.sha256(p.read_bytes()).hexdigest()==j['derivative_blend_sha256']
+          scalp=json.loads(pathlib.Path('artifacts/semantic-scalp-bvh/scalp-triangle-contact.json').read_text())
+          assert scalp['hair_roots']==4450 and scalp['scalp_triangulated_face_candidates']>10
+          assert scalp['source_sha256']==j['source_sha256'] and not scalp['photorealism_approved']
           print('ACTUAL_BLENDER_SEMANTIC_EVIDENCE_VERIFIED')
           PY
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
           name: verified-provisional-afro-anatomical-tags
-          path: artifacts/semantic-tags/
+          path: |
+            artifacts/semantic-tags/
+            artifacts/semantic-scalp-bvh/
           retention-days: 7
           if-no-files-found: warn
