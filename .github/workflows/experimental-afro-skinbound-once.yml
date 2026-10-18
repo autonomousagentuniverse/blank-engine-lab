@@ -55,3 +55,5 @@ jobs:
           path: artifacts/afro-skinbound-hair/
           retention-days: 7
           if-no-files-found: warn
+
+# Retrigger after correcting the Python ARMATURE modifier API syntax.
