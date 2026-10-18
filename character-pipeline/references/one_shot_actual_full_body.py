@@ -14,7 +14,7 @@ import numpy as np
 
 SOURCE=pathlib.Path("source/afro_mask_respected_uv_pbr.blend")
 PIN="a1c38165ae2d8d100e04919e4e57b35623ac9fabc1b0d2cb44bdfb7829fef570"
-OUT=pathlib.Path("artifacts/blank-genuine-full-body")
+OUT=pathlib.Path(os.environ.get("BLANK_HUMAN_OUTPUT_DIR","artifacts/blank-genuine-full-body"))
 OUT.mkdir(parents=True,exist_ok=True)
 W,H=840,1260
 MARGIN=.075
