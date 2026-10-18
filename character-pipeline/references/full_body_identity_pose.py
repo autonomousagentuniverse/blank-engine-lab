@@ -20,7 +20,7 @@ def make_relaxed_neutral_stance(rig, scene):
         is_second=any(z in name for z in ("twist","upperarm02","roll","helper"))
         if not is_upper or is_second:
             continue
-        side = "L" if name.endswith(".l") or name.startswith("left") or "leftupper" in name else ("R" if name.endswith(".r") or name.startswith("right") or "rightupper" in name else None)
+        side = "L" if name.endswith("l") or name.startswith("left") or "leftupper" in name else ("R" if name.endswith("r") or name.startswith("right") or "rightupper" in name else None)
         if side:
             candidates.setdefault(side,pb)
     if set(candidates)!={"L","R"}:
