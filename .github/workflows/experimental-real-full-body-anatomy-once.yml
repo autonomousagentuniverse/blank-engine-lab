@@ -1,4 +1,5 @@
 name: EXPERIMENTAL Real Full-Body Geometry A/B Once
+# Retry after correcting inherited teacher-proposal contract tests.
 on:
   workflow_dispatch:
   push:
