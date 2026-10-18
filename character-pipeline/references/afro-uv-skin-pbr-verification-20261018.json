@@ -1,0 +1,72 @@
+{
+  "schema": "blank.engine.uv-skin-pbr-verification.v1",
+  "date": "2026-10-18",
+  "source_sha256": "0eca41c5f0175e50df18914bb87cc007184ddcf55f2dd84ea3640645ddac2f52",
+  "run_ids": {
+    "first_error_material_slots": 39142021927,
+    "first_bake_visual_failure": 39142119015,
+    "corrected_blender": 39142378127,
+    "chrome": 39142449410
+  },
+  "artifacts": {
+    "blender": 12141827590,
+    "chrome": 12142301902
+  },
+  "uv_bake": {
+    "skin_material": "Dark_Brown_Skin_Microstructure",
+    "skin_material_slots": [
+      0,
+      1,
+      2,
+      5,
+      6
+    ],
+    "skin_polygons": 18194,
+    "uv": "UVMap",
+    "resolution": [
+      1024,
+      1024
+    ],
+    "basecolor": true,
+    "tangent_normal": true,
+    "source_shape_face_smoothing_restored": true,
+    "baked_blend_sha256": "6fb5fb2b6f353933bbfd90f4b265c8f2023f7191c81cca6f6198f58a596197e3",
+    "baked_glb_sha256": "0ee083dafd22793112cdbe6c7f30db558e23f198e3afa4d90422f23985c19e93",
+    "glb_bytes": 74031908
+  },
+  "chrome": {
+    "webgl2": true,
+    "skinned_meshes": 15,
+    "joint_count": 53,
+    "skinned_hair_layers": 3,
+    "brown_skin_renders": true,
+    "head_rotation_movement_m": [
+      0.0111252,
+      0.0293667,
+      0.0281201
+    ],
+    "visual_fail": "Large exposed body faces obscure blue shirt/face and distort character silhouette; source Cycles character has intact clothing and face."
+  },
+  "gltf_anatomy": {
+    "old_new_body_mesh_name": "base",
+    "body_primitives": 6,
+    "morph_targets": 11,
+    "garment_name": "female_casualsuit01",
+    "garment_morph_targets": 1,
+    "original_blender_body_modifiers": [
+      "ARMATURE",
+      "MASK",
+      "MASK"
+    ],
+    "likely_unresolved": "Original body MASK visibility or morph/garment deformation not honored equivalently in GLB; not yet isolated."
+  },
+  "gates": {
+    "bake_color_normal": true,
+    "cycles_smooth_skin": true,
+    "chrome_load_animate": true,
+    "cycles_webgl_visual_parity": false,
+    "photorealism_approved": false,
+    "production_deployed": false
+  },
+  "next": "Isolate Blender source body MASK modifier and GLB evaluated/skinned mesh topology and morph state, create controlled baseline and corrected mask-respecting export with rig/skin preserved; compare real Chrome screenshots."
+}
