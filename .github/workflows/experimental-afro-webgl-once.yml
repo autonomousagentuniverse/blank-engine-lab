@@ -1,0 +1,57 @@
+name: EXPERIMENTAL Afro Rigged GLB Chrome WebGL Parity Smoke
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/human-reference-atlas-20261018
+    paths:
+      - .github/workflows/experimental-afro-webgl-once.yml
+permissions:
+  contents: read
+  actions: read
+jobs:
+  browser-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Recover pinned actual Blender generated rigged GLB
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p artifacts/afro-visual-glb artifacts/afro-browser
+          gh run download 39140457420 --repo autonomousagentuniverse/blank-engine-lab --name afro-skinbound-cycles-glb-real-20261018 --dir artifacts/afro-visual-glb
+          printf '3f6d5df1e5c576226f06fdb2b02be74e379b1b2a66a2ad1c97b9cb340d565788  artifacts/afro-visual-glb/afro_skinbound_rigged.glb\n' | sha256sum -c -
+      - name: Install pinned Three.js and real Chrome
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm install --no-save --ignore-scripts --no-audit --no-fund three@0.186.1 playwright@1.56.1
+          npx playwright install chrome
+      - name: Test real GLTFLoader skinning and render in WebGL Chrome
+        run: |
+          node scripts/audit-afro-rigged-glb-browser.mjs
+      - name: Verify browser outcomes and remain explicit about parity limits
+        run: |
+          node --input-type=module - <<'JS'
+          import assert from 'node:assert/strict';
+          import {readFile,stat} from 'node:fs/promises';
+          const p='artifacts/afro-browser/';
+          const r=JSON.parse(await readFile(p+'webgl-report.json','utf-8'));
+          assert.equal(r.chrome_webgl_pass,true);
+          assert.equal(r.hair.length,3);
+          assert.ok(r.head_rotation_movement_m.some(v=>v>.001));
+          assert.equal(r.cycles_webgl_pixel_parity_verified,false);
+          assert.equal(r.photorealism_approved,false);
+          for(const f of ['afro-webgl-neutral.png','afro-webgl-head-y.png'])assert.ok((await stat(p+f)).size>20000);
+          console.log('BLANK_GLTF_CHROME_RENDER_SKINNING_VERIFIED');
+          JS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: afro-skinbound-real-chrome-webgl-20261018
+          path: artifacts/afro-browser/
+          retention-days: 7
+          if-no-files-found: warn
