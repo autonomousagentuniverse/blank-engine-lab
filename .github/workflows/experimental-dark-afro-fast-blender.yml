@@ -1,8 +1,5 @@
 name: Direct Blender afro woman from existing editable full-body human
 on:
-  push:
-    branches:
-      - experiment/dark-skin-afro-woman-blender-20261018
   workflow_dispatch:
 permissions:
   contents: read
