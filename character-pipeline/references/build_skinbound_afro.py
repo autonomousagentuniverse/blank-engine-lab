@@ -51,13 +51,16 @@ def bary(p,a,b,c):
  assert det>1e-15,("FACE_DEGENERATE",det)
  y=(vv*wu-uv*wv)/det;z=(uu*wv-uv*wu)/det
  return (1-y-z,y,z)
-def interp_weights(body,indices,ws):
+def interp_weights(body,indices,ws,allowed_bones):
  out={}
  for i,factor in zip(indices,ws):
   for g in body.data.vertices[i].groups:
    name=body.vertex_groups[g.group].name
+   if name not in allowed_bones: continue  # 'body', 'scalp', 'joint-*' are masks, not bones
    out[name]=out.get(name,0)+factor*g.weight
- return {k:v for k,v in out.items() if v>0.0001}
+ total=sum(out.values())
+ assert .97<=total<=1.03,("MISSING_NORMALIZED_RIG_BONE_WEIGHTS",total)
+ return {k:v/total for k,v in out.items() if v/total>0.0001}
 def run():
  assert sha(SRC)==EXPECTED
  bpy.ops.wm.open_mainfile(filepath=str(SRC.resolve()),load_ui=False)
@@ -69,9 +72,8 @@ def run():
  rest=coords(body)
  scalp=body.vertex_groups["scalp"];mask=set()
  for vert in body.data.vertices:
-  try:
-   if scalp.weight(vert.index)>=.5:mask.add(vert.index)
-  except RuntimeError:pass
+  if any(g.group==scalp.index and g.weight>=.5 for g in vert.groups):
+   mask.add(vert.index)
  assert len(mask)==376
  tris=[]
  for poly in body.data.polygons:
@@ -95,7 +97,7 @@ def run():
    indexes=tris[tri]
    ws=bary(loc,*[rest[j] for j in indexes])
    assert min(ws)>-.001
-   weights=interp_weights(body,indexes,ws)
+   weights=interp_weights(body,indexes,ws,set(rig.data.bones.keys()))
    assert sum(weights.values())>.9,("UNWEIGHTED_SCALP_SITE",sum(weights.values()))
    root_bind.append((indexes,ws,layer,len(ring_starts)))
    source_roots.append(srcroot)
