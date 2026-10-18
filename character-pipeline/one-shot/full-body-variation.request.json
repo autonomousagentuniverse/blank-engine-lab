@@ -8,8 +8,8 @@
     "camera.three_quarter_orbit_degrees": 27,
     "render.cycles_samples": 32,
     "render.exposure_ev": -3.3500195136193742,
-    "morphology.shoulder_width": 0.7,
-    "morphology.waist_width": 0.15,
-    "morphology.hip_width": 0.75
+    "morphology.shoulder_width": 0.15,
+    "morphology.waist_width": 0.08,
+    "morphology.hip_width": 0.98
   }
 }

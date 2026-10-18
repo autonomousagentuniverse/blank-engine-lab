@@ -129,6 +129,15 @@ scene.view_settings.view_transform="AgX"
 scene.view_settings.look="AgX - Medium High Contrast"
 scene.view_settings.exposure=EV
 scene.view_settings.gamma=1
+# Studio context ONLY on revised frame: improve black-afro silhouette separation.
+# Physically rendered by Blender World shader, not an image postprocessor.
+WORLD_STUDIO_CHANGED=False
+if os.environ.get("BLANK_HUMAN_STUDIO_BACKGROUND","0")=="1":
+ scene.world.use_nodes=True
+ background=next(n for n in scene.world.node_tree.nodes if n.type=="BACKGROUND")
+ background.inputs["Color"].default_value=(0.22,0.24,0.27,1)
+ background.inputs["Strength"].default_value=4.5
+ WORLD_STUDIO_CHANGED=True
 
 original=bpy.data.objects["CAM_face_closeup"]
 face_comparison={}
@@ -248,6 +257,7 @@ report={
  "mesh_geometry_changed":bool(face_keys) or BODY_RESULT["applied"],
  "morphs_changed":bool(face_keys) or BODY_RESULT["applied"],"light_powers_changed":False,
  "bone_count":53,"source_light_names_watts":lights,
+ "revised_world_studio_background":WORLD_STUDIO_CHANGED,
  "actual_armature_pose":STANCE_RESULT,
  "source_world_model_bounds_m":world_extent,
  "model_height_m":height,

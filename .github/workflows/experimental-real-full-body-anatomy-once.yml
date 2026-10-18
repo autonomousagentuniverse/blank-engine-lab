@@ -63,6 +63,7 @@ jobs:
         env:
           BLANK_HUMAN_RENDER_CONFIG: artifacts/full-body-variants/changed/config.json
           BLANK_HUMAN_RELAX_STANCE: '1'
+          BLANK_HUMAN_STUDIO_BACKGROUND: '1'
           BLANK_HUMAN_OUTPUT_DIR: artifacts/full-body-variants/changed
           OMP_NUM_THREADS: '4'
         run: |
