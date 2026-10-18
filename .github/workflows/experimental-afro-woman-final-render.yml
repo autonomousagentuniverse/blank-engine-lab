@@ -1,8 +1,5 @@
 name: Experimental real Blender final afro alignment and dark-skin character rendering
 on:
-  push:
-    branches:
-      - experiment/afro-woman-body-rebuild-blender-20261018
   workflow_dispatch:
 permissions:
   contents: read
