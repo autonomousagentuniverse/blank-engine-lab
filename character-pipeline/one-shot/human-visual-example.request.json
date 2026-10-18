@@ -1,0 +1,12 @@
+{
+  "schema": "blank.human.visual-render-request.v1",
+  "source_sha256": "a1c38165ae2d8d100e04919e4e57b35623ac9fabc1b0d2cb44bdfb7829fef570",
+  "image_generation_used": false,
+  "release_allowed": false,
+  "values": {
+    "camera.margin": 0.085,
+    "camera.three_quarter_orbit_degrees": 27,
+    "render.cycles_samples": 32,
+    "render.exposure_ev": -3.3500195136193742
+  }
+}
