@@ -1,0 +1,64 @@
+{
+  "schema": "blank.engine.human.cycles-chrome-webgl-parity.v1",
+  "date": "2026-10-18",
+  "source_blend_sha256": "0eca41c5f0175e50df18914bb87cc007184ddcf55f2dd84ea3640645ddac2f52",
+  "blender": {
+    "run_id": 39140457420,
+    "conclusion": "success",
+    "artifact_id": 12141716432,
+    "version": "4.5.3 LTS",
+    "original_source_unchanged": true,
+    "images": [
+      "skinbound_front.png",
+      "skinbound_three_quarter.png",
+      "skinbound_profile.png",
+      "skinbound_head_y_22.png"
+    ],
+    "collision_indicator": {
+      "samples_per_pose": 13350,
+      "neutral_negative_proxy_fraction": 0.03873,
+      "rotated_y22_negative_proxy_fraction": 0.04285,
+      "warning": "Only local normal signed nearest-triangle sample. Not watertight signed distance or collision certification."
+    },
+    "glb": {
+      "sha256": "3f6d5df1e5c576226f06fdb2b02be74e379b1b2a66a2ad1c97b9cb340d565788",
+      "bytes": 72856732,
+      "mesh_count": 10,
+      "skin_count": 1,
+      "joint_count": 53,
+      "skinbound_hair_nodes": 3,
+      "structural_export_pass": true,
+      "skin_material_has_baked_basecolor_texture": false
+    }
+  },
+  "browser": {
+    "first_run_id": 39140859924,
+    "first_status": "failure",
+    "first_reason": "Harmless favicon 404 caused overly broad browser-console assertion; GLTF successfully loaded",
+    "verified_run_id": 39140979697,
+    "conclusion": "success",
+    "artifact_id": 12140629957,
+    "engine": "Real Google Chrome with SwiftShader WebGL2, Three.js GLTFLoader",
+    "skinned_mesh_count": 15,
+    "skin_bones_max": 53,
+    "hair_nodes": 3,
+    "hair_root_sample_motion_m": [
+      0.011125210762839186,
+      0.029366662425319115,
+      0.028120063873878266
+    ],
+    "actual_visual_result": "FAIL: skin, face and large shirt/body areas appear pure white or washed out in WebGL screenshot; Cycles display differs substantially",
+    "technical_webgl_load_pass": true,
+    "mechanical_head_bone_motion_pass": true,
+    "cycles_pixel_parity_verified": false,
+    "webgl_parity_visual_pass": false,
+    "photorealism_approved": false
+  },
+  "next": "Bake procedural materials (especially Dark_Brown_Skin_Microstructure) into appropriate UV PBR maps, validate texture licensing and sRGB/linear color, create matched camera/lighting Chrome vs Cycles visual checks, then repair eye/skin/face anatomy. Do not approve based on GLTFLoader pass.",
+  "production_deployed": false,
+  "release_allowed": false,
+  "experimental_workflows_manual_only": [
+    ".github/workflows/experimental-afro-visual-glb-once.yml",
+    ".github/workflows/experimental-afro-webgl-once.yml"
+  ]
+}
