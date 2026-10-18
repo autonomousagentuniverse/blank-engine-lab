@@ -1,11 +1,6 @@
 name: EXPERIMENTAL Genuine Full Body Blender 3-View One Shot
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - research/human-reference-atlas-20261018
-    paths:
-      - .github/workflows/experimental-genuine-full-body-once.yml
 permissions:
   contents: read
   actions: read
