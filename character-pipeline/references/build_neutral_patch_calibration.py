@@ -108,7 +108,6 @@ scene.render.engine="CYCLES";scene.cycles.device="CPU";scene.cycles.samples=24
 scene.render.threads_mode="FIXED";scene.render.threads=4
 scene.render.resolution_x=720;scene.render.resolution_y=960
 scene.render.resolution_percentage=100;scene.render.image_settings.file_format="PNG"
-focus=cam.location+cam.matrix_world.to_quaternion()@__import__("mathutils").Vector((0,0,-3.821))
 # Facial reference plane is Blender x0,y0,z1.639, not a fitted image focus.
 focus=__import__("mathutils").Vector((0.0,0.0,1.6390173435211182))
 views=[]
