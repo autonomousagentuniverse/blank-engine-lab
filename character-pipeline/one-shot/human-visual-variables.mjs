@@ -42,7 +42,7 @@ export function validateContracts(){
       if(control.binding.target!==null)err('PHANTOM_BLENDER_BINDING',path);
     }
   }
-  if(active!==7)err('ACTIVE_BINDING_COUNT_CHANGED');
+  if(active!==10)err('ACTIVE_BINDING_COUNT_CHANGED');
   if(defects.schema!=='blank.human.defect-taxonomy.v1'||!Array.isArray(defects.defects))err('DEFECT_SCHEMA');
   const ids=defects.defects.map(x=>x.id);
   if(ids.length!==new Set(ids).size||ids.some(x=>typeof x!=='string'||!x))err('DEFECT_IDS_DUPLICATE');
@@ -85,6 +85,9 @@ export function compileBlenderRenderConfig(request){
     controls:merged,
     overridden_control_names:Object.keys(requested).sort(),
     binding_evidence:Object.fromEntries(Object.keys(merged).map(k=>[k,allowed[k].binding.target])),
+    // This compiler is only a plan: renderer separately proves actual mesh change.
+    geometry_change_requested:Object.entries(merged).some(([k,v])=>
+      k.startsWith('morphology.') && v!==allowed[k].default),
     actual_geometry_changed:false,
     image_generation_used:false,
     photorealism_approved:false,
