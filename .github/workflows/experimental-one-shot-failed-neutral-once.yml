@@ -57,3 +57,5 @@ jobs:
           if-no-files-found: warn
 
 # One rerun after fixing nondeterministic Blender lights collection iteration order.
+
+# Repeat one-shot after Blender 4.5 AgX view look enum correction; input SHA/geometry unchanged.
