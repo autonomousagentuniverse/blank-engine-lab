@@ -1,0 +1,65 @@
+name: Direct Blender afro woman from existing editable full-body human
+on:
+  push:
+    branches:
+      - experiment/dark-skin-afro-woman-blender-20261018
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  generate-character:
+    runs-on: ubuntu-latest
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Retrieve existing verified EDITABLE Blender basemesh not an image
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p previous-mpfb artifacts/dark-afro-woman-fast
+          gh run download 39082527374 --repo autonomousagentuniverse/blank-engine-lab \
+            --name new-independent-cc0-human-one-shot-cycles --dir previous-mpfb
+          python3 - <<'PY'
+          import hashlib,pathlib
+          p=pathlib.Path('previous-mpfb/new_human_cc0_pilot.blend')
+          assert p.stat().st_size>1000000
+          assert hashlib.sha256(p.read_bytes()).hexdigest()=='ae45c099821c725024289f73c803f5b02f579f9c7df77f16083c092f13405537'
+          print('ORIGINAL_EDITABLE_3D_HUMAN_VERIFIED')
+          PY
+      - name: Install actual Blender Python engine
+        run: |
+          python3 -m pip install --disable-pip-version-check --no-cache-dir bpy==4.5.3
+          python3 -m py_compile experiments/real-human-reference/adapt_existing_human_afro.py
+      - name: Reconstruct true editable afro, skin and four full Cycles views
+        env:
+          OMP_NUM_THREADS: '4'
+        run: timeout -k 15s 900s python3 -u experiments/real-human-reference/adapt_existing_human_afro.py
+      - name: Validate image and editable Blender source preservation
+        run: |
+          python3 - <<'PY'
+          import pathlib,hashlib,json
+          p=pathlib.Path('artifacts/dark-afro-woman-fast')
+          d=json.loads((p/'report.json').read_text())
+          assert d['afro_strands']==4450 and d['original_bob_removed']
+          assert d['has_real_3d_geometry'] and not d['source_is_ai_image']
+          assert len(d['renders'])==4
+          assert d['rig_bones']>=53
+          for v in d['renders']:
+            q=p/v['file']
+            assert hashlib.sha256(q.read_bytes()).hexdigest()==v['sha256']
+          q=p/d['editable_blend']
+          assert hashlib.sha256(q.read_bytes()).hexdigest()==d['blend_sha256']
+          print('EDITABLE_BLENDER_CHAR_AND_ALL_FOUR_RENDERS_VERIFIED',q.stat().st_size)
+          PY
+      - name: Archive exact produced character and previews
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: black-woman-afro-dark-skin-editable-blender
+          path: artifacts/dark-afro-woman-fast/
+          retention-days: 7
+          if-no-files-found: warn
