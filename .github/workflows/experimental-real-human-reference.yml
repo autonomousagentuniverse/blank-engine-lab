@@ -1,8 +1,5 @@
 name: Experimental real human photo decomposition vs generated control
 on:
-  push:
-    branches:
-      - experiment/real-human-photographic-decomposition-20261017
   workflow_dispatch:
 permissions:
   contents: read
