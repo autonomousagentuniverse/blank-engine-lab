@@ -127,10 +127,29 @@ for name,angle in [("front",0),("three_quarter_40",40)]:
  scene.render.filepath=str(image.resolve())
  bpy.ops.render.render(write_still=True)
  assert image.stat().st_size>30000
+ # White emission silhouette under the same exact camera, no lighting.
+ original_world=scene.world;original_override=bpy.context.view_layer.material_override
+ maskworld=bpy.data.worlds.new("EXPERIMENT_CALIBRATION_VIEW_BLACK")
+ maskworld.use_nodes=True
+ bg=next(n for n in maskworld.node_tree.nodes if n.type=="BACKGROUND")
+ bg.inputs["Color"].default_value=(0,0,0,1);bg.inputs["Strength"].default_value=1
+ scene.world=maskworld
+ white=bpy.data.materials.new("EXPERIMENT_WHITE_SILHOUETTE")
+ white.use_nodes=True;nodes=white.node_tree.nodes;nodes.clear()
+ oo=nodes.new("ShaderNodeOutputMaterial");em=nodes.new("ShaderNodeEmission")
+ em.inputs["Color"].default_value=(1,1,1,1);em.inputs["Strength"].default_value=1
+ white.node_tree.links.new(em.outputs["Emission"],oo.inputs["Surface"])
+ bpy.context.view_layer.material_override=white
+ mask=OUT/("blender-silhouette-"+name+".png")
+ scene.render.filepath=str(mask.resolve())
+ bpy.ops.render.render(write_still=True)
+ assert mask.stat().st_size>15000
+ bpy.context.view_layer.material_override=original_override;scene.world=original_world
  mat=up@viewcam.matrix_world
  views.append({"name":name,"angle_degrees":angle,
   "matrix_yup":[float(mat[i][j]) for j in range(4) for i in range(4)],
-  "file":image.name,"sha256":sha(image),"bytes":image.stat().st_size})
+  "file":image.name,"sha256":sha(image),"bytes":image.stat().st_size,
+  "silhouette_file":mask.name,"silhouette_sha256":sha(mask)})
 assert sha(SRC)==SHA
 spec["heldout_character_views"]=views
 (OUT/"blender-neutral-patch.json").write_text(json.dumps(spec,indent=2)+"\n")
