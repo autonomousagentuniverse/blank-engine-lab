@@ -46,7 +46,7 @@ def coords(body):
   ev.to_mesh_clear()
   bpy.data.objects.remove(probe,do_unlink=True)
 def bary(p,a,b,c):
- u=b-a;v=c-a;w=p-a;uu=u.dot(u);uv=u.dot(v);vv=v.dot(v)
+ u=b-a;v=c-a;w=p-a;uu=u.dot(u);uv=u.dot(v);vv=v.dot(v);wu=w.dot(u);wv=w.dot(v)
  det=uu*vv-uv*uv
  assert det>1e-15,("FACE_DEGENERATE",det)
  y=(vv*wu-uv*wv)/det;z=(uu*wv-uv*wu)/det
