@@ -1,11 +1,6 @@
 name: EXPERIMENTAL Coherent Afro Hair Field One Shot
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - research/human-reference-atlas-20261018
-    paths:
-      - .github/workflows/experimental-coherent-afro-once.yml
 permissions:
   contents: read
   actions: read
