@@ -79,7 +79,14 @@ if RENDER_CONFIG_FILE:
 # Body and skinned garments get same controlled rest-geometry warp.
 # Apply after any face shape-key creation so expression keys are preserved.
 BODY_RESULT=apply_blender_body_widths(body=body,rig=rig,scene=scene,values=BODY_VALUES)
+# Geometry fingerprint of actual existing head above neck, before and after body change.
 print("BLANK_REAL_BODY_GEOMETRY",json.dumps(BODY_RESULT,sort_keys=True),flush=True)
+STANCE_RESULT={"applied":False,"previous_head_preserved":True}
+if os.environ.get("BLANK_HUMAN_RELAX_STANCE","0")=="1":
+ from full_body_identity_pose import make_relaxed_neutral_stance
+ STANCE_RESULT=make_relaxed_neutral_stance(rig,scene)
+ STANCE_RESULT["applied"]=True
+ print("BLANK_REAL_RELAXED_BONE_POSE",json.dumps(STANCE_RESULT,sort_keys=True),flush=True)
 
 # Bound all actually visible human meshes and visible curves; never use source
 # portrait camera crop or rough guessed character height.
@@ -241,6 +248,7 @@ report={
  "mesh_geometry_changed":bool(face_keys) or BODY_RESULT["applied"],
  "morphs_changed":bool(face_keys) or BODY_RESULT["applied"],"light_powers_changed":False,
  "bone_count":53,"source_light_names_watts":lights,
+ "actual_armature_pose":STANCE_RESULT,
  "source_world_model_bounds_m":world_extent,
  "model_height_m":height,
  "actual_face_geometry_morphs":face_data,

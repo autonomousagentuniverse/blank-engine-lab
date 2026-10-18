@@ -1,6 +1,11 @@
 name: EXPERIMENTAL Real Full-Body Geometry A/B Once
 # Retry after correcting inherited teacher-proposal contract tests.
+# One-time, branch-scoped execution bridge for this expressly requested render.
+# RESTORE workflow_dispatch-only immediately after inspecting run evidence.
 on:
+  push:
+    branches:
+      - experiment/locked-head-relaxed-fullbody-one-shot-20261018
   workflow_dispatch:
 permissions:
   contents: read
@@ -57,6 +62,7 @@ jobs:
       - name: Generate actually modified same-source 3D full-body geometry in Blender Cycles
         env:
           BLANK_HUMAN_RENDER_CONFIG: artifacts/full-body-variants/changed/config.json
+          BLANK_HUMAN_RELAX_STANCE: '1'
           BLANK_HUMAN_OUTPUT_DIR: artifacts/full-body-variants/changed
           OMP_NUM_THREADS: '4'
         run: |
@@ -73,6 +79,7 @@ jobs:
           assert a['source_blend_sha256']==b['source_blend_sha256']
           assert a['source_unchanged'] and b['source_unchanged']
           assert not a['mesh_geometry_changed'] and b['mesh_geometry_changed']
+          assert b['actual_armature_pose']['applied'] and b['actual_armature_pose']['head_pose_preserved']
           assert a['bone_count']==b['bone_count']==53
           assert not a['body_morphology']['applied'] and b['body_morphology']['applied']
           assert len(b['body_morphology']['objects_modified'])>=2, 'Garments must share the body deformation'
