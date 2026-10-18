@@ -1,0 +1,83 @@
+name: Experimental real human photo decomposition vs generated control
+on:
+  push:
+    branches:
+      - experiment/real-human-photographic-decomposition-20261017
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  analyze-authentic-photographs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Install deterministic photo-measurement libraries
+        run: |
+          python3 -m pip install --disable-pip-version-check --no-cache-dir \
+             Pillow==11.3.0 numpy==2.2.6 opencv-python-headless==4.12.0.88
+          python3 -m py_compile experiments/real-human-reference/analyze_photos.py
+      - name: Retrieve original real-person CC/PD source photographs, not digital characters
+        run: |
+          mkdir -p photo-input mira-a-render artifacts/real-human-reference
+          python3 - <<'PY'
+          import json,subprocess,pathlib
+          j=json.loads(pathlib.Path("experiments/real-human-reference/verified_photos.json").read_text())
+          assert len(j["sources"])==6
+          for item in j["sources"]:
+            assert item["source"].startswith("https://commons.wikimedia.org/wiki/File:")
+            assert item["url"].startswith("https://upload.wikimedia.org/wikipedia/commons/")
+            assert item["license"] in {"CC0-1.0","CC-BY-4.0","CC-BY-2.0","PD-self"}
+            dest=pathlib.Path("photo-input")/item["file"]
+            cmd=["curl","-fL","--retry","3","--retry-all-errors","--connect-timeout","30",
+                 "--max-time","210","-A","BlankEnginePhotoStructureResearch/1.0 (human-sourced comparison)",
+                 "-o",str(dest),item["url"]]
+            subprocess.run(cmd,check=True)
+            assert dest.stat().st_size>40000,(item["id"],dest.stat().st_size)
+            print("AUTHENTIC_PHOTOGRAPH_RETRIEVED",item["id"],dest.stat().st_size,flush=True)
+          PY
+      - name: Download unchanged older complete MIRA A render controls
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download 39074108104 --repo autonomousagentuniverse/blank-engine-lab \
+            --name abc-human-A --dir mira-a-render
+          python3 - <<'PY'
+          import json,pathlib,hashlib
+          p=pathlib.Path("mira-a-render")
+          j=json.loads((p/"report.json").read_text())
+          assert j["variant"]=="A" and not j["release_allowed"]
+          assert j["source_hash"]=="1809398d604efa567a063697f34d84dc10c6db95914f38a31ac5bd6912e5e96d"
+          for im in ("eyes_macro.png","front.png"):
+            assert (p/im).stat().st_size>10000
+            entry=next(x for x in j["frames"] if x["view"]==im[:-4])
+            assert hashlib.sha256((p/im).read_bytes()).hexdigest()==entry["sha256"]
+          print("PREVIOUS_REAL_CYCLES_GENERATED_A_CONTROL_VERIFIED")
+          PY
+      - name: Compare measured photographic crops to old rejected CGI without claiming 3D anatomy
+        run: |
+          python3 -u experiments/real-human-reference/analyze_photos.py
+          python3 - <<'PY'
+          import json,pathlib
+          p=pathlib.Path("artifacts/real-human-reference/photo-versus-mira-metrics.json")
+          j=json.loads(p.read_text())
+          assert len(j["reference_photographs"])==6
+          assert len(j["generated_control"])==3
+          assert not j["generator_photoreal_pass"] and not j["release_allowed"]
+          assert j["follicle_growth_angle_3D"].startswith("NOT_MEASURED")
+          assert j["geometric_anatomy_measurement"].startswith("NOT_MEASURED")
+          assert (p.parent/"real-human-vs-cgi-review.jpg").stat().st_size>20000
+          print("REAL_PHOTOGRAPH_EVIDENCE_AND_LIMITS_VALIDATED")
+          PY
+      - name: Preserve reduced reference sheet, attribution and numeric metrics only
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: real-human-photographic-decomposition-v1
+          path: artifacts/real-human-reference/
+          if-no-files-found: warn
+          retention-days: 7
