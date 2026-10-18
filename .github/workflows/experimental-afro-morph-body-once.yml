@@ -57,7 +57,7 @@ jobs:
           assert.equal(r.all_11_morphs_react,false);
           assert.equal(r.dynamic_morph_count,9);
           assert.deepEqual(r.inert_target_indices,[3,6]);
-          assert.ok(r.body_skinning.length>=2);
+          assert.equal(r.body_skinning.length,4);
           assert.ok(r.body_skinning.every(x=>x.pass));
           assert.equal(r.skinning_technical_pass,true);
           assert.equal(r.matched_blender_camera,false);
