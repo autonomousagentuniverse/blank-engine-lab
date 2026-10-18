@@ -1,0 +1,85 @@
+{
+  "schema": "blank.engine.human.light-isolation.20261018.v1",
+  "date": "2026-10-18",
+  "source": {
+    "repository": "autonomousagentuniverse/blank-engine-lab",
+    "branch": "research/human-reference-atlas-20261018",
+    "blend_sha256": "a1c38165ae2d8d100e04919e4e57b35623ac9fabc1b0d2cb44bdfb7829fef570",
+    "glb_sha256": "1040b6330559865801b67ac57c293ddc07b94328cc735476ff4da47464c3399d",
+    "unchanged": true
+  },
+  "blender_chrome_run": {
+    "id": 39149671952,
+    "conclusion": "success",
+    "artifact_id": 12144722555
+  },
+  "rect_orientation_run": {
+    "id": 39150007657,
+    "conclusion": "failure",
+    "reason": "Browser finished both real renders; report step lacked numpy. Images archived; numerical report independently computed offline from actual PNGs.",
+    "artifact_id": 12144936366
+  },
+  "setup": {
+    "camera": "CAM_face_closeup",
+    "resolution_px": [
+      720,
+      960
+    ],
+    "source_area_shape": "DISK",
+    "disks": [
+      {
+        "name": "Edge_rim",
+        "watts": 400,
+        "diameter_m": 1.4
+      },
+      {
+        "name": "Soft_fill",
+        "watts": 270,
+        "diameter_m": 1.7
+      },
+      {
+        "name": "Soft_key",
+        "watts": 560,
+        "diameter_m": 2.2
+      }
+    ],
+    "webgl_experiment": "THREE.RectAreaLight approximating disks; intensity source_W/(pi*disk_area) without fitting, physically not calibrated",
+    "no_exposure_or_camera_alignment_fitting": true,
+    "unlit_blender": "Source Principled baseColor connected to Emission, Blender Standard Medium High Contrast look",
+    "unlit_chrome": "MeshBasicMaterial source texture/map + color, no illumination"
+  },
+  "metrics_over_visible_joint_silhouette": {
+    "foreground_pixels": 290782,
+    "mae_rgb_values_0_255": {
+      "unlit_basecolor": 6.374,
+      "previous_point_lighting": 135.285,
+      "rect_180_degree_extra_flip": 170.492,
+      "rect_source_quaternion": 36.611
+    },
+    "rect_extra_flip_black_pixel_fraction": 1,
+    "source_quaternion_nearwhite_any_channel_fraction": 0.738178,
+    "source_quaternion_nearwhite_torso_fraction": 0.914613,
+    "source_quaternion_nearwhite_head_fraction": 0.265999,
+    "source_quaternion_nearwhite_hair_fraction": 0.208481,
+    "orientation_only_improvement": 133.881
+  },
+  "interpretations": {
+    "baked_basecolor_transport": "PASS_DIAGNOSTIC: good agreement under no-light conditions, conditional on non-identical display transforms and some non-Principled nails",
+    "rect_light_facing": "CONFIRMED: unnecessary 180-degree local-X rotation caused black; original source quaternion contributes to illumination",
+    "rect_light_brightness": "FAIL: massive RGB saturation under uncalibrated area W/(pi*area) proxy",
+    "physically_matched_lighting": "NOT_PROVEN",
+    "cycles_webgl_material_shading_parity": "NOT_APPROVED",
+    "photo_realistic_human": "NOT_APPROVED",
+    "full_body_multiview": "NOT_APPROVED",
+    "production_deployment": "NONE"
+  },
+  "images_sha256": {
+    "blender-emission-unlit.png": "3996c96cafeeb8279d0062ee70d814ab8af4bedb38b7e46bed7802de15a1a2de",
+    "chrome-unlit-basecolor.png": "4d475e0a69a93ac58cc87c1e9e5d112de75b2c9cc8283078836e75c39f22a142",
+    "blender-cycles-color.png": "f29b72831cb730beb32d5aba3e640ee2a595f4037ce4b07db86111d506e58138",
+    "chrome-matched-camera-pbr.png": "e6b17fdc3d2aab39e340765189839d682c297e86ac7fe3a4fc92d9fe149e988b",
+    "chrome-source-area-proxy.png": "5005b3523caeb26caab38013db332011d616d0134d439825cb7c71a6e4b10049",
+    "chrome-area-unflipped-source.png": "804fe74f0cfc0734d5ded5b88399847af6301b11dc24afd4cdfb3d4c70d40863"
+  },
+  "next": "Normalize display transform and calibrate luminance on independent neutral diffuse test patch in both engines, then evaluate source disk emitters with appropriate sampling/area source units on held-out portrait/profile/full-body angles. Keep source geometry unchanged."
+}
