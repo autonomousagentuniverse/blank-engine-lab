@@ -129,13 +129,26 @@ try{
     p.renderer.render(p.scene,p.camera);
   },v.name);
   await page.locator('canvas').screenshot({path:join(base,'chrome-character-'+v.name+'.png')});
+  await page.evaluate(()=>{
+    const p=window.LIGHT_PROBE;
+    p.currentDefaults=[];
+    const pure=new p.THREE.MeshBasicMaterial({color:0xffffff,side:p.THREE.DoubleSide});
+    p.model.traverse(o=>{if(o.isMesh){p.currentDefaults.push([o,o.material]);o.material=pure;}});
+    p.renderer.render(p.scene,p.camera);
+  });
+  await page.locator('canvas').screenshot({path:join(base,'chrome-silhouette-'+v.name+'.png')});
+  await page.evaluate(()=>{
+    const p=window.LIGHT_PROBE;
+    for(const [o,m] of p.currentDefaults)o.material=m;
+    p.renderer.render(p.scene,p.camera);
+  });
  }
  assert.deepEqual(errors,[]);
  const report={schema:'blank.engine.chrome.patch-calibration.v1',
   original_glb_sha256:'1040b6330559865801b67ac57c293ddc07b94328cc735476ff4da47464c3399d',
   neutral_only_calibration:calibrate,initial_probe:ready,held_out_views:views,
   light_shapes_approximate_rectangles:true,source_blender_lights_are_disks:true,
-  calibration_is_display_referred_empirical_not_physical:false,
+  calibration_is_display_referred_empirical_not_physical:true,
   calibration_is_physical_radiometry:false,photorealism_approved:false,
   no_subject_pixel_fitting:true,production_deployed:false};
  await writeFile(join(base,'chrome-neutral-calibration.json'),JSON.stringify(report,null,2)+'\n');
