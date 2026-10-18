@@ -1,0 +1,51 @@
+{
+  "schema": "blank.engine.hair.follicle.surface.a-b.v1",
+  "date": "2026-10-18",
+  "source": {
+    "blend_sha256": "26fbbab775771a197482d7baffb89decbbf4f821dd3cfaa69fac28ee52e1fc2a",
+    "lineage": "MPFB source-derived, NOT newly independent person",
+    "original_unchanged": true
+  },
+  "workflow": {
+    "run_id": 39129920528,
+    "conclusion": "success",
+    "artifact_id": 12137433691,
+    "permanent_event": "workflow_dispatch only"
+  },
+  "geometry": {
+    "root_count": 4450,
+    "scalp_mask_vertices": 376,
+    "scalp_triangles": 668,
+    "area_m2": 0.063599,
+    "used_triangles": 668,
+    "before": {
+      "p50_mm": 21.1666,
+      "p95_mm": 48.4541
+    },
+    "after": {
+      "p50_mm": 0,
+      "p95_mm": 0.0001,
+      "max_mm": 0.00025
+    },
+    "metric_scope": "Neutral pose exact scalp triangle sampling. 0mm is expected by construction, not certified pose-aware follicles."
+  },
+  "output": {
+    "blend_sha256": "79d09a8a44ad0ed27300a37203196551f4ad0267e181ab743f28fa43f4d1a4cc",
+    "camera": "unchanged source face closeup",
+    "real_cycles": true
+  },
+  "visual": {
+    "geometry_contact": "pass",
+    "eyes_visibility": "improved relative to floating roots",
+    "hair_realism": "fail",
+    "reason": "Two tall separated, upright spiky fans; simple normals and independent curls lack local clump coherence. Existing skin and eye issues unchanged."
+  },
+  "next": "Anatomy-conditioned multiscale guide and clump field at verified scalp/hairline, with movement attachment and honest Cycles visual veto.",
+  "readiness": {
+    "photoreal_approved": false,
+    "realistic_hair_approved": false,
+    "webgl_parity": false,
+    "production_deployed": false,
+    "release_allowed": false
+  }
+}
