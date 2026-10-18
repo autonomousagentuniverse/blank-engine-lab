@@ -1,11 +1,6 @@
 name: EXPERIMENTAL Human Variable Contract and Blender Bindings Once
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - research/human-reference-atlas-20261018
-    paths:
-      - .github/workflows/experimental-human-visual-variables-once.yml
 permissions:
   contents: read
   actions: read
