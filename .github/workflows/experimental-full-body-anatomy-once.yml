@@ -1,0 +1,93 @@
+name: EXPERIMENTAL One-Shot Full-Body 3D Anatomy Once
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  real-blender-full-body:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Validate source-pinned contract and synthetic geometry invariants
+        run: |
+          node --check character-pipeline/one-shot/human-visual-variables.mjs
+          node --test character-pipeline/one-shot/human-visual-variables.test.mjs
+          python3 -m unittest discover -s character-pipeline/references -p test_full_body_morphology.py -v
+          python3 -m py_compile character-pipeline/references/full_body_morphology.py character-pipeline/references/one_shot_actual_full_body.py
+      - name: Compile specific full-body proportions, leave face at neutral
+        run: |
+          node character-pipeline/one-shot/human-variables-cli.mjs compile character-pipeline/one-shot/full-body-variation.request.json /tmp/actual-body-config.json
+          python3 - <<'PY'
+          import json
+          j=json.load(open('/tmp/actual-body-config.json'))
+          x=j['controls']
+          assert len(x)==10 and j['geometry_change_requested'] is True
+          assert j['actual_geometry_changed'] is False
+          assert x['morphology.shoulder_width']==.70
+          assert x['morphology.waist_width']==.15
+          assert x['morphology.hip_width']==.75
+          assert x['morphology.jaw_width']==.34
+          assert x['morphology.cheek_fullness']==.61
+          assert x['morphology.brow_ridge_strength']==.20
+          assert not j['release_allowed'] and not j['image_generation_used']
+          print('FULL_BODY_PLAN_VALIDATED_NO_PREMATURE_GEOMETRY_CLAIM')
+          PY
+      - name: Recover exact original human source (no image generation)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p source artifacts/blank-genuine-full-body
+          gh run download 39143615834 --repo autonomousagentuniverse/blank-engine-lab --name afro-mask-respected-geometry-and-glb --dir source
+          printf 'a1c38165ae2d8d100e04919e4e57b35623ac9fabc1b0d2cb44bdfb7829fef570  source/afro_mask_respected_uv_pbr.blend\n' | sha256sum -c -
+      - name: Generate actual edited-mesh front/three-quarter/profile full-body Cycles shots
+        env:
+          OMP_NUM_THREADS: '4'
+          BLANK_HUMAN_RENDER_CONFIG: /tmp/actual-body-config.json
+        run: |
+          python3 -m pip install --disable-pip-version-check --no-cache-dir bpy==4.5.3 numpy pillow
+          timeout -k 20s 1200s python3 -u character-pipeline/references/one_shot_actual_full_body.py
+      - name: Prove actual body/garment geometry changed and hash real rendered evidence
+        run: |
+          python3 - <<'PY'
+          import pathlib,hashlib,json
+          root=pathlib.Path('artifacts/blank-genuine-full-body')
+          j=json.loads((root/'actual-full-body-report.json').read_text())
+          b=j['body_morphology']
+          assert j['source_unchanged'] and j['mesh_geometry_changed']
+          assert b['applied'] and b['maximum_displacement_m']>.004
+          assert b['modified_vertex_coordinates']>100
+          assert len(b['objects_modified'])>=2
+          assert j['bone_count']==53 and j['light_powers_changed'] is False
+          assert not j['actual_face_geometry_morphs']
+          assert not j['controlled_face_render_AB']
+          assert set(q['name'] for q in j['shots'])=={'front','three_quarter_27','profile_90'}
+          for name,direction in [('morphology.shoulder_width',1),('morphology.waist_width',-1),('morphology.hip_width',1)]:
+            measurement=b['actual_measured_body_slice_widths'][name]
+            assert direction*measurement['delta_m']>.001,(name,measurement)
+          for q in j['shots']+[j['editable_blend']]:
+            p=root/q['path']
+            assert p.stat().st_size==q['bytes']
+            assert hashlib.sha256(p.read_bytes()).hexdigest()==q['sha256']
+            if 'head_to_foot_framing_pass' in q: assert q['head_to_foot_framing_pass']
+          assert j['photoreal_human_approved'] is False
+          assert j['production_deployed'] is False
+          print('REAL_BLENDER_SOURCE_BODY_SILHOUETTE_CHANGED_NOT_JUST_CAMERA',b)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: verified-full-body-anatomy-morph-v1
+          path: |
+            artifacts/blank-genuine-full-body/*.png
+            artifacts/blank-genuine-full-body/*.blend
+            artifacts/blank-genuine-full-body/*.json
+          retention-days: 7
+          if-no-files-found: warn
