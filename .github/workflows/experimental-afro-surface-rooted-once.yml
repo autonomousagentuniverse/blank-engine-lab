@@ -1,0 +1,62 @@
+name: EXPERIMENTAL Surface-Rooted Afro Real Blender A/B
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/human-reference-atlas-20261018
+    paths:
+      - .github/workflows/experimental-afro-surface-rooted-once.yml
+permissions:
+  contents: read
+  actions: read
+jobs:
+  surface-rooted-afro:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Download exact historical Afro source and old face preview
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p source artifacts/follicle-surface-prototype
+          gh run download 39090435514 --repo autonomousagentuniverse/blank-engine-lab --name user-afro-woman-body-final-real-blender --dir source
+          printf '26fbbab775771a197482d7baffb89decbbf4f821dd3cfaa69fac28ee52e1fc2a  source/afro_woman_darkskin_medium_build_final.blend\n' | sha256sum -c -
+          test -s source/face_closeup.png
+          cp source/face_closeup.png artifacts/follicle-surface-prototype/face_before_immutable.png
+      - name: Construct entirely new scalp-surface follice roots in real Blender
+        env:
+          OMP_NUM_THREADS: '4'
+        run: |
+          python3 -m pip install --disable-pip-version-check --no-cache-dir bpy==4.5.3
+          python3 -m py_compile character-pipeline/references/build_surface_rooted_afro.py
+          timeout -k 15s 970s python3 -u character-pipeline/references/build_surface_rooted_afro.py
+      - name: Fail closed on wrong geometry, absent renders or hash changes
+        run: |
+          python3 - <<'PY'
+          import pathlib,json,hashlib
+          d=pathlib.Path('artifacts/follicle-surface-prototype')
+          j=json.loads((d/'follicle-report.json').read_text())
+          assert j['base_sha256']=='26fbbab775771a197482d7baffb89decbbf4f821dd3cfaa69fac28ee52e1fc2a'
+          assert j['root_count']==4450 and j['distinct_occupied_triangles']>100
+          assert j['root_to_scalp_triangle_mm']['after_max']<0.1
+          assert j['source_unmodified'] and j['follicle_attachment_geometry_pass']
+          assert not j['photorealism_approved'] and not j['webgl_parity'] and not j['release_allowed']
+          for file,key in [('afro_woman_surface_rooted_prototype.blend','derivative_blend_sha256'),
+                           ('face_surface_rooted.png','preview_png_sha256')]:
+              p=d/file
+              assert p.stat().st_size>80000
+              assert hashlib.sha256(p.read_bytes()).hexdigest()==j[key]
+          assert (d/'face_before_immutable.png').stat().st_size>80000
+          print('REAL_BLENDER_FOLLICLE_ARTIFACT_VERIFIED')
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: surface-rooted-afro-real-blender-a-b
+          path: artifacts/follicle-surface-prototype/
+          retention-days: 7
+          if-no-files-found: warn
