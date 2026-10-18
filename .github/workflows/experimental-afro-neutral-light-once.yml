@@ -1,0 +1,73 @@
+name: EXPERIMENTAL Neutral Patch Lamp Calibration with Holdout Views Once
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/human-reference-atlas-20261018
+    paths:
+      - .github/workflows/experimental-afro-neutral-light-once.yml
+permissions:
+  contents: read
+  actions: read
+jobs:
+  patch-calibration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: SHA-verify experimental character source and unchanged GLB
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p source artifacts/afro-neutral-light-calibration
+          gh run download 39143615834 --repo autonomousagentuniverse/blank-engine-lab --name afro-mask-respected-geometry-and-glb --dir source
+          printf 'a1c38165ae2d8d100e04919e4e57b35623ac9fabc1b0d2cb44bdfb7829fef570  source/afro_mask_respected_uv_pbr.blend\n' | sha256sum -c -
+          printf '1040b6330559865801b67ac57c293ddc07b94328cc735476ff4da47464c3399d  source/afro_mask_respected_rigged.glb\n' | sha256sum -c -
+          cp source/afro_mask_respected_rigged.glb artifacts/afro-neutral-light-calibration/input.glb
+      - name: Render 18 percent neutral patch and two unused-for-calibration human views in real Blender
+        env:
+          OMP_NUM_THREADS: '4'
+        run: |
+          python3 -m pip install --disable-pip-version-check --no-cache-dir bpy==4.5.3 numpy pillow
+          python3 -m py_compile character-pipeline/references/build_neutral_patch_calibration.py character-pipeline/references/compare_neutral_light_heldout.py
+          timeout -k 20s 900s python3 -u character-pipeline/references/build_neutral_patch_calibration.py
+      - name: Source-albedo calibrated Three.js RectArea and held-out pose renders in real Chrome
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm install --no-save --ignore-scripts --no-audit --no-fund three@0.186.1 playwright@1.56.1
+          npx playwright install chrome
+          node --check scripts/audit-afro-neutral-light-chrome.mjs
+          timeout -k 20s 540s node scripts/audit-afro-neutral-light-chrome.mjs
+      - name: Quantify neutral scalar transfer without fitting character image pixels
+        run: |
+          python3 character-pipeline/references/compare_neutral_light_heldout.py
+          python3 - <<'PY'
+          import pathlib,json,hashlib
+          p=pathlib.Path('artifacts/afro-neutral-light-calibration')
+          b=json.loads((p/'blender-neutral-patch.json').read_text())
+          c=json.loads((p/'chrome-neutral-calibration.json').read_text())
+          m=json.loads((p/'neutral-light-transfer-report.json').read_text())
+          assert b['source_sha256']=='a1c38165ae2d8d100e04919e4e57b35623ac9fabc1b0d2cb44bdfb7829fef570'
+          assert b['source_unmodified'] and c['no_subject_pixel_fitting']
+          assert not m['physically_calibrated_lamps'] and not m['photorealism_approved']
+          assert set(m['heldout_character_results'])=={'front','three_quarter_40'}
+          assert all(x['silhouette_iou']>.90 for x in m['heldout_character_results'].values())
+          assert m['global_scalar_neutral_only']==c['neutral_only_calibration']['scalar']
+          print('NEUTRAL_ONLY_CALIBRATION_REPORTED_WITH_TWO_HELDOUT_VIEWS',{
+           k:x['color']['mean_error'] for k,x in m['heldout_character_results'].items()})
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: afro-neutral-calibration-heldout-views-20261018
+          path: |
+            artifacts/afro-neutral-light-calibration/*.png
+            artifacts/afro-neutral-light-calibration/*.json
+          retention-days: 7
+          if-no-files-found: warn
