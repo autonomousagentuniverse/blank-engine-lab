@@ -25,7 +25,7 @@ jobs:
           printf '327befea50b2961d1ff3341fdf2e7b6bb173f7c74c09212c68061677a974b3f2  source/afro_woman_coherent_field_candidate.blend\n' | sha256sum -c -
       - name: Run dependency-free barycentric and skinweight regression
         run: |
-          python3 -m unittest -v character-pipeline/references/test_skinbound_math.py
+          python3 character-pipeline/references/test_skinbound_math.py
           python3 -m py_compile character-pipeline/references/build_skinbound_afro.py
       - name: Run actual Blender 4.5.3 deformed scalp-vs-hair measurement
         env:
