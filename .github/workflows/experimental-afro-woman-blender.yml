@@ -1,5 +1,8 @@
 name: Experimental Blender full-body dark-skin afro woman
 on:
+  push:
+    branches:
+      - experiment/dark-skin-afro-woman-blender-20261018
   workflow_dispatch:
 permissions:
   contents: read
@@ -70,7 +73,7 @@ jobs:
         run: |
           python3 - <<'PY'
           import pathlib,json,hashlib
-          p=pathlib.Path('artifacts/new-human-from-photos')
+          p=pathlib.Path('artifacts/dark-afro-woman')
           d=json.loads((p/'report.json').read_text())
           assert d['new_human_source'] and not d['mira_fallback_used']
           assert len(d['cycles_images'])==4
@@ -92,6 +95,6 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: afro-woman-28-dark-skin-blender-cycles
-          path: artifacts/new-human-from-photos/
+          path: artifacts/dark-afro-woman/
           retention-days: 7
           if-no-files-found: warn
