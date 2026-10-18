@@ -1,0 +1,82 @@
+name: Experimental real Blender final afro alignment and dark-skin character rendering
+on:
+  push:
+    branches:
+      - experiment/afro-woman-body-rebuild-blender-20261018
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  final-render-alignment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Reuse exact already verified rebuilt Blender file, no model regeneration
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p source artifacts/afro_woman_final_blender
+          gh run download 39089947769 \
+            --repo autonomousagentuniverse/blank-engine-lab \
+            --name afro-woman-rebuilt-body-actual-blender \
+            --dir source
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib,json
+          source=Path('source/afro_woman_rebuilt_medium_body.blend')
+          assert source.exists() and source.stat().st_size>20000000
+          j=json.loads(Path('source/report.json').read_text())
+          h=hashlib.sha256(source.read_bytes()).hexdigest()
+          assert h=='0c0a6f4de609bfe982d5ea420ce03083e9ba2b2e82bcb97d759b4bb09f84a55f'
+          assert h==j['output_blend_sha256']
+          assert j['measured_anatomical_width_change']['hip']['width_change_pct']>=28
+          assert j['total_coiled_strands']==4450
+          print('PINNED_COMPLETE_BODY_MODEL_VERIFIED',h)
+          PY
+      - name: Install actual Blender 4.5.3 engine for source blend editing
+        run: |
+          python3 -m pip install --disable-pip-version-check --no-cache-dir bpy==4.5.3
+          python3 -m py_compile experiments/real-human-reference/finalize_afro_woman_render.py
+      - name: Correct dark-skin slots, Afro alignment and portrait camera in authentic Blender
+        env:
+          OMP_NUM_THREADS: '4'
+        run: |
+          timeout -k 15s 850s python3 -u experiments/real-human-reference/finalize_afro_woman_render.py
+      - name: Validate exactly three genuine PNG renders and editable final scene
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib,json
+          p=Path('artifacts/afro_woman_final_blender')
+          j=json.loads((p/'report.json').read_text())
+          assert j['photo_generator_used'] is False
+          assert j['actual_body_morph_preserved']
+          assert j['afro_curve_count']==4450
+          assert len(j['final_render_views'])==3
+          b=p/'afro_woman_darkskin_medium_build_final.blend'
+          assert b.stat().st_size>20000000
+          assert hashlib.sha256(b.read_bytes()).hexdigest()==j['final_blend_sha256']
+          names=[]
+          for view in j['final_render_views']:
+            f=p/view['file'];names.append(view['name'])
+            assert f.stat().st_size>100000
+            assert hashlib.sha256(f.read_bytes()).hexdigest()==view['sha256']
+            a,c,d,e=view['frustum']
+            assert min(a,d)>=.06-1e-4 and max(c,e)<=.94+1e-4
+          assert sorted(names)==sorted(['full_body_front','full_body_three_quarter','face_closeup'])
+          assert next(x for x in j['final_render_views'] if x['name']=='face_closeup')['ortho_scale']<1.0
+          print('BLENDER_SCENE_AND_RENDER_PROVENANCE_CHECKS_PASSED')
+          PY
+      - name: Upload ONLY new actual Blender .blend, Cycles PNGs and report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: user-afro-woman-body-final-real-blender
+          path: artifacts/afro_woman_final_blender/
+          retention-days: 7
+          if-no-files-found: warn
