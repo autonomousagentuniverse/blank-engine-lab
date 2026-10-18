@@ -1,8 +1,5 @@
 name: Experimental Blender full-body dark-skin afro woman
 on:
-  push:
-    branches:
-      - experiment/dark-skin-afro-woman-blender-20261018
   workflow_dispatch:
 permissions:
   contents: read
