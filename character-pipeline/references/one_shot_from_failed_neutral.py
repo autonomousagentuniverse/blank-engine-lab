@@ -93,8 +93,8 @@ assert body.type=="MESH" and not body.hide_render
 assert bpy.data.objects["AFRO_WOMAN_28_Medium_Build"].hide_render
 assert len(body.data.vertices)==10756
 assert len(next(x for x in bpy.data.objects if x.type=="ARMATURE").data.bones)==53
-assert [round(o.data.energy) for o in bpy.data.objects if o.type=="LIGHT" and not o.hide_render]==[
- int(x["watts"]) for x in authored_lights]
+assert {o.name:round(float(o.data.energy),5) for o in bpy.data.objects if o.type=="LIGHT" and not o.hide_render}=={
+ x["name"]:round(x["watts"],5) for x in authored_lights}, "ORIGINAL_LIGHT_VALUES_MUST_MATCH_BY_NAME"
 configure_scene(scene,w=960,h=1280,samples=48)
 cam=bpy.data.objects["CAM_face_closeup"]
 # Portrait shot: fixed authored scene, camera orbit only, no facial/body edits.
