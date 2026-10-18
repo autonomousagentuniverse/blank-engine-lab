@@ -45,3 +45,18 @@ The example compiler uses a new output file and refuses overwrite, and only sour
 Isolated GitHub Actions [run 39165616875](https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/39165616875) **SUCCESS**: twelve Node negative/contract regression tests passed, all four JSON files parsed, then a real Blender 4.5.3 Cycles run used an independently compiled config. It generated actual front/27-degree/profile full-body PNGs with margin **8.5%**, samples **32**, exposure **−3.3500195 EV**, preserved 53-joint rig, and left original geometry/lighting unchanged. Artifact **12150786184** includes exact config, output PNGs, editable Blender `.blend` and file-hash evidence JSON. Automated full-body camera framing is mechanically verified; the woman's actual anatomy, eye, skin and hair quality remain visually below photorealistic acceptance.
 
 **No production deployment; manual test workflow only after run.** The earlier image-generator lookalike images do not count toward Blender output metrics.
+
+## Phase 19 body-first geometry research (2026-10-18)
+
+This section supersedes the *current-control-count* in the V1 history above, not its historical verified 2026-10-18 run. On isolated branch `research/full-body-anatomy-controls-20261018`, there are 10 code-declared executable bindings (four camera/render, three independently researched face morphs, three newly added full-body geometry controls), with 26 unavailable controls.
+
+**Actual full-body controls under test:** `morphology.shoulder_width` (default 0.42), `morphology.waist_width` (0.36), `morphology.hip_width` (0.52). Real adapter `character-pipeline/references/full_body_morphology.py` warps geometry in bounded vertically localized bands in world space, affecting the original body shape-key streams and armature-bound garment meshes; it records measured torso band widths before/after and fails if changes are absent or in the wrong direction. Face and hair are inherited; no newly authored human identity exists. This is a prototype deformation field and has **not** passed human anatomy, garment intersection, skeletal animation, or real-render acceptance.
+
+Reproduction/verification protocol:
+```bash
+python3 -m unittest discover -s character-pipeline/references -p test_full_body_morphology.py -v
+node --test character-pipeline/one-shot/human-visual-variables.test.mjs
+node character-pipeline/one-shot/human-variables-cli.mjs compile character-pipeline/one-shot/full-body-neutral.request.json /tmp/body-neutral.json
+node character-pipeline/one-shot/human-variables-cli.mjs compile character-pipeline/one-shot/full-body-variation.request.json /tmp/body-varied.json
+```
+Actual paired Blender/PNG verification is specified in the **manual-only** workflow `.github/workflows/experimental-real-full-body-anatomy-once.yml`, to render neutral and changed from the same SHA-pinned scene and compare front, 27-degree and profile full-body views, widths and immutable provenance. **It has not been run as part of the new body work**. A prior Phase 17 Blender run never changed body geometry and must not be counted as Phase 19 evidence. No production deployment or photo-realism approval.
