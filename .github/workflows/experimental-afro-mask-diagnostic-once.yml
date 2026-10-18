@@ -1,11 +1,6 @@
 name: EXPERIMENTAL Source MASK and Morph Forensic
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - research/human-reference-atlas-20261018
-    paths:
-      - .github/workflows/experimental-afro-mask-diagnostic-once.yml
 permissions:
   contents: read
   actions: read
