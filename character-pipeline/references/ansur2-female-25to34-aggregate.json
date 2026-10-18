@@ -1,0 +1,118 @@
+{
+  "schema": "blank.engine.real-anthropometry.v2",
+  "dataset": "ANSUR II FEMALE Public",
+  "raw_source": "https://github.com/Amin1617/ANSUR_II/blob/main/ANSUR%20II%20FEMALE%20Public.csv",
+  "origin": "2012 U.S. Army public anthropometric working database",
+  "cohort": {
+    "female_all_n": 1986,
+    "female_age25to34_n": 732
+  },
+  "variables_mm": {
+    "stature": {
+      "n": 732,
+      "mean_mm": 1631.88,
+      "sd_mm": 63.89,
+      "p05_mm": null,
+      "p50_mm": null,
+      "p95_mm": null
+    },
+    "hipbreadth": {
+      "n": 732,
+      "mean_mm": 355.26,
+      "sd_mm": 26.66,
+      "p05_mm": null,
+      "p50_mm": null,
+      "p95_mm": null
+    },
+    "waistbreadth": {
+      "n": 732,
+      "mean_mm": 301.84,
+      "sd_mm": 32.88,
+      "p05_mm": null,
+      "p50_mm": null,
+      "p95_mm": null
+    },
+    "waistcircumference": {
+      "n": 732,
+      "mean_mm": 866.26,
+      "sd_mm": 99.39,
+      "p05_mm": null,
+      "p50_mm": null,
+      "p95_mm": null
+    },
+    "buttockcircumference": {
+      "n": 732,
+      "mean_mm": 1024.79,
+      "sd_mm": 75.8,
+      "p05_mm": null,
+      "p50_mm": null,
+      "p95_mm": null
+    },
+    "chestcircumference": {
+      "n": 732,
+      "mean_mm": 948.73,
+      "sd_mm": 78.99,
+      "p05_mm": null,
+      "p50_mm": null,
+      "p95_mm": null
+    },
+    "biacromialbreadth": {
+      "n": 732,
+      "mean_mm": 366.46,
+      "sd_mm": 17.86,
+      "p05_mm": null,
+      "p50_mm": null,
+      "p95_mm": null
+    },
+    "crotchheight": {
+      "n": 732,
+      "mean_mm": 782.39,
+      "sd_mm": 44.89,
+      "p05_mm": null,
+      "p50_mm": null,
+      "p95_mm": null
+    },
+    "headbreadth": {
+      "n": 732,
+      "mean_mm": 147.74,
+      "sd_mm": 5.3,
+      "p05_mm": null,
+      "p50_mm": null,
+      "p95_mm": null
+    },
+    "headlength": {
+      "n": 732,
+      "mean_mm": 190.11,
+      "sd_mm": 7.38,
+      "p05_mm": null,
+      "p50_mm": null,
+      "p95_mm": null
+    },
+    "bizygomaticbreadth": {
+      "n": 732,
+      "mean_mm": 133.53,
+      "sd_mm": 5.55,
+      "p05_mm": null,
+      "p50_mm": null,
+      "p95_mm": null
+    }
+  },
+  "pearson_correlations": {
+    "stature__crotchheight": 0.856,
+    "stature__biacromialbreadth": 0.559,
+    "stature__hipbreadth": 0.383,
+    "hipbreadth__waistbreadth": 0.775,
+    "hipbreadth__buttockcircumference": 0.939,
+    "waistbreadth__waistcircumference": 0.955,
+    "headbreadth__bizygomaticbreadth": 0.623,
+    "headbreadth__headlength": 0.211,
+    "waistcircumference__buttockcircumference": 0.801
+  },
+  "flags": [
+    "Not all women; military convenience population, not a default for Black female shape",
+    "Variable interpupillarybreadth excluded: raw reported values ~616 are incompatible with anatomical mm; units/coding must be verified",
+    "No self-reported Heightin/Weightlbs fields used",
+    "Cohort aggregates only; do not combine univariate percentiles into a synthetic identity",
+    "Absolute measurements require identical landmarks and pose in Blender; existing source Z-band waist was arm contaminated"
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "schema": "blank.engine.african-face-published-aggregates.v1",
+  "sources": [
+    {
+      "study": "Soumboundou 2023 Senegal 3D photogrammetry",
+      "source": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10285636/",
+      "total_n": 104,
+      "female_n": 46,
+      "sex_specific": true,
+      "age_range": "16-45",
+      "measurements_mm": {
+        "al-al": {
+          "mean": 37.2,
+          "sd": 3.32
+        },
+        "n-sn": {
+          "mean": 48.6,
+          "sd": 3.22
+        },
+        "en-en": {
+          "mean": 32.7,
+          "sd": 2.83
+        },
+        "ex-ex": {
+          "mean": 87.9,
+          "sd": 3.24
+        },
+        "n-prn": {
+          "mean": 39.1,
+          "sd": 3.53
+        },
+        "ch-ch": {
+          "mean": 46.91,
+          "sd": 4.03
+        },
+        "enR-exL": {
+          "mean": 29.2,
+          "sd": 2.12
+        },
+        "enL-exR": {
+          "mean": 29,
+          "sd": 2.26
+        }
+      },
+      "limits": "Female subset published aggregates only; no subject meshes, 3D normal or covariance available"
+    },
+    {
+      "study": "Adekunle 2022 Nigeria Vectra H1 3D photogrammetry",
+      "source": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8783922/",
+      "total_n": 452,
+      "female_n": 198,
+      "sex_specific": false,
+      "measurements_mm": {
+        "en-en": {
+          "mean": 35.19,
+          "sd": 3.2
+        },
+        "Pr-Pl": {
+          "mean": 67.04,
+          "sd": 3.67
+        },
+        "zy-zy": {
+          "mean": 139.43,
+          "sd": 7.11
+        },
+        "go-go": {
+          "mean": 124.29,
+          "sd": 9.72
+        }
+      },
+      "limits": "These article abstract values are both-sex pooled; never treat as women's distribution; no individual reusable mesh"
+    }
+  ],
+  "not_reusable_3d_meshes": true
+}
