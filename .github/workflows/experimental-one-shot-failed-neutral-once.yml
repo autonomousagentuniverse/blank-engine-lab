@@ -1,0 +1,57 @@
+name: EXPERIMENTAL One-shot Character from Failed Neutral Render
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/human-reference-atlas-20261018
+    paths:
+      - .github/workflows/experimental-one-shot-failed-neutral-once.yml
+permissions:
+  contents: read
+  actions: read
+jobs:
+  real-blender-one-shot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 26
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Recover unchanged exact previously approved masked-source Blender character
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p source artifacts/blank-one-shot-last-failure
+          gh run download 39143615834 --repo autonomousagentuniverse/blank-engine-lab --name afro-mask-respected-geometry-and-glb --dir source
+          printf 'a1c38165ae2d8d100e04919e4e57b35623ac9fabc1b0d2cb44bdfb7829fef570  source/afro_mask_respected_uv_pbr.blend\n' | sha256sum -c -
+      - name: Actual one-invocation Blender HDR-neutral and 3quarter character Cycles render
+        env:
+          OMP_NUM_THREADS: '4'
+        run: |
+          python3 -m pip install --disable-pip-version-check --no-cache-dir bpy==4.5.3 numpy pillow
+          python3 -m py_compile character-pipeline/references/one_shot_from_failed_neutral.py
+          timeout -k 15s 1180s python3 -u character-pipeline/references/one_shot_from_failed_neutral.py
+      - name: Verify no source changes, real HDR neutral, real PNG and saved Blender variant
+        run: |
+          python3 - <<'PY'
+          import pathlib,json,hashlib
+          d=pathlib.Path('artifacts/blank-one-shot-last-failure')
+          r=json.loads((d/'one-shot-report.json').read_text())
+          assert r['source_blend_sha256']=='a1c38165ae2d8d100e04919e4e57b35623ac9fabc1b0d2cb44bdfb7829fef570'
+          assert r['source_unchanged'] and not r['geometry_changed'] and not r['authored_lamp_energy_changed']
+          assert r['hdr_reference']['median_scene_linear_luminance']>0
+          assert r['image']['width']==960 and r['image']['height']==1280
+          assert not r['natural_human_photorealism_approved'] and not r['release_allowed']
+          for f in [r['hdr_reference'],r['image'],r['blend']]:
+            p=d/f['file']
+            assert p.stat().st_size==f['bytes'] and hashlib.sha256(p.read_bytes()).hexdigest()==f['sha256']
+          print('ONE_SHOT_RENDER_SUCCESS_SOURCE_UNMODIFIED')
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: blank-one-shot-from-failed-neutral-blender
+          path: artifacts/blank-one-shot-last-failure/
+          retention-days: 7
+          if-no-files-found: warn
