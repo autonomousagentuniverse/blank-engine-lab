@@ -1,8 +1,5 @@
 name: Experimental actual Blender medium-build afro woman rebuild (no MPFB asset download)
 on:
-  push:
-    branches:
-      - experiment/afro-woman-body-rebuild-blender-20261018
   workflow_dispatch:
 permissions:
   contents: read
