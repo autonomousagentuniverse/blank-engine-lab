@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blank Engine · Anatomical Character Builder</title>
+<link rel="stylesheet" href="./style.css"></head>
+<body>
+<header class="top"><div><div class="eyebrow">BLANK ENGINE / CHARACTER LAB / EXPERIMENTAL</div>
+<h1>Human Anatomy Builder <span>01</span></h1><p>A fresh Blender mesh from your measurements. No reuse of the distorted hip geometry.</p></div>
+<div class="topside"><div class="state"><i></i> LOCAL ONLY · NOT DEPLOYED</div><div id="count" class="subtext">91 adjustable variables</div></div></header>
+<main class="layout">
+<aside class="controls"><div class="toolbar"><div><strong>Manual measurements</strong><small>Every change becomes part of the next Blender build.</small></div>
+<input id="search" aria-label="Search controls" placeholder="Search anatomy, hair, toe…" autocomplete="off"></div>
+<div id="sections" class="sections"></div>
+<div class="actions"><div id="dirty" class="muted">Default specification</div>
+<button id="submit" class="primary">Rebuild full character in Blender <span aria-hidden="true">↗</span></button>
+<div class="minor"><button id="save">Export JSON</button><label class="import">Import JSON<input id="import" type="file" accept=".json,application/json" hidden></label><button id="reset">Reset</button></div></div>
+</aside>
+<section class="workspace"><div class="workspace-head"><div><span class="eyebrow">ANATOMY / TRUE BLENDER OUTPUT</span><h2>Full-body comparison</h2></div><div id="buildStatus" class="indicator">Not generated</div></div>
+<div class="hero">
+<div class="empty" id="empty">
+ <div class="figure" aria-hidden="true"><div class="face"></div><div class="neck"></div><div class="body"></div><div class="legs"></div></div>
+ <h3>Shape the next character</h3><p>Adjust proportions from head to toes, then press <strong>Rebuild full character in Blender</strong>. Front, three-quarter, and profile evidence will appear here.</p>
+</div>
+<div id="images" class="images" hidden>
+<figure><img id="front" alt="Actual Blender front view, head to toes"><figcaption>01 · FRONT</figcaption></figure>
+<figure><img id="three_quarter" alt="Actual Blender three-quarter view, head to toes"><figcaption>02 · THREE-QUARTER</figcaption></figure>
+<figure><img id="profile" alt="Actual Blender side profile, head to toes"><figcaption>03 · PROFILE</figcaption></figure></div>
+</div>
+<div class="bottom-grid"><article class="info"><div class="eyebrow">BUILD EVIDENCE</div><div id="report">No Blender rebuild has been submitted in this local session.</div><div id="artifactLinks" class="links"></div></article>
+<article class="info"><div class="eyebrow">PIPELINE STATUS</div><div class="pipeline"><span>01 · Adjust controls</span><span>02 · Submit JSON</span><span>03 · Reconstruct topology</span><span>04 · Blender Cycles render</span><span>05 · Review proportions</span></div><pre id="log"></pre></article></div>
+<div class="footnote">Preview is an anatomical clay prototype, not a photorealism or rigging certification. Skin color is preserved in the Blender material; disable <b>Clay mode</b> to see it in renders. Vercel deployment is intentionally excluded.</div>
+</section>
+</main><script type="module" src="./app.mjs"></script>
+</body></html>

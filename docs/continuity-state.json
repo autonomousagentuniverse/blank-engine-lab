@@ -1,6 +1,6 @@
 {
   "schema": "blank.engine.continuity.v1",
-  "snapshot_utc": "2026-10-16",
+  "snapshot_utc": "2026-10-18T23:10:00Z",
   "repository": "autonomousagentuniverse/blank-engine-lab",
   "base_commit": "92c4588a99c4b22661a05197b8585da8334b806f",
   "current_deployed_major": "Alpha 0.5",
@@ -615,6 +615,24 @@
     "world_background_not_matched_in_ab": true,
     "technical_status": "PASS",
     "visual_status": "FAIL",
+    "photorealism_approved": false,
+    "production_deployed": false,
+    "workflow_manual_only": true
+  },
+  "manual_anatomy_builder_20261018": {
+    "date": "2026-10-18",
+    "branch": "experiment/manual-anatomy-builder-page-20261018",
+    "controls": 91,
+    "ui": "character-pipeline/manual-builder/index.html",
+    "server": "character-pipeline/manual-builder/server.mjs",
+    "geometry": "character-pipeline/manual-builder/build_human.py",
+    "pipeline": "new procedural landmark loft, digit tubes, voxel-union, Blender Cycles three-view",
+    "previous_source_read": false,
+    "previous_head_retained": false,
+    "source_binding_static_audit": "91/91 matched",
+    "node_tests": "NOT RUN",
+    "real_blender_baseline": "NOT RUN",
+    "visual_status": "AWAITING REVIEW",
     "photorealism_approved": false,
     "production_deployed": false,
     "workflow_manual_only": true

@@ -1,0 +1,56 @@
+name: Manual Blender anatomical character builder — head-to-toe
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate-and-render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9a # v4.2.2
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Validate all parameter bindings and local submit handler
+        run: node --test test/manual-human-builder.test.mjs
+      - name: Install real Blender
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y blender
+          blender --background --factory-startup --python-expr "import bpy; print('REAL_BLENDER',bpy.app.version_string)"
+      - name: Prepare unmodified 91-control baseline
+        run: |
+          mkdir -p artifacts/manual-human-ci
+          node --input-type=module -e "import {defaultRequest} from './character-pipeline/manual-builder/controls.mjs';import{writeFileSync}from'node:fs';writeFileSync('artifacts/manual-human-ci/settings.json',JSON.stringify(defaultRequest(),null,2))"
+      - name: Execute fresh Blender geometry build and render
+        run: |
+          blender --background --factory-startup --python character-pipeline/manual-builder/build_human.py -- artifacts/manual-human-ci/settings.json artifacts/manual-human-ci/result
+      - name: Verify required outputs and the exact control count
+        run: |
+          python3 - <<'PY'
+          import json,pathlib
+          d=pathlib.Path('artifacts/manual-human-ci/result')
+          r=json.loads((d/'report.json').read_text())
+          assert r['schema']=='blank.anatomy-rebuild-report.v1'
+          assert r['source_character_reused'] is False
+          assert r['controls_applied']==91
+          assert r['geometry']['digits_per_foot']==5
+          assert r['geometry']['digits_per_hand']==5
+          assert r['geometry']['skin_union_vertices']>1000
+          for f in ['front.png','three_quarter.png','profile.png','anatomical_character.blend']:
+              assert (d/f).stat().st_size>8000,f
+          print('REAL_BLENDER_REBUILD_ACCEPTED_TECHNICALLY',r['geometry'])
+          PY
+      - name: Preserve true Blender visual review artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: manual-human-anatomy-real-blender
+          path: |
+            artifacts/manual-human-ci/settings.json
+            artifacts/manual-human-ci/result/*.png
+            artifacts/manual-human-ci/result/*.blend
+            artifacts/manual-human-ci/result/report.json
+          if-no-files-found: warn
+          retention-days: 7
