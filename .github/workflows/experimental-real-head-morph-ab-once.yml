@@ -1,0 +1,85 @@
+name: EXPERIMENTAL Real Head Morphology A/B Blender Once
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/human-reference-atlas-20261018
+    paths:
+      - .github/workflows/experimental-real-head-morph-ab-once.yml
+permissions:
+  contents: read
+  actions: read
+jobs:
+  run-real-face-geometry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Assert bounded contracts and teacher anti-fabrication tests
+        run: |
+          node --test character-pipeline/one-shot/human-visual-variables.test.mjs
+          node character-pipeline/one-shot/human-variables-cli.mjs validate-contracts
+          node character-pipeline/one-shot/human-variables-cli.mjs compile character-pipeline/one-shot/human-visual-example.request.json /tmp/actual-geometry-config.json
+          python3 - <<'PY'
+          import json
+          r=json.load(open('/tmp/actual-geometry-config.json'))
+          assert len(r['controls'])==7 and not r['actual_geometry_changed']
+          assert r['controls']['morphology.jaw_width']==.20
+          assert r['controls']['morphology.cheek_fullness']==.75
+          assert r['controls']['morphology.brow_ridge_strength']==.10
+          PY
+      - name: Recover source-identical audited Blender human with all source shape keys
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p source artifacts/blank-genuine-full-body
+          gh run download 39143615834 --repo autonomousagentuniverse/blank-engine-lab --name afro-mask-respected-geometry-and-glb --dir source
+          printf 'a1c38165ae2d8d100e04919e4e57b35623ac9fabc1b0d2cb44bdfb7829fef570  source/afro_mask_respected_uv_pbr.blend\n' | sha256sum -c -
+      - name: Render controlled source-vs-new-morph face A/B and full-body in Blender Cycles
+        env:
+          BLANK_HUMAN_RENDER_CONFIG: /tmp/actual-geometry-config.json
+          OMP_NUM_THREADS: '4'
+        run: |
+          python3 -m pip install --disable-pip-version-check --no-cache-dir bpy==4.5.3 numpy pillow
+          python3 -m py_compile character-pipeline/references/human_face_morph_bindings.py character-pipeline/references/one_shot_actual_full_body.py
+          timeout -k 20s 1080s python3 -u character-pipeline/references/one_shot_actual_full_body.py
+      - name: Verify *actual changed geometry* and identical-camera baseline-vs-new render
+        run: |
+          python3 - <<'PY'
+          import json,hashlib,pathlib
+          p=pathlib.Path('artifacts/blank-genuine-full-body')
+          r=json.loads((p/'actual-full-body-report.json').read_text())
+          assert r['source_unchanged'] and r['mesh_geometry_changed'] and r['morphs_changed']
+          assert r['bone_count']==53 and r['control_provenance']['compiled_config_applied']
+          assert len(r['actual_face_geometry_morphs'])==3 and len(r['control_provenance']['bound_face_shape_key_names'])==3
+          assert len(r['shots'])==3 and set(q['name'] for q in r['shots'])=={'front','three_quarter_27','profile_90'}
+          assert not r['photoreal_human_approved'] and not r['production_deployed']
+          for name,entry in r['actual_face_geometry_morphs'].items():
+            assert entry['changed_source_vertices']>30 and .5<entry['max_offset_mm']<9.2
+            print('ACTUAL_SOURCE_GEOMETRY_MORPH_CONFIRMED',name,entry)
+          a=r['controlled_face_render_AB']
+          assert a['pixels_changed_over_2']>100
+          assert a['mean_absolute_rgb_difference']>0 and a['camera_unchanged'] and a['lights_unchanged']
+          for key in ('baseline_file','modified_file'):
+            f=p/a[key];assert f.is_file() and f.stat().st_size>20000
+          for q in r['shots']+[r['editable_blend']]:
+            file=p/q['path']
+            assert hashlib.sha256(file.read_bytes()).hexdigest()==q['sha256']
+          print('REAL_ACTUAL_BLENDER_GEOMETRY_CHANGE_EVIDENCE_PASS',a)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: real-face-morphology-blender-ab-v1
+          path: |
+            artifacts/blank-genuine-full-body/*.png
+            artifacts/blank-genuine-full-body/*.blend
+            artifacts/blank-genuine-full-body/*.json
+          retention-days: 7
+          if-no-files-found: warn
