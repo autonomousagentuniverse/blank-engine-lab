@@ -1,0 +1,51 @@
+name: EXPERIMENTAL Source MASK and Morph Forensic
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/human-reference-atlas-20261018
+    paths:
+      - .github/workflows/experimental-afro-mask-diagnostic-once.yml
+permissions:
+  contents: read
+  actions: read
+jobs:
+  real-mask:
+    runs-on: ubuntu-latest
+    timeout-minutes: 13
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Recover and hash-check baked scene and current GLB
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p source artifacts/afro-mask-anatomy-audit
+          gh run download 39142378127 --repo autonomousagentuniverse/blank-engine-lab --name afro-uv-baked-pbr-blender-20261018 --dir source
+          printf '6fb5fb2b6f353933bbfd90f4b265c8f2023f7191c81cca6f6198f58a596197e3  source/afro_skinbound_uv_pbr.blend\n' | sha256sum -c -
+          printf '0ee083dafd22793112cdbe6c7f30db558e23f198e3afa4d90422f23985c19e93  source/afro_skinbound_uv_pbr.glb\n' | sha256sum -c -
+      - name: Run exact Blender modifier/morph source forensic
+        run: |
+          python3 -m pip install --disable-pip-version-check --no-cache-dir bpy==4.5.3
+          python3 -m py_compile character-pipeline/references/audit_mask_morph_source.py
+          timeout -k 10s 450s python3 -u character-pipeline/references/audit_mask_morph_source.py
+      - name: Verify complete actual evaluated geometry report
+        run: |
+          python3 - <<'PY'
+          import json,pathlib
+          r=json.loads(pathlib.Path('artifacts/afro-mask-anatomy-audit/mask-morph-observation.json').read_text())
+          assert r['source_unmodified'] and not r['bake_or_export_changed']
+          assert len(r['geometry_cases'])==6
+          assert len(r['body_original_mesh']['shape_keys'])>=1
+          assert sum(m['type']=='MASK' for m in r['modifiers'])==2
+          print('BLENDER_MASK_GEOMETRY_OBSERVATIONS',[(x['label'],x['vertices'],x['polygons']) for x in r['geometry_cases']])
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: afro-mask-morph-forensic-20261018
+          path: artifacts/afro-mask-anatomy-audit/
+          retention-days: 7
+          if-no-files-found: warn
