@@ -55,3 +55,5 @@ jobs:
           path: artifacts/afro-browser/
           retention-days: 7
           if-no-files-found: warn
+
+# One-time rerun: only favicon 204 fix; structural GLB asset and acceptance criteria unchanged.
