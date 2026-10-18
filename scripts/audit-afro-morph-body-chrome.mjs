@@ -127,7 +127,7 @@ try{
  // non-clothing morph, chosen by actual measured nonzero displacement.
  const candidates=morphs.filter(x=>x.moved_in_webgl);
  if(candidates.length){
-  const chosen=candidates.reduce((x,y)=>x.world_displacement_m>y.world_displacement_m?x:y);
+  const chosen=candidates.find(x=>x.index===10)||candidates.reduce((x,y)=>x.world_displacement_m>y.world_displacement_m?x:y);
   await page.evaluate(index=>{
    const s=window.PROBE;
    for(const o of s.body)o.morphTargetInfluences[index]=o.morphTargetInfluences[index]<.5?1:0;
@@ -144,10 +144,11 @@ try{
  // specific body joint bone, rotate and read the actual skinned vertex.
  const bodyTests=await page.evaluate(()=>{
   const s=window.PROBE,positions=[];
-  const tests=[['head',.24],['spine_02',.20],['spine_01',.15]].filter(([name])=>!!s.byName(name));
-  for(const [name,angle] of tests){
+  const tests=[['head',.24,'body'],['spine_03',.20,'body'],['spine_01',.15,'garment'],['spine_02',.17,'garment']].filter(([name])=>!!s.byName(name));
+  for(const [name,angle,scope] of tests){
    let best=null;
-   for(const mesh of s.body){
+   const targetMeshes=scope==='garment'?s.skin.filter(o=>o.name.includes('female_casualsuit01')):s.body;
+   for(const mesh of targetMeshes){
     const bone=mesh.skeleton.bones.findIndex(b=>b.name===name);
     if(bone<0)continue;
     const indices=mesh.geometry.attributes.skinIndex,weights=mesh.geometry.attributes.skinWeight;
@@ -157,7 +158,7 @@ try{
      if(w>(best?.weight||0))best={mesh,i,weight:w};
     }
    }
-   if(!best){positions.push({name,error:'NO_BONE_INFLUENCE',pass:false});continue;}
+   if(!best){positions.push({name,scope,error:'NO_BONE_INFLUENCE',pass:false});continue;}
    const bone=s.byName(name);
    const get=()=>{
     const v=new s.THREE.Vector3();
@@ -169,13 +170,13 @@ try{
    bone.rotation.y=prior+angle;bone.updateMatrixWorld(true);s.model.updateMatrixWorld(true);
    const after=get(),gap=before.distanceTo(after);
    bone.rotation.y=prior;bone.updateMatrixWorld(true);s.model.updateMatrixWorld(true);
-   positions.push({name,rad:angle,source_skin_weight:best.weight,displacement_m:gap,pass:gap>.0005});
+   positions.push({name,scope,rad:angle,source_skin_weight:best.weight,displacement_m:gap,pass:gap>.0005});
   }
   s.renderer.render(s.scene,s.camera);
   return positions;
  });
  console.log('REAL_CHROME_BODY_SKINNING_TEST',JSON.stringify(bodyTests));
- assert.ok(bodyTests.length>=2);
+ assert.equal(bodyTests.length,4);
  assert.ok(bodyTests.every(x=>x.pass));
  assert.equal(errors.length,0);
  // Final pose: rotate head only, retain calibrated neutral morph weights
