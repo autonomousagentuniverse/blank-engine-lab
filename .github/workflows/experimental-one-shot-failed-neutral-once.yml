@@ -55,3 +55,5 @@ jobs:
           path: artifacts/blank-one-shot-last-failure/
           retention-days: 7
           if-no-files-found: warn
+
+# One rerun after fixing nondeterministic Blender lights collection iteration order.
