@@ -7,8 +7,8 @@ const request=()=>({schema:'blank.human.visual-render-request.v1',
  source_sha256:sourceSha(),image_generation_used:false,release_allowed:false,
  values:{"camera.margin":.1,"camera.three_quarter_orbit_degrees":32,"render.cycles_samples":36,"render.exposure_ev":-3.3}});
 const reject=(x,code)=>assert.throws(x,e=>e.message.includes(code));
-test('All four JSON contracts load and include 7 real bindings',()=>{
- const p=validateContracts();assert.equal(p.implemented,7);assert.equal(p.unimplemented,29);
+test('All four JSON contracts load and include 10 real bindings',()=>{
+ const p=validateContracts();assert.equal(p.implemented,10);assert.equal(p.unimplemented,26);
  assert.equal(p.controls,36);assert.equal(p.defects,18);assert.equal(p.release_allowed,false);
 });
 test('Compile actual Blender render parameters without inventing geometry',()=>{
@@ -94,4 +94,31 @@ test('Actual geometry controls still reject unsupported eye and nonnumeric value
  reject(()=>compileBlenderRenderConfig(r),"UNIMPLEMENTED_CONTROL");
  r.values={"morphology.jaw_width":null};
  reject(()=>compileBlenderRenderConfig(r),"CONTROL_OUT_OF_BOUNDS");
+});
+
+test('Full-body morph controls compile and require actual Blender evidence',()=>{
+ const r=request();
+ r.values={'morphology.shoulder_width':.70,'morphology.waist_width':.15,'morphology.hip_width':.75};
+ const cfg=compileBlenderRenderConfig(r);
+ assert.equal(cfg.geometry_change_requested,true);
+ assert.equal(cfg.actual_geometry_changed,false);
+ assert.equal(cfg.controls['morphology.shoulder_width'],.70);
+ assert.equal(cfg.controls['morphology.waist_width'],.15);
+ assert.equal(cfg.controls['morphology.hip_width'],.75);
+ assert.equal(cfg.controls['morphology.jaw_width'],.34);
+ assert.equal(cfg.release_allowed,false);
+});
+test('Neutral full-body request does not pretend to have modified 3D anatomy',()=>{
+ const cfg=compileBlenderRenderConfig(request());
+ assert.equal(cfg.geometry_change_requested,false);
+ assert.equal(cfg.actual_geometry_changed,false);
+});
+test('Reject invalid or absent body geometry values; keep eye morph unimplemented',()=>{
+ const r=request();
+ r.values={'morphology.hip_width':1.1};
+ reject(()=>compileBlenderRenderConfig(r),'CONTROL_OUT_OF_BOUNDS');
+ r.values={'morphology.hip_width':null};
+ reject(()=>compileBlenderRenderConfig(r),'CONTROL_OUT_OF_BOUNDS');
+ r.values={'morphology.eye_spacing':.5};
+ reject(()=>compileBlenderRenderConfig(r),'UNIMPLEMENTED_CONTROL');
 });
