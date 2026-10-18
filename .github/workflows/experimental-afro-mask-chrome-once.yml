@@ -1,0 +1,74 @@
+name: EXPERIMENTAL Mask-Respected Afro Chrome Visual A/B
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/human-reference-atlas-20261018
+    paths:
+      - .github/workflows/experimental-afro-mask-chrome-once.yml
+permissions:
+  contents: read
+  actions: read
+jobs:
+  real-chrome:
+    runs-on: ubuntu-latest
+    timeout-minutes: 19
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Recover strict Blender masked export with unchanged rig and morphs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p artifacts/afro-mask-respected artifacts/afro-visual-glb artifacts/afro-browser
+          gh run download 39143615834 --repo autonomousagentuniverse/blank-engine-lab --name afro-mask-respected-geometry-and-glb --dir artifacts/afro-mask-respected
+          python3 - <<'PY'
+          import json,hashlib,pathlib,shutil
+          d=pathlib.Path('artifacts/afro-mask-respected')
+          r=json.loads((d/'mask-respected-report.json').read_text())
+          assert r['masked_body_vertices']==10756 and r['masked_body_faces']==10690
+          assert r['source_mask_vs_rebuild_max_vertex_difference_mm']==0
+          assert all(n==11 for n in r['gltf']['morph_targets_each_primitive'])
+          assert r['gltf']['valid_skin'] and r['gltf']['skin_joint_count']==53
+          p=d/'afro_mask_respected_rigged.glb'
+          assert hashlib.sha256(p.read_bytes()).hexdigest()==r['gltf']['sha256']
+          out=pathlib.Path('artifacts/afro-visual-glb/afro_skinbound_rigged.glb')
+          shutil.copyfile(p,out)
+          print('CHROME_MASK_VERIFIED_GLB_SHA',r['gltf']['sha256'])
+          PY
+      - name: Install Three.js GLTFLoader and Google Chrome for software-WebGL
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm install --no-save --ignore-scripts --no-audit --no-fund three@0.186.1 playwright@1.56.1
+          npx playwright install chrome
+      - name: Render corrected mask-respected GLB and animate head in Chrome
+        run: |
+          node scripts/audit-afro-rigged-glb-browser.mjs
+      - name: Verify real rendered screenshots and preserve clinical parity status
+        run: |
+          python3 - <<'PY'
+          import json,pathlib
+          d=pathlib.Path('artifacts/afro-browser')
+          r=json.loads((d/'webgl-report.json').read_text())
+          s=json.loads(pathlib.Path('artifacts/afro-mask-respected/mask-respected-report.json').read_text())
+          assert r['chrome_webgl_pass'] and r['webgl_version']==2 and len(r['hair'])==3 and r['head_bone_found']
+          assert any(x>.001 for x in r['head_rotation_movement_m'])
+          assert not r['cycles_webgl_pixel_parity_verified'] and not r['photorealism_approved']
+          r.update({"corrected_glb_sha256":s['gltf']['sha256'],
+              "mask_vertices":s['masked_body_vertices'],"mask_faces":s['masked_body_faces'],
+              "morphs_per_skin_primitive":s['gltf']['morph_targets_each_primitive'],
+              "visual_review":"REQUIRED_NOT_AUTO_APPROVED","production_deployed":False})
+          (d/'webgl-report.json').write_text(json.dumps(r,indent=2)+'\n')
+          for name in ['afro-webgl-neutral.png','afro-webgl-head-y.png']:
+            assert (d/name).stat().st_size>20000
+          print('REAL_CHROME_MASKED_BONE_AND_MORPH_RENDER_PASS')
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: afro-mask-respected-real-chrome-webgl
+          path: artifacts/afro-browser/
+          retention-days: 7
+          if-no-files-found: warn
