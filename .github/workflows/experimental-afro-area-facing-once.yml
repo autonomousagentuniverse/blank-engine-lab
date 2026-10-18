@@ -1,0 +1,85 @@
+name: EXPERIMENTAL Source Area Light Direction A/B Once
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/human-reference-atlas-20261018
+    paths:
+      - .github/workflows/experimental-afro-area-facing-once.yml
+permissions:
+  contents: read
+  actions: read
+jobs:
+  source-orientation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Recover previously measured authentic Blender and Chrome reference
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p artifacts/afro-light-isolation source
+          gh run download 39149671952 --repo autonomousagentuniverse/blank-engine-lab --name afro-albedo-versus-area-light-isolation-20261018 --dir artifacts/afro-light-isolation
+          gh run download 39143615834 --repo autonomousagentuniverse/blank-engine-lab --name afro-mask-respected-geometry-and-glb --dir source
+          printf '1040b6330559865801b67ac57c293ddc07b94328cc735476ff4da47464c3399d  source/afro_mask_respected_rigged.glb\n' | sha256sum -c -
+          cp source/afro_mask_respected_rigged.glb artifacts/afro-light-isolation/input.glb
+          python3 - <<'PY'
+          import pathlib,json
+          p=pathlib.Path('artifacts/afro-light-isolation')
+          b=json.loads((p/'blender-unlit-reference.json').read_text())
+          assert b['source_blend_sha256']=='a1c38165ae2d8d100e04919e4e57b35623ac9fabc1b0d2cb44bdfb7829fef570'
+          assert len([x for x in b['authored_lights'] if x['type']=='AREA'])==3
+          assert all(x['shape']=='DISK' for x in b['authored_lights'])
+          PY
+      - name: Chromium with pinned Three GLTFLoader/RectArea
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm install --no-save --ignore-scripts --no-audit --no-fund three@0.186.1 playwright@1.56.1
+          npx playwright install chrome
+          node --check scripts/audit-afro-rectarea-orientation-chrome.mjs
+          timeout -k 20s 470s node scripts/audit-afro-rectarea-orientation-chrome.mjs
+      - name: Report direct opposite emission directions without exposure fitting
+        run: |
+          python3 - <<'PY'
+          import json,pathlib,numpy as np
+          from PIL import Image
+          d=pathlib.Path('artifacts/afro-light-isolation')
+          source=json.loads((d/'blender-unlit-reference.json').read_text())
+          browser=json.loads((d/'chrome-light-isolation.json').read_text())
+          assert browser['unflipped_orientation_test']['lights']==3
+          a=np.array(Image.open(d/'blender-cycles-color.png').convert('RGB')).astype(np.float32)
+          mask=np.array(Image.open(d/'blender-white-silhouette.png').convert('RGB')).max(2)>128
+          mask2=np.array(Image.open(d/'chrome-white-silhouette.png').convert('RGB')).max(2)>128
+          use=mask&mask2;assert use.sum()>150000
+          outcomes={}
+          for label,name in [('previous_flipped','chrome-source-area-proxy.png'),('source_quaternion','chrome-area-unflipped-source.png')]:
+             x=np.array(Image.open(d/name).convert('RGB')).astype(np.float32)
+             v=x[use]
+             outcomes[label]={
+               'mae_mean':round(float(np.abs(a[use]-v).mean()),3),
+               'image_rgb_median':np.median(v,axis=0).round(3).tolist(),
+               'black_all_channels_fraction':round(float(np.mean(np.all(v<2,axis=1))),5),
+               'white_any_channel_fraction':round(float(np.mean(np.any(v>=254,axis=1))),5)}
+          r={'schema':'blank.engine.rectarea.orientation.v1',
+            'controlled':'Only RectAreaLight quaternion rotated by 180 degrees; unchanged source watts, area, GLB, exact camera, exposure, materials',
+            'source_blender_light_shapes':[x['shape'] for x in source['authored_lights']],
+            'light_unit_conversion_validated':False,'full_radiometry_approved':False,
+            'outcomes':outcomes,'source_preserved':True,'production_deployed':False,
+            'photorealism_approved':False}
+          (d/'orientation-report.json').write_text(json.dumps(r,indent=2)+'\n')
+          print('SOURCE_RECTAREA_SIGN_DIAGNOSTIC',json.dumps(outcomes))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: afro-rectarea-source-facing-comparison-20261018
+          path: |
+            artifacts/afro-light-isolation/chrome-*.png
+            artifacts/afro-light-isolation/orientation-report.json
+            artifacts/afro-light-isolation/chrome-light-isolation.json
+          retention-days: 7
+          if-no-files-found: warn
