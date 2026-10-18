@@ -1,0 +1,74 @@
+name: EXPERIMENTAL Chrome Body Morph Rig Audit One Time
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/human-reference-atlas-20261018
+    paths:
+      - .github/workflows/experimental-afro-morph-body-once.yml
+permissions:
+  contents: read
+  actions: read
+jobs:
+  morph-and-joints:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Recover exactly verified masked GLB and audit manifest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p artifacts/afro-morph-body
+          gh run download 39143615834 --repo autonomousagentuniverse/blank-engine-lab --name afro-mask-respected-geometry-and-glb --dir artifacts/afro-morph-body
+          python3 - <<'PY'
+          import json,pathlib,hashlib
+          d=pathlib.Path("artifacts/afro-morph-body")
+          j=json.loads((d/"mask-respected-report.json").read_text())
+          p=d/"afro_mask_respected_rigged.glb"
+          assert p.stat().st_size==71397960
+          assert j["gltf"]["sha256"]=="1040b6330559865801b67ac57c293ddc07b94328cc735476ff4da47464c3399d"
+          assert hashlib.sha256(p.read_bytes()).hexdigest()==j["gltf"]["sha256"]
+          assert j["masked_body_vertices"]==10756
+          assert all(i==11 for i in j["gltf"]["morph_targets_each_primitive"])
+          (d/"input.glb").hardlink_to(p)
+          print("IMMUTABLE_MASKED_MORPH_GLTF_SOURCE_VERIFIED")
+          PY
+      - name: Install pinned browser and actual Three.js GLTFLoader
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm install --no-save --ignore-scripts --no-audit --no-fund three@0.186.1 playwright@1.56.1
+          npx playwright install chrome
+      - name: Run real Chrome 11-morph and head/torso skeletal deformation experiment
+        run: |
+          node scripts/audit-afro-morph-body-chrome.mjs
+      - name: Require real output data rather than harness-only success
+        run: |
+          node --input-type=module - <<'JS'
+          import {readFile,stat} from 'node:fs/promises';
+          import assert from 'node:assert/strict';
+          const d='artifacts/afro-morph-body/';
+          const r=JSON.parse(await readFile(d+'morph-body-report.json','utf-8'));
+          assert.equal(r.model.morph_count,11);
+          assert.equal(r.morphs.length,11);
+          assert.equal(r.all_11_morphs_react,true);
+          assert.ok(r.body_skinning.length>=2);
+          assert.ok(r.body_skinning.every(x=>x.pass));
+          assert.equal(r.skinning_technical_pass,true);
+          assert.equal(r.matched_blender_camera,false);
+          assert.equal(r.photorealism_approved,false);
+          for(const f of ['neutral.png','morph-extreme.png','head-rotation.png'])assert.ok((await stat(d+f)).size>20000);
+          console.log('MASK_RESPECTED_ELEVEN_MORPHS_AND_BODY_JOINTS_VERIFIED');
+          JS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: afro-morph-body-chrome-20261018
+          path: |
+            artifacts/afro-morph-body/morph-body-report.json
+            artifacts/afro-morph-body/*.png
+          retention-days: 7
+          if-no-files-found: warn
