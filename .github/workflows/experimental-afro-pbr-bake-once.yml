@@ -58,3 +58,5 @@ jobs:
           if-no-files-found: warn
 
 # Retest identical source with actual multi-slot skin material face selection.
+
+# One-time bake experiment: retain original mesh smooth shading in UV bake duplicate.
