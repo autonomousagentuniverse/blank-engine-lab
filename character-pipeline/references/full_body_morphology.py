@@ -102,6 +102,22 @@ def apply_blender_body_widths(*, body, rig, scene, values):
         keys = obj.data.shape_keys.key_blocks if obj.data.shape_keys else []
         if keys and any(len(k.data) != len(obj.data.vertices) for k in keys):
             raise ValueError("BODY_MORPH_KEY_MISMATCH:" + obj.name)
+    def band_widths():
+        # Real Basis shape-key vertex positions from the authored 3D body.
+        # This is a 3D source-space width check, not an image-space proxy.
+        basis = body.data.shape_keys.key_blocks["Basis"].data
+        world = body.matrix_world
+        samples = [world @ item.co for item in basis]
+        measurements = {}
+        for name, (level, _) in BANDS.items():
+            xs = [p.x for p in samples if abs((p.z - bounds[2]) / height - level) < .032]
+            if len(xs) < 10:
+                raise ValueError("BODY_MORPH_MISSING_SLICE:" + name)
+            measurements[name] = {"source_sample_vertices": len(xs),
+                                   "span_m": max(xs) - min(xs)}
+        return measurements
+
+    before_widths = band_widths()
     max_delta = 0.
     changed_count = 0
     modified = []
@@ -124,8 +140,19 @@ def apply_blender_body_widths(*, body, rig, scene, values):
                          "shape_keys": len(keys) if keys else 0})
     if changed_count < 100 or max_delta < .004:
         raise ValueError("BODY_MORPH_INSUFFICIENT_REAL_GEOMETRY_CHANGE")
+    after_widths = band_widths()
+    widths = {}
+    for name, old in before_widths.items():
+        new = after_widths[name]
+        delta = new["span_m"] - old["span_m"]
+        if abs(values[name] - CONTROL_DEFAULTS[name]) >= .1:
+            if delta * (values[name] - CONTROL_DEFAULTS[name]) <= .001:
+                raise ValueError("BODY_MORPH_BAND_DID_NOT_CHANGE_AS_REQUESTED:" + name)
+        widths[name] = {"before_m": old["span_m"], "after_m": new["span_m"],
+                        "delta_m": delta, "measured_source_vertices": old["source_sample_vertices"]}
     scene.view_layers[0].update()
-    return {"applied": True, "body_original_bounds_m": list(bounds),
+    return {"applied": True, "actual_measured_body_slice_widths": widths,
+            "body_original_bounds_m": list(bounds),
             "objects_modified": modified, "modified_vertex_coordinates": changed_count,
             "maximum_displacement_m": max_delta, "neutral_baseline": False,
             "rig_bones_unchanged": len(rig.data.bones),
