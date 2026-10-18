@@ -76,6 +76,7 @@ try{
  // world space; restore weights after each test to avoid cumulating changes.
  const morphs=await page.evaluate(()=>{
   const s=window.PROBE;
+  window.MORPH_DEFAULTS=s.body.map(o=>Array.from(o.morphTargetInfluences));
   const ans=[];
   const p=new s.THREE.Vector3(),before=new s.THREE.Vector3(),after=new s.THREE.Vector3();
   for(let t=0;t<11;t++){
@@ -130,11 +131,11 @@ try{
    s.renderer.render(s.scene,s.camera);
   },chosen.index);
   await page.locator('canvas').screenshot({path:join(out,'morph-extreme.png')});
-  await page.evaluate(index=>{
+  await page.evaluate(()=>{
    const s=window.PROBE;
-   for(const o of s.body){const k=Object.entries(o.morphTargetDictionary).find(([name,j])=>j===index);
-    o.morphTargetInfluences[index]=window.BASELINE_MORPH?.[index]??o.morphTargetInfluences[index];}
-  },chosen.index);
+   s.body.forEach((part,i)=>part.morphTargetInfluences.set(window.MORPH_DEFAULTS[i]));
+   s.renderer.render(s.scene,s.camera);
+  });
  }
  // Bone deformation: pick high-weight vertex of original skin mesh, find
  // specific body joint bone, rotate and read the actual skinned vertex.
