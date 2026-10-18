@@ -1,0 +1,58 @@
+name: EXPERIMENTAL Blender UV Skin PBR Bake One Shot
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/human-reference-atlas-20261018
+    paths:
+      - .github/workflows/experimental-afro-pbr-bake-once.yml
+permissions:
+  contents: read
+  actions: read
+jobs:
+  bake-and-export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 27
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Recover pinned original rigged Afro asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p source artifacts/afro-pbr-bake
+          gh run download 39139909059 --repo autonomousagentuniverse/blank-engine-lab --name afro-skinbound-geometry-regression-20261018 --dir source
+          printf '0eca41c5f0175e50df18914bb87cc007184ddcf55f2dd84ea3640645ddac2f52  source/afro_skinbound_hair_derivative.blend\n' | sha256sum -c -
+      - name: Execute Blender Cycles UV PBR diffuse and tangent normal bake
+        env:
+          OMP_NUM_THREADS: '4'
+        run: |
+          python3 -m pip install --disable-pip-version-check --no-cache-dir bpy==4.5.3
+          python3 -m py_compile character-pipeline/references/bake_skin_uv_pbr.py
+          timeout -k 15s 1230s python3 -u character-pipeline/references/bake_skin_uv_pbr.py
+      - name: Test input preservation, image bytes, GLB skin and report
+        run: |
+          python3 - <<'PY'
+          import pathlib,json,hashlib,struct
+          d=pathlib.Path('artifacts/afro-pbr-bake')
+          r=json.loads((d/'uv-bake-report.json').read_text())
+          assert r['input_sha256']=='0eca41c5f0175e50df18914bb87cc007184ddcf55f2dd84ea3640645ddac2f52'
+          assert r['source_unchanged'] and r['basecolor_and_normal_bake_pass']
+          assert r['glb']['structure_pass'] and r['glb']['joints']==53
+          assert r['glb']['skin_basecolor_texture'] is not None and r['glb']['skin_normal_texture'] is not None
+          assert not r['cycles_chrome_visual_parity_verified'] and not r['photorealism_approved'] and not r['release_allowed']
+          for obj in [r['images']['basecolor'],r['images']['normal'],r['preview'],r['blend'],r['glb']]:
+              p=d/obj.get('path')
+              assert p.stat().st_size==obj['bytes']
+              assert hashlib.sha256(p.read_bytes()).hexdigest()==obj['sha256']
+          print('REAL_BLENDER_UV_BAKE_TEXTURES_AND_GLTF_STRUCTURE_PASS')
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: afro-uv-baked-pbr-blender-20261018
+          path: artifacts/afro-pbr-bake/
+          retention-days: 7
+          if-no-files-found: warn
