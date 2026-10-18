@@ -13,7 +13,7 @@ SOURCE=Path("source/afro_woman_full_body.blend")
 OUT=Path("artifacts/afro_woman_body_rebuild")
 OUT.mkdir(parents=True,exist_ok=True)
 BASE_NAME="AFRO_WOMAN_28_Medium_Build"
-SOURCE_SHA="a37d358f468477fdaf889ab2c86f1621f839e2e3ea162874209f15ded4c8455a"
+SOURCE_SHA="6d62b24389ffa41ec4dac3ea57518c25941979f45d0799a9b9a089c24f827713"
 def sha(p):
  h=hashlib.sha256()
  with open(p,"rb") as f:
