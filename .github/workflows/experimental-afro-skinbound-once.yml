@@ -26,6 +26,7 @@ jobs:
         run: |
           python3 -m pip install --disable-pip-version-check --no-cache-dir bpy==4.5.3
           python3 -m py_compile character-pipeline/references/build_skinbound_afro.py
+          python3 character-pipeline/references/test_skinbound_math.py
           timeout -k 20s 1160s python3 -u character-pipeline/references/build_skinbound_afro.py
       - name: Authenticate real Blender outputs and preserve pass/fail result
         run: |
@@ -37,6 +38,7 @@ jobs:
           assert j["source_unchanged"] and j["hair_count"]==4450 and len(j["pose_tests"])==4
           assert j["original_nurbs_retained"] and j["meshes"]==3
           assert j["skinbound_geometry_pass"]==all(p["pass"] for p in j["pose_tests"])
+          assert j["skinbound_geometry_pass"], "POSE_ATTACHMENT_THRESHOLDS_NOT_MET"
           assert not j["photorealism_approved"] and not j["rigged_export_glb_verified"] and not j["release_allowed"]
           p=d/"afro_skinbound_hair_derivative.blend"
           assert p.stat().st_size>10000000
