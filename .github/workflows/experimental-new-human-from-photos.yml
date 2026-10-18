@@ -1,5 +1,8 @@
 name: Experimental one-shot NEW MPFB whole human from human photo research
 on:
+  push:
+    branches:
+      - experiment/real-photo-to-new-human-mpfb-20261017
   workflow_dispatch:
 permissions:
   contents: read
