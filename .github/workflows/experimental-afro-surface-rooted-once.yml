@@ -1,11 +1,6 @@
 name: EXPERIMENTAL Surface-Rooted Afro Real Blender A/B
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - research/human-reference-atlas-20261018
-    paths:
-      - .github/workflows/experimental-afro-surface-rooted-once.yml
 permissions:
   contents: read
   actions: read
