@@ -6,7 +6,7 @@ No 2D generation or image edits. The same Blender meshes, materials, clothing,
 53-bone armature, skin weights, pose and source 3 disk lamps remain unchanged.
 Automatically frame whole model at front, 25-degree and 90-degree views.
 """
-import bpy, hashlib, json, pathlib, math, statistics
+import bpy, hashlib, json, pathlib, math, statistics, os
 from mathutils import Vector, Matrix
 from PIL import Image
 import numpy as np
@@ -18,6 +18,29 @@ OUT.mkdir(parents=True,exist_ok=True)
 W,H=840,1260
 MARGIN=.075
 EV=-3.3500195136193742  # Verified scene-linear EXR experiment, Actions run 39153621026
+SAMPLES=28
+THREE_QUARTER_DEGREES=25
+RENDER_CONFIG_FILE=os.environ.get("BLANK_HUMAN_RENDER_CONFIG")
+if RENDER_CONFIG_FILE:
+ cfg=json.loads(pathlib.Path(RENDER_CONFIG_FILE).read_text())
+ assert cfg.get("schema")=="blank.human.blender-render-config.v1", "INVALID_VISUAL_VARIABLE_CONFIG"
+ assert cfg.get("source_sha256")==PIN, "WRONG_CONFIG_CHARACTER_SHA"
+ assert cfg.get("release_allowed") is False and cfg.get("image_generation_used") is False, "NO_RELEASE_OR_IMAGEGEN_MISLABELING"
+ assert cfg.get("actual_geometry_changed") is False, "CONFIG_CANNOT_PREAPPROVE_GEOMETRY_CHANGES"
+ values=cfg.get("controls")
+ assert isinstance(values,dict) and set(values)=={
+   "camera.margin","camera.three_quarter_orbit_degrees","render.cycles_samples","render.exposure_ev"
+ }, "UNKNOWN_OR_MISSING_VARIABLE_BINDINGS"
+ def bounded(name,low,high,integer=False):
+  value=values[name]
+  assert type(value) in (int,float) and math.isfinite(value) and low<=value<=high, "INVALID_CONTROL_"+name
+  if integer:assert type(value) is int, "SAMPLES_MUST_BE_INTEGER"
+  return value
+ MARGIN=bounded("camera.margin",.04,.18)
+ THREE_QUARTER_DEGREES=bounded("camera.three_quarter_orbit_degrees",10,60)
+ SAMPLES=bounded("render.cycles_samples",16,128,True)
+ EV=bounded("render.exposure_ev",-8,3)
+ print("BLANK_EXECUTABLE_HUMAN_VARIABLES",json.dumps(values,sort_keys=True),flush=True)
 
 def digest(p):
  h=hashlib.sha256()
@@ -69,7 +92,7 @@ assert (maxv.x-minv.x)<2 and (maxv.y-minv.y)<2.5
 
 scene.render.engine="CYCLES"
 scene.cycles.device="CPU"
-scene.cycles.samples=28
+scene.cycles.samples=SAMPLES
 scene.cycles.use_denoising=True
 scene.render.threads_mode="FIXED";scene.render.threads=4
 scene.render.resolution_x=W;scene.render.resolution_y=H;scene.render.resolution_percentage=100
@@ -93,7 +116,7 @@ assert front_dir.length>.01
 front_dir.normalize()
 world_extent={"min":list(minv),"max":list(maxv),"center":list(center)}
 shots=[]
-for name,degrees in [("front",0),("three_quarter_25",25),("profile_90",90)]:
+for name,degrees in [("front",0),(f"three_quarter_{THREE_QUARTER_DEGREES:g}",THREE_QUARTER_DEGREES),("profile_90",90)]:
  angle=math.radians(degrees)
  direction=Matrix.Rotation(angle,4,"Z")@front_dir
  direction.normalize()
@@ -158,7 +181,7 @@ for name,degrees in [("front",0),("three_quarter_25",25),("profile_90",90)]:
 
 # Default editable scene camera = 25-degree full-body and all three are
 # preserved as independently selectable camera objects in one derivative .blend.
-scene.camera=bpy.data.objects["ONE_SHOT_FULL_BODY_CAMERA_three_quarter_25"]
+scene.camera=bpy.data.objects[f"ONE_SHOT_FULL_BODY_CAMERA_three_quarter_{THREE_QUARTER_DEGREES:g}"]
 editable=OUT/"actual_full_body_camera_variants.blend"
 bpy.ops.file.pack_all()
 bpy.ops.wm.save_as_mainfile(filepath=str(editable.resolve()),compress=True,check_existing=False)
@@ -177,8 +200,15 @@ report={
  "bone_count":53,"source_light_names_watts":lights,
  "source_world_model_bounds_m":world_extent,
  "model_height_m":height,
+ "control_provenance":{"contract":"blank.human.visual-variables.v1",
+  "compiled_config_applied":bool(RENDER_CONFIG_FILE),
+  "margin_fraction":MARGIN,
+  "three_quarter_degrees":THREE_QUARTER_DEGREES,
+  "cycles_samples":SAMPLES,
+  "exposure_ev":EV,
+  "unimplemented_controls_applied":[]},
  "blender_version":bpy.app.version_string,
- "render":{"engine":"CYCLES","width":W,"height":H,"samples":28,
+ "render":{"engine":"CYCLES","width":W,"height":H,"samples":SAMPLES,
   "display_transform":"AgX","look":"AgX - Medium High Contrast",
   "exposure_EV":EV,"automatic_framing":"visible human geometry projected onto each actual camera, no cropped hands/hair/feet"},
  "shots":shots,
