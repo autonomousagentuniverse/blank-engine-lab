@@ -1,0 +1,63 @@
+name: EXPERIMENTAL Genuine Full Body Blender 3-View One Shot
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/human-reference-atlas-20261018
+    paths:
+      - .github/workflows/experimental-genuine-full-body-once.yml
+permissions:
+  contents: read
+  actions: read
+jobs:
+  render-from-real-blend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Fetch exact previous real Blender character scene
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p source artifacts/blank-genuine-full-body
+          gh run download 39143615834 --repo autonomousagentuniverse/blank-engine-lab --name afro-mask-respected-geometry-and-glb --dir source
+          printf 'a1c38165ae2d8d100e04919e4e57b35623ac9fabc1b0d2cb44bdfb7829fef570  source/afro_mask_respected_uv_pbr.blend\n' | sha256sum -c -
+      - name: Generate actual front three-quarter and profile full-body 3D shots in one Blender invocation
+        env:
+          OMP_NUM_THREADS: '4'
+        run: |
+          python3 -m pip install --disable-pip-version-check --no-cache-dir bpy==4.5.3 numpy pillow
+          python3 -m py_compile character-pipeline/references/one_shot_actual_full_body.py
+          timeout -k 20s 1280s python3 -u character-pipeline/references/one_shot_actual_full_body.py
+      - name: Validate actual Cycles RGB PNG provenance and head-to-foot projected margins
+        run: |
+          python3 - <<'PY'
+          import pathlib,json,hashlib
+          p=pathlib.Path('artifacts/blank-genuine-full-body')
+          j=json.loads((p/'actual-full-body-report.json').read_text())
+          assert j['source_blend_sha256']=='a1c38165ae2d8d100e04919e4e57b35623ac9fabc1b0d2cb44bdfb7829fef570'
+          assert j['source_unchanged'] and not j['image_generation_tool_used']
+          assert j['single_blender_process_multiple_views']
+          assert j['bone_count']==53 and not j['mesh_geometry_changed'] and not j['light_powers_changed']
+          assert set(x['name'] for x in j['shots'])=={'front','three_quarter_25','profile_90'}
+          assert j['render']['width']==840 and j['render']['height']==1260
+          assert not j['production_deployed'] and not j['photoreal_human_approved']
+          for x in j['shots']+[j['editable_blend']]:
+            fn=x.get('path');q=p/fn
+            assert q.exists() and q.stat().st_size==x['bytes']
+            assert hashlib.sha256(q.read_bytes()).hexdigest()==x['sha256']
+          for view in j['shots']:
+            assert view['head_to_foot_framing_pass']
+            assert all(.025<value<.975 for value in view['human_projected_bounds_normalized'].values())
+          print('GENUINE_BLENDER_FULL_BODY_THREE_VIEW_RENDER_PASS',[(s['name'],s['sha256']) for s in j['shots']])
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: genuine-3d-blender-full-body-three-views
+          path: artifacts/blank-genuine-full-body/
+          retention-days: 7
+          if-no-files-found: warn
