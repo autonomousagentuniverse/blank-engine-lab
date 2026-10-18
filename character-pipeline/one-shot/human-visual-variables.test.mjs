@@ -39,7 +39,7 @@ test('Reject nonfinite, out of range and fractional Cycles sample values',()=>{
 });
 test('Teacher example remains blocked, never applies an unimplemented jaw edit',()=>{
  const result=assessTeacherProposal(CONTRACTS.proposal);assert.equal(result.status,"BLOCKED_UNVERIFIED_REFERENCE");
- assert.equal(result.blocked.length,0);assert.deepEqual(result.applied_changes,[]);assert.equal(result.release_allowed,false);
+ assert.equal(result.blocked.length,1);assert.deepEqual(result.applied_changes,[]);assert.equal(result.release_allowed,false);
 });
 test('Even a rights-verified teacher suggestion requires manual review',()=>{
  const t=structuredClone(CONTRACTS.proposal);
@@ -86,6 +86,7 @@ test('Three real morphology controls compile, but teacher cannot auto-apply them
  assert.equal(c.actual_geometry_changed,false,"compiler only plans geometry, never executes it");
  const p=structuredClone(CONTRACTS.proposal);
  p.teacher.rights_verified=true;p.teacher.reference_ids=["rights-cleared-reference"];
+ p.proposed_changes=[{control:"morphology.jaw_width",delta:-.05,reason:"Review tracked geometry deformation"}];
  assert.equal(assessTeacherProposal(p).status,"PENDING_MANUAL_REVIEW");
 });
 test('Actual geometry controls still reject unsupported eye and nonnumeric values',()=>{
