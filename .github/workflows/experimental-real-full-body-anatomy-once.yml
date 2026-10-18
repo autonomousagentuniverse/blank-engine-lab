@@ -1,11 +1,7 @@
 name: EXPERIMENTAL Real Full-Body Geometry A/B Once
 # Retry after correcting inherited teacher-proposal contract tests.
-# One-time, branch-scoped execution bridge for this expressly requested render.
-# RESTORE workflow_dispatch-only immediately after inspecting run evidence.
+## Restored manually after source-pinned Blender run 39173554893.
 on:
-  push:
-    branches:
-      - experiment/locked-head-relaxed-fullbody-one-shot-20261018
   workflow_dispatch:
 permissions:
   contents: read

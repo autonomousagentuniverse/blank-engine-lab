@@ -594,5 +594,29 @@
     "combined_initial_workflow_conclusion": "failure_old_fixture",
     "workflows_manual_only": true,
     "hair_32pct_ratio_still_exceeds_experimental_limit": true
+  },
+  "locked_head_relaxed_full_body_20261018": {
+    "date": "2026-10-18",
+    "branch": "experiment/locked-head-relaxed-fullbody-one-shot-20261018",
+    "run": 39173554893,
+    "run_url": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/39173554893",
+    "artifact_id": 12153482478,
+    "artifact_url": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/39173554893/artifacts/12153482478",
+    "source_sha256": "a1c38165ae2d8d100e04919e4e57b35623ac9fabc1b0d2cb44bdfb7829fef570",
+    "blender_version": "4.5.3",
+    "render_engine": "CYCLES",
+    "render_png_count": 6,
+    "editable_blend_count": 2,
+    "rig_bones": 53,
+    "previous_head_pose_translation_m": 0,
+    "shoulder_width_proxy_delta_m": -0.0300382876,
+    "waist_width_proxy_delta_m": -0.0314622244,
+    "hip_width_proxy_delta_m": 0.0216347781,
+    "world_background_not_matched_in_ab": true,
+    "technical_status": "PASS",
+    "visual_status": "FAIL",
+    "photorealism_approved": false,
+    "production_deployed": false,
+    "workflow_manual_only": true
   }
 }
