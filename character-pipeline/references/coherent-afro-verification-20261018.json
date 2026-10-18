@@ -1,0 +1,59 @@
+{
+  "schema": "blank.engine.human.hair.coherent_field.v1",
+  "date": "2026-10-18",
+  "status": "GEOMETRY_PASS_VISUAL_PARTIAL_NOT_PHOTOREAL",
+  "source": {
+    "lineage": "MPFB-generated Black woman, previous scalp-triangle-rooted hair subsystem",
+    "input_blend_sha256": "79d09a8a44ad0ed27300a37203196551f4ad0267e181ab743f28fa43f4d1a4cc",
+    "source_unchanged": true
+  },
+  "run": {
+    "id": 39130834258,
+    "url": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/39130834258",
+    "status": "success",
+    "artifact_id": 12137039400,
+    "workflow": "manual-only after verification"
+  },
+  "geometry": {
+    "strands": 4450,
+    "shared_guide_count": 88,
+    "scalp_vertices": 376,
+    "scalp_triangles": 668,
+    "source_root_gap_p95_mm": 0.00012,
+    "new_root_gap_max_mm": 0.000247,
+    "root_movement_max_mm": 0.0000149,
+    "local_neighbor_guide_cos_median": 0.99824,
+    "global_envelope_adjustments": 27,
+    "new_max_tip_above_source_roots_mm": 56.71,
+    "tip_z_p95_before_m": 1.85741,
+    "tip_z_p95_after_m": 1.83063
+  },
+  "output": {
+    "packed_blend_sha256": "327befea50b2961d1ff3341fdf2e7b6bb173f7c74c09212c68061677a974b3f2",
+    "png_sha256": "e42d02eee714bc15dfd567aa5be0a9d3ddd2c7535ceb11856fd7f5ffe215eaa6",
+    "real_blender": "4.5.3 LTS",
+    "same_camera": true
+  },
+  "visual": {
+    "former_issue": "Two tall spiky separated Afro hair peaks",
+    "improvement": "Crown is markedly more rounded and compact; forehead and eyes not obscured by long fibers",
+    "open_defects": [
+      "Still dense synthetic helmet/clump uniformity",
+      "Scalp-hairline style and transitions remain simplistic",
+      "Eye corneas/iris/lid remain bright and artificial",
+      "Skin BRDF still pale, waxy and unrealistic",
+      "No matched full-body comparison or head pose test"
+    ],
+    "classification": "PROVISIONAL_IMPROVEMENT_ONLY_NOT_ACCEPTED_PHOTOREAL"
+  },
+  "gates": {
+    "source_license": "MPFB core source-derived",
+    "neutral_follicle_contact": true,
+    "pose_dependent_follicle_contact": false,
+    "external_same_subject_3d_reference": false,
+    "realism_approved": false,
+    "glb_webgl_parity": false,
+    "release_allowed": false,
+    "production_deployed": false
+  }
+}
