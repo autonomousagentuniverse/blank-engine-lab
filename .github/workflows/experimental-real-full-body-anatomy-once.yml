@@ -2,6 +2,9 @@ name: EXPERIMENTAL Real Full-Body Geometry A/B Once
 # Retry after correcting inherited teacher-proposal contract tests.
 on:
   workflow_dispatch:
+  push:
+    branches: [research/full-body-anatomy-controls-20261018]
+    paths: [.github/workflows/experimental-real-full-body-anatomy-once.yml]
 permissions:
   contents: read
   actions: read
