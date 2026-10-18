@@ -7,8 +7,8 @@ const request=()=>({schema:'blank.human.visual-render-request.v1',
  source_sha256:sourceSha(),image_generation_used:false,release_allowed:false,
  values:{"camera.margin":.1,"camera.three_quarter_orbit_degrees":32,"render.cycles_samples":36,"render.exposure_ev":-3.3}});
 const reject=(x,code)=>assert.throws(x,e=>e.message.includes(code));
-test('All four JSON contracts load and include 4 true executable bindings',()=>{
- const p=validateContracts();assert.equal(p.implemented,4);assert.equal(p.unimplemented,32);
+test('All four JSON contracts load and include 7 real bindings',()=>{
+ const p=validateContracts();assert.equal(p.implemented,7);assert.equal(p.unimplemented,29);
  assert.equal(p.controls,36);assert.equal(p.defects,18);assert.equal(p.release_allowed,false);
 });
 test('Compile actual Blender render parameters without inventing geometry',()=>{
@@ -23,7 +23,7 @@ test('Partial changes retain verified baseline and separate overwritten controls
  assert.deepEqual(cfg.overridden_control_names,["camera.margin"]);
 });
 test('Reject fake Blender morph bindings and unknown/deprecated controls',()=>{
- const q=request();q.values={"morphology.jaw_width":.2};reject(()=>compileBlenderRenderConfig(q),"UNIMPLEMENTED_CONTROL");
+ const q=request();q.values={"morphology.eye_depth":.2};reject(()=>compileBlenderRenderConfig(q),"UNIMPLEMENTED_CONTROL");
  q.values={"arbitrary.secret_variable":.5};reject(()=>compileBlenderRenderConfig(q),"UNKNOWN_CONTROL");
  q.values={"__proto__.constructor":1};reject(()=>compileBlenderRenderConfig(q),"UNKNOWN_CONTROL");
 });
@@ -39,7 +39,7 @@ test('Reject nonfinite, out of range and fractional Cycles sample values',()=>{
 });
 test('Teacher example remains blocked, never applies an unimplemented jaw edit',()=>{
  const result=assessTeacherProposal(CONTRACTS.proposal);assert.equal(result.status,"BLOCKED_UNVERIFIED_REFERENCE");
- assert.equal(result.blocked.length,2);assert.deepEqual(result.applied_changes,[]);assert.equal(result.release_allowed,false);
+ assert.equal(result.blocked.length,0);assert.deepEqual(result.applied_changes,[]);assert.equal(result.release_allowed,false);
 });
 test('Even a rights-verified teacher suggestion requires manual review',()=>{
  const t=structuredClone(CONTRACTS.proposal);
@@ -74,4 +74,24 @@ test('Defect taxonomy guards identifiers; release always fails closed',()=>{
  r.defects=[{id:"render_not_blender",severity:"blocker"}];assert.equal(validateEvaluationReport(r).release_allowed,false);
  r.defects=[{id:"hypothetical_not_in_taxonomy",severity:"blocker"}];reject(()=>validateEvaluationReport(r),"UNKNOWN_DEFECT");
  r.defects=[];r.release_allowed=true;reject(()=>validateEvaluationReport(r),"EVALUATION_RELEASE_FORGED");
+});
+
+test('Three real morphology controls compile, but teacher cannot auto-apply them',()=>{
+ const r=request();
+ r.values={"morphology.jaw_width":.20,"morphology.cheek_fullness":.75,"morphology.brow_ridge_strength":.10};
+ const c=compileBlenderRenderConfig(r);
+ assert.equal(c.controls["morphology.jaw_width"],.20);
+ assert.equal(c.controls["morphology.cheek_fullness"],.75);
+ assert.equal(c.controls["morphology.brow_ridge_strength"],.10);
+ assert.equal(c.actual_geometry_changed,false,"compiler only plans geometry, never executes it");
+ const p=structuredClone(CONTRACTS.proposal);
+ p.teacher.rights_verified=true;p.teacher.reference_ids=["rights-cleared-reference"];
+ assert.equal(assessTeacherProposal(p).status,"PENDING_MANUAL_REVIEW");
+});
+test('Actual geometry controls still reject unsupported eye and nonnumeric values',()=>{
+ const r=request();
+ r.values={"morphology.eye_depth":.44};
+ reject(()=>compileBlenderRenderConfig(r),"UNIMPLEMENTED_CONTROL");
+ r.values={"morphology.jaw_width":null};
+ reject(()=>compileBlenderRenderConfig(r),"CONTROL_OUT_OF_BOUNDS");
 });

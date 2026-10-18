@@ -42,7 +42,7 @@ export function validateContracts(){
       if(control.binding.target!==null)err('PHANTOM_BLENDER_BINDING',path);
     }
   }
-  if(active!==4)err('ACTIVE_BINDING_COUNT_CHANGED');
+  if(active!==7)err('ACTIVE_BINDING_COUNT_CHANGED');
   if(defects.schema!=='blank.human.defect-taxonomy.v1'||!Array.isArray(defects.defects))err('DEFECT_SCHEMA');
   const ids=defects.defects.map(x=>x.id);
   if(ids.length!==new Set(ids).size||ids.some(x=>typeof x!=='string'||!x))err('DEFECT_IDS_DUPLICATE');

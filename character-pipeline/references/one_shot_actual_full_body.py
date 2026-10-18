@@ -29,7 +29,8 @@ if RENDER_CONFIG_FILE:
  assert cfg.get("actual_geometry_changed") is False, "CONFIG_CANNOT_PREAPPROVE_GEOMETRY_CHANGES"
  values=cfg.get("controls")
  assert isinstance(values,dict) and set(values)=={
-   "camera.margin","camera.three_quarter_orbit_degrees","render.cycles_samples","render.exposure_ev"
+   "camera.margin","camera.three_quarter_orbit_degrees","render.cycles_samples","render.exposure_ev",
+   "morphology.jaw_width","morphology.cheek_fullness","morphology.brow_ridge_strength"
  }, "UNKNOWN_OR_MISSING_VARIABLE_BINDINGS"
  def bounded(name,low,high,integer=False):
   value=values[name]
@@ -40,6 +41,9 @@ if RENDER_CONFIG_FILE:
  THREE_QUARTER_DEGREES=bounded("camera.three_quarter_orbit_degrees",10,60)
  SAMPLES=bounded("render.cycles_samples",16,128,True)
  EV=bounded("render.exposure_ev",-8,3)
+ JAW_WIDTH=bounded("morphology.jaw_width",0,1)
+ CHEEK_FULLNESS=bounded("morphology.cheek_fullness",0,1)
+ BROW_RIDGE=bounded("morphology.brow_ridge_strength",0,1)
  print("BLANK_EXECUTABLE_HUMAN_VARIABLES",json.dumps(values,sort_keys=True),flush=True)
 
 def digest(p):
@@ -62,6 +66,13 @@ assert len(body.data.shape_keys.key_blocks)==12
 lights={o.name:round(float(o.data.energy),6) for o in scene.objects if o.type=="LIGHT" and not o.hide_render}
 assert len(lights)==3
 assert all(o.data.type=="AREA" and o.data.shape=="DISK" for o in scene.objects if o.type=="LIGHT" and not o.hide_render)
+face_data={}
+face_keys={}
+if RENDER_CONFIG_FILE:
+ from human_face_morph_bindings import apply_face_controls
+ face_data,face_keys=apply_face_controls(body,values)
+ # Control values at defaults yield no actual change even though keys exist.
+ print("BLANK_REAL_FACE_SHAPE_KEYS_CREATED",json.dumps(face_data),flush=True)
 
 # Bound all actually visible human meshes and visible curves; never use source
 # portrait camera crop or rough guessed character height.
@@ -106,6 +117,31 @@ scene.view_settings.exposure=EV
 scene.view_settings.gamma=1
 
 original=bpy.data.objects["CAM_face_closeup"]
+face_comparison={}
+if face_keys:
+ scene.camera=original
+ old_dims=(scene.render.resolution_x,scene.render.resolution_y)
+ scene.render.resolution_x=720;scene.render.resolution_y=960
+ scene.cycles.samples=24
+ names=list(face_keys.values())
+ for name in names:body.data.shape_keys.key_blocks[name].value=0.0
+ baseline_face=OUT/"baseline_actual_face.png";scene.render.filepath=str(baseline_face.resolve())
+ bpy.ops.render.render(write_still=True)
+ for name in names:body.data.shape_keys.key_blocks[name].value=1.0
+ modified_face=OUT/"geometry_modified_actual_face.png";scene.render.filepath=str(modified_face.resolve())
+ bpy.ops.render.render(write_still=True)
+ A=np.asarray(Image.open(baseline_face).convert("RGB"),dtype=np.float32)
+ B=np.asarray(Image.open(modified_face).convert("RGB"),dtype=np.float32)
+ absdiff=np.abs(A-B)
+ mean=float(absdiff.mean());pixels=int(np.sum(np.max(absdiff,axis=2)>2))
+ assert pixels>100,("MORPH_NO_RENDER_CHANGE",pixels,mean)
+ face_comparison={"baseline_file":baseline_face.name,"modified_file":modified_face.name,
+ "baseline_sha256":digest(baseline_face),"modified_sha256":digest(modified_face),
+ "mean_absolute_rgb_difference":mean,"pixels_changed_over_2":pixels,
+ "camera_unchanged":True,"lights_unchanged":True,"source_unchanged":True}
+ print("ACTUAL_GEOMETRY_CHANGED_FACE_CYCLES_AB",json.dumps(face_comparison),flush=True)
+ scene.render.resolution_x,scene.render.resolution_y=old_dims
+ scene.cycles.samples=SAMPLES
 assert original.data.type=="ORTHO"
 # Take the EXISTING Blender face-camera horizontal azimuth as zero: only orbit
 # around WORLD z for subsequent views, without changing the mesh pose.
@@ -195,18 +231,21 @@ report={
  "image_generation_tool_used":False,
  "human":"Existing Blender 3D synthetic MPFB-derived dark-skinned woman; hair, face, rig, clothes, geometry unchanged",
  "single_blender_process_multiple_views":True,
- "mesh_geometry_changed":False,
- "morphs_changed":False,"light_powers_changed":False,
+ "mesh_geometry_changed":bool(face_keys),
+ "morphs_changed":bool(face_keys),"light_powers_changed":False,
  "bone_count":53,"source_light_names_watts":lights,
  "source_world_model_bounds_m":world_extent,
  "model_height_m":height,
+ "actual_face_geometry_morphs":face_data,
+ "controlled_face_render_AB":face_comparison,
  "control_provenance":{"contract":"blank.human.visual-variables.v1",
   "compiled_config_applied":bool(RENDER_CONFIG_FILE),
   "margin_fraction":MARGIN,
   "three_quarter_degrees":THREE_QUARTER_DEGREES,
   "cycles_samples":SAMPLES,
   "exposure_ev":EV,
-  "unimplemented_controls_applied":[]},
+  "unimplemented_controls_applied":[],
+  "bound_face_shape_key_names":face_keys},
  "blender_version":bpy.app.version_string,
  "render":{"engine":"CYCLES","width":W,"height":H,"samples":SAMPLES,
   "display_transform":"AgX","look":"AgX - Medium High Contrast",

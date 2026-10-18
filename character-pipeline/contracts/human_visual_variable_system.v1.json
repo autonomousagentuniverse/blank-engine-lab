@@ -74,8 +74,8 @@
       "max": 1,
       "units": "proposed_normalized",
       "binding": {
-        "status": "unimplemented",
-        "target": null
+        "status": "implemented",
+        "target": "character-pipeline/references/human_face_morph_bindings.py:BLANK_V2_JAW_WIDTH"
       },
       "meaning": "Explicit desired control; values not learned from proprietary image-generator internals."
     },
@@ -98,8 +98,8 @@
       "max": 1,
       "units": "proposed_normalized",
       "binding": {
-        "status": "unimplemented",
-        "target": null
+        "status": "implemented",
+        "target": "character-pipeline/references/human_face_morph_bindings.py:BLANK_V2_CHEEK_FULLNESS"
       },
       "meaning": "Explicit desired control; values not learned from proprietary image-generator internals."
     },
@@ -110,8 +110,8 @@
       "max": 1,
       "units": "proposed_normalized",
       "binding": {
-        "status": "unimplemented",
-        "target": null
+        "status": "implemented",
+        "target": "character-pipeline/references/human_face_morph_bindings.py:BLANK_V2_BROW_PROJECTION"
       },
       "meaning": "Explicit desired control; values not learned from proprietary image-generator internals."
     },
@@ -459,7 +459,10 @@
         "camera.margin": 0.075,
         "camera.three_quarter_orbit_degrees": 25,
         "render.cycles_samples": 28,
-        "render.exposure_ev": -3.3500195136193742
+        "render.exposure_ev": -3.3500195136193742,
+        "morphology.jaw_width": 0.34,
+        "morphology.cheek_fullness": 0.61,
+        "morphology.brow_ridge_strength": 0.2
       },
       "provenance": "real_blender_phase16_camera_and_phase15_hdr"
     }
@@ -469,7 +472,8 @@
     "teacher_policy": "No model-internal generator variables available; image references may propose deltas, not certify geometry.",
     "camera_policy": "All 3 source views must be fully framed, margin validated against actual projected bbox.",
     "provenance_policy": "Source SHA must match baseline; no undocumented edits.",
-    "approval_policy": "No photo-realism, originality or release approval from schema validation alone."
+    "approval_policy": "No photo-realism, originality or release approval from schema validation alone.",
+    "geometry_tuning": "Three supported head surface shape-key deltas are empirical bounded spatial edits, NOT human likeness/female appearance scores; source BLEND frozen, compare same-camera Cycles against unmodified reference."
   },
   "release_allowed": false
 }
