@@ -118,13 +118,20 @@ def apply_blender_body_widths(*, body, rig, scene, values):
                 point = matrix @ item.co
                 sample_cloud.append((point.x, (point.z - bounds[2]) / height, mesh.name))
         for name, (level, _) in BANDS.items():
-            chosen = [(x, obj_name) for x, t, obj_name in sample_cloud if abs(t - level) < .040]
-            xs = [x for x, _ in chosen]
+            chosen = [(x, t, obj_name) for x, t, obj_name in sample_cloud if abs(t - level) < .045]
+            xs = [x for x, _, _ in chosen]
             if len(xs) < 10:
                 raise ValueError("BODY_MORPH_MISSING_ASSEMBLED_SLICE:" + name)
+            # Evaluate paired lateral coordinates at matched vertex locations.
+            # A broad extrema envelope is not an anatomically reliable waist
+            # measurement: nearby hip vertices can dominate its endpoints.
+            weights = [math.exp(-.5 * ((t - level) / .016) ** 2) for _, t, _ in chosen]
+            midline = (bounds[0] + bounds[3]) / 2
+            width_proxy = 2 * sum(w * abs(x - midline) for (x, _, _), w in zip(chosen, weights)) / sum(weights)
             measurements[name] = {"source_sample_vertices": len(xs),
-                                   "sources": sorted({obj for _, obj in chosen}),
-                                   "span_m": max(xs) - min(xs)}
+                                   "sources": sorted({obj for _, _, obj in chosen}),
+                                   "envelope_span_m": max(xs) - min(xs),
+                                   "width_proxy_m": width_proxy}
         return measurements
 
     before_widths = band_widths()
@@ -154,12 +161,17 @@ def apply_blender_body_widths(*, body, rig, scene, values):
     widths = {}
     for name, old in before_widths.items():
         new = after_widths[name]
-        delta = new["span_m"] - old["span_m"]
+        delta = new["width_proxy_m"] - old["width_proxy_m"]
         if abs(values[name] - CONTROL_DEFAULTS[name]) >= .1:
             if delta * (values[name] - CONTROL_DEFAULTS[name]) <= .001:
-                raise ValueError("BODY_MORPH_BAND_DID_NOT_CHANGE_AS_REQUESTED:" + name)
-        widths[name] = {"before_m": old["span_m"], "after_m": new["span_m"],
-                        "delta_m": delta, "measured_source_vertices": old["source_sample_vertices"]}
+                raise ValueError("BODY_MORPH_BAND_DID_NOT_CHANGE_AS_REQUESTED:" +
+                                 name + ":delta_m=" + str(round(delta, 6)))
+        widths[name] = {"before_m": old["width_proxy_m"], "after_m": new["width_proxy_m"],
+                        "delta_m": delta, "measure": "paired_weighted_twice_mean_lateral_radius",
+                        "envelope_span_before_m": old["envelope_span_m"],
+                        "envelope_span_after_m": new["envelope_span_m"],
+                        "source_meshes": old["sources"],
+                        "measured_source_vertices": old["source_sample_vertices"]}
     scene.view_layers[0].update()
     return {"applied": True, "actual_measured_body_slice_widths": widths,
             "body_original_bounds_m": list(bounds),
