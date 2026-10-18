@@ -1,11 +1,6 @@
 name: EXPERIMENTAL Afro Rigged GLB Chrome WebGL Parity Smoke
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - research/human-reference-atlas-20261018
-    paths:
-      - .github/workflows/experimental-afro-webgl-once.yml
 permissions:
   contents: read
   actions: read
