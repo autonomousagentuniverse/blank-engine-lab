@@ -117,7 +117,7 @@ def main():
  nt0.links.new(c.outputs["Color"],base)
  n=nt0.nodes.new("ShaderNodeTexImage");n.name="EXPORT_SKIN_NORMAL_UV";n.image=image_normal
  n.location=(-700,-150)
- n.colorspace_settings.name="Non-Color" if hasattr(n,"colorspace_settings") else "Non-Color"
+ # The linked image itself uses Non-Color; ShaderNodeTexImage has no node-level colorspace.
  nm=nt0.nodes.new("ShaderNodeNormalMap");nm.name="EXPORT_SKIN_TANGENT_NORMAL"
  nm.space="TANGENT";nm.uv_map=uv.name;nm.inputs["Strength"].default_value=.85
  nt0.links.new(n.outputs["Color"],nm.inputs["Color"])
