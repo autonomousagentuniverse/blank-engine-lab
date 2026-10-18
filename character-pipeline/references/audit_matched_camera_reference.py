@@ -90,8 +90,7 @@ nt.links.new(em.outputs["Emission"],out.inputs["Surface"])
 view.material_override=mat
 scene.cycles.samples=4
 scene.view_settings.view_transform="Standard"
-scene.view_settings.look="Medium High Contrast" if "Medium High Contrast" in [
- x.identifier for x in scene.view_settings.bl_rna.properties["look"].enum_items] else "Medium High Contrast"
+scene.view_settings.look="Medium High Contrast"
 mask=OUT/"blender-white-silhouette.png"
 scene.render.filepath=str(mask.resolve())
 bpy.ops.render.render(write_still=True)
