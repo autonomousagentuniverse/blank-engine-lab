@@ -107,14 +107,33 @@ export default async function handler(req,res){
  const match=JOB_RE.exec(String(req.query?.job||''));
  if(!match)return res.status(400).json({error:'Invalid anatomy job identifier'});
  const [,outer,inner]=match;
+ const requestedAsset=req.query?.asset;
+ if(requestedAsset!==undefined&&requestedAsset!=='animated_character.glb')
+  return res.status(400).json({error:'Only the generated rigged GLB can be imported into the game'});
  try{
   const sandbox=await Sandbox.get({name:sandboxName(outer)});
   const domain=sandbox.domain(PORT);
+  const token=await tokenFromSandbox(sandbox);
   const result=await requestJSON(domain+'/api/jobs/'+inner,{
-   headers:{Authorization:'Bearer '+await tokenFromSandbox(sandbox)},
+   headers:{Authorization:'Bearer '+token},
    signal:AbortSignal.timeout(12000)
   });
   if(result.status!==200)return res.status(result.status).json({error:result.data.error||'Job not found'});
+  if(requestedAsset){
+   if(result.data.status!=='complete')return res.status(409).json({error:'The Blender build is not finished'});
+   const asset=await fetch(domain+'/outputs/'+inner+'/animated_character.glb',{
+    headers:{Authorization:'Bearer '+token},signal:AbortSignal.timeout(30000)
+   });
+   if(!asset.ok)return res.status(502).json({error:'Completed Blender GLB is unavailable'});
+   const declared=Number(asset.headers.get('content-length')||0);
+   if(declared>8*1024*1024)return res.status(413).json({error:'GLB exceeds the playable avatar size limit'});
+   const bytes=Buffer.from(await asset.arrayBuffer());
+   if(bytes.length<20||bytes.length>8*1024*1024)return res.status(413).json({error:'Playable GLB has an invalid size'});
+   if(bytes.readUInt32LE(0)!==0x46546c67)return res.status(502).json({error:'Invalid GLB returned by Blender worker'});
+   res.setHeader('Content-Type','model/gltf-binary');
+   res.setHeader('Content-Length',String(bytes.length));
+   return res.status(200).send(bytes);
+  }
   return res.status(200).json({
    ...result.data,
    id:outer+'.'+inner,

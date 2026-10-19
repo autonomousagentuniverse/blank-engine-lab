@@ -72,3 +72,5 @@ h2{font-size:25px;margin-top:6px}.top p{color:var(--muted);margin-top:6px;font-s
 #animationQualityStatus{padding:10px 12px;border:1px solid #454b56;border-radius:7px;background:#252934;font-size:12px;line-height:1.6;color:#d4dbe4}
 
 .build-progress{margin:12px 0;padding:15px;background:#252832;color:#f1f0f0;border:1px solid #555d69;border-radius:10px}.build-progress progress{display:block;width:100%;height:13px;margin:10px 0}.build-progress p{font-size:13px;line-height:1.5;color:#d6d8dd}#resumeBuild{padding:10px;border-radius:8px}
+
+.play-in-engine{display:inline-flex;align-items:center;justify-content:center;padding:11px 14px;border-radius:9px;background:#1a644e;color:#fff;font-weight:700;text-decoration:none;min-height:44px}

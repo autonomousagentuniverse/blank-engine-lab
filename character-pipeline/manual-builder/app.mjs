@@ -252,6 +252,14 @@ function showResults(job){
   'Sandbox downloads expire after approximately 30 minutes; save your .blend immediately'
  ].join('\n');
  const links=$('#artifactLinks');links.replaceChildren();
+ const play=document.createElement('a');
+ play.href='/index.html?anatomyJob='+encodeURIComponent(job.id);
+ play.textContent='Play-test this character in Blank Engine ↗';
+ play.className='play-in-engine';
+ play.target='_blank';
+ play.rel='noopener noreferrer';
+ play.title='Load the generated rigged human into the existing Rapier playable scene (temporary Blender job)';
+ links.append(play);
  for(const [label,name] of [['Animated GLB · all 9 clips','animated_character.glb'],['Editable Blender','anatomical_character.blend'],['Build evidence','report.json']]){
   const a=document.createElement('a');a.href=filesBase+'/outputs/'+id+'/'+name;a.textContent=label;a.download=name;links.append(a);
  }

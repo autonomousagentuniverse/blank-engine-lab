@@ -32,6 +32,7 @@ const progressKey='blankbox-playstate-v1';
 const skinKey='blankbox-player-skin-v1';
 let selectedSkin=SKIN_NAMES.includes(localStorage.getItem(skinKey))?localStorage.getItem(skinKey):SKIN_NAMES[0];
 let avatarBytes=null,avatarMotionBytes=null,avatarGeneration=0,poseController=null,poseReach=0,poseReachTarget=null,poseReachRadius=0;
+let blenderAnatomyPlaytest=false;
 let autoDemoRequested=false;
 function material(color, extra={}) { const m=new THREE.MeshStandardMaterial({color,roughness:.62,metalness:.26,...extra}); materials.push(m); return m; }
 function addMesh(geo,mat,parent=scene){ const mesh=new THREE.Mesh(geo,mat); parent.add(mesh); return mesh; }
@@ -208,8 +209,10 @@ function update(dt){
   if(pressed.has('KeyD')||pressed.has('ArrowRight'))dx+=1;
   const angle=Math.atan2(dx,dz)+cameraYaw;
   const magnitude=worldInspectMode?0:Math.min(1,Math.hypot(dx,dz));
+  const isRunning=pressed.has('ShiftLeft')||pressed.has('ShiftRight');
   const input={x:Math.sin(angle)*magnitude,z:Math.cos(angle)*magnitude,
-    jump:pressed.has('Space'),run:pressed.has('ShiftLeft')||pressed.has('ShiftRight')};
+    jump:pressed.has('Space'),run:isRunning,
+    speedScale:blenderAnatomyPlaytest?(isRunning?.5:.37):1};
   physicsAccum=stepAccumulator(physicsAccum,dt,step=>{
     const move=physicsWorld ? (delta=>physicsWorld.step(delta)) : createFallbackMover((x,z)=>!wallCollision(x,z),actor);
     actor=stepActor(actor,input,step,move);
@@ -457,15 +460,48 @@ $('motionInput').onchange=async event=>{
   catch(e){setStatus('Motion import rejected: '+e.message,true);}
   finally{event.target.value='';}
 };
+async function loadBlenderHumanFromJob(){
+ const raw=new URLSearchParams(location.search).get('anatomyJob');
+ if(raw===null)return;
+ const uuid='[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
+ if(!new RegExp('^'+uuid+'\\.'+uuid+'$').test(raw)){
+  $('avatarStatus').textContent='Anatomy play-test link is invalid';
+  setStatus('Invalid Blender anatomy job identifier',true);return;
+ }
+ try{
+  $('avatarStatus').textContent='Loading actual Blender human into Rapier game…';
+  const response=await fetch('/api/anatomy?job='+encodeURIComponent(raw)+'&asset=animated_character.glb',{
+   cache:'no-store',signal:AbortSignal.timeout(45000)
+  });
+  if(!response.ok){
+   const data=await response.json().catch(()=>({}));
+   throw Error(data.error||'Blender GLB transfer failed (HTTP '+response.status+')');
+  }
+  const bytes=await response.arrayBuffer();
+  if(bytes.byteLength<1000||bytes.byteLength>MAX_AVATAR_BYTES)throw Error('Generated GLB outside import size limits');
+  await loadAvatarBytes(bytes);
+  if(avatarBytes!==bytes||characterRig?.skinnedCount<1)throw Error('GLB import was not accepted');
+  blenderAnatomyPlaytest=true;
+  const walk=characterRig.clipSources.walk,run=characterRig.clipSources.run;
+  const summary=' · BLENDER PLAYTEST · Walk: '+walk+' · Run: '+run+' · contact IK available';
+  $('avatarStatus').textContent+=summary;
+  setStatus('Anatomy human loaded into physics game. WASD/arrow keys move; Shift runs; Space jumps. Use touch arrows on mobile. Motion realism remains under review.');
+  history.replaceState(null,'',location.pathname+location.hash);
+ }catch(e){
+  blenderAnatomyPlaytest=false;
+  $('avatarStatus').textContent='Blender game import FAILED: '+e.message;
+  setStatus('Blender game import failed; procedural character remains available. '+e.message,true);
+ }
+}
 $('avatarBtn').onclick=()=>$('avatarInput').click();
 $('avatarInput').onchange=async event=>{
   const file=event.target.files?.[0];
-  try {if(!file)return;if(file.size>MAX_AVATAR_BYTES)throw Error('GLB must be under 8 MB');await loadAvatarBytes(await file.arrayBuffer());}
+  try {if(!file)return;if(file.size>MAX_AVATAR_BYTES)throw Error('GLB must be under 8 MB');blenderAnatomyPlaytest=false;await loadAvatarBytes(await file.arrayBuffer());}
   catch(e){setStatus('Avatar import rejected: '+e.message,true);}
   finally{event.target.value='';}
 };
 $('skinBtn').onclick=()=>{
-  if(avatarBytes){avatarBytes=null;avatarMotionBytes=null;avatarGeneration++;replaceAvatarRig(createCharacterRig(THREE,{skin:selectedSkin,makeMaterial:material,armorMaterial:pbrLibrary.materialFor('armor')}));$('avatarStatus').textContent='Avatar: procedural rig restored';setStatus('Imported GLB unloaded; procedural avatar restored.');return;}
+  if(avatarBytes){blenderAnatomyPlaytest=false;avatarBytes=null;avatarMotionBytes=null;avatarGeneration++;replaceAvatarRig(createCharacterRig(THREE,{skin:selectedSkin,makeMaterial:material,armorMaterial:pbrLibrary.materialFor('armor')}));$('avatarStatus').textContent='Avatar: procedural rig restored';setStatus('Imported GLB unloaded; procedural avatar restored.');return;}
   selectedSkin=SKIN_NAMES[(SKIN_NAMES.indexOf(selectedSkin)+1)%SKIN_NAMES.length];characterRig.setSkin(selectedSkin);$('skinName').textContent=selectedSkin;
   try{localStorage.setItem(skinKey,selectedSkin);}catch{}
   setStatus('Changed skinned character appearance: '+selectedSkin);

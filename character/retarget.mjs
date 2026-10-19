@@ -28,7 +28,7 @@ export function mapHumanoidBones(root) {
   const bones=[];root.traverse(obj=>{if(obj.isBone)bones.push(obj);});
   const mapped={};const used=new Set();
   for(const [role,names] of Object.entries(ALIASES)) {
-    const bone=bones.find(b=>!used.has(b)&&names.includes(normalizeBoneName(b.name)));
+    const bone=names.map(n=>bones.find(b=>!used.has(b)&&normalizeBoneName(b.name)===n)).find(Boolean);
     if(bone){mapped[role]=bone;used.add(bone);}
   }
   return mapped;

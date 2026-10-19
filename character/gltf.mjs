@@ -35,7 +35,7 @@ export function inspectAvatarGlb(buffer) {
 /** Exact authored animation aliases, not substring guesses such as WalkJump. */
 export function selectLocomotionClips(clips){
  if(!Array.isArray(clips))throw Error('Invalid authored animation list');
- const aliases={idle:['idle','idling','standing','stand'],walk:['walk','walking'],run:['run','running','sprint','sprinting'],jump:['jump','jumping','leap'],fall:['fall','falling','airborne']};
+ const aliases={idle:['idle','idle_breath','idling','standing','stand'],walk:['walk','walk_inplace','walking'],run:['run','run_inplace','running','sprint','sprinting'],jump:['jump','jumping','leap'],fall:['fall','falling','airborne']};
  const out={};
  for(const [state,names] of Object.entries(aliases)){
   for(const name of names){
@@ -138,6 +138,18 @@ export function createGlbAvatar(THREE,gltf){
         next.play();
         next.crossFadeFrom(previous,duration,false);
         playing=desired;
+      }
+      // Anatomy Builder's in-place clips are ~2 seconds long. Playing them at
+      // original FPS while Rapier moves the body causes severe apparent foot
+      // skating. Match a measured cycle cadence to physical ground speed.
+      // This is preliminary speed calibration, not mocap/true stance matching.
+      if(['walk','run'].includes(desired)){
+        const action=actions[desired],clip=action.getClip();
+        if(/_InPlace$/i.test(clip.name)){
+          const speed=Math.hypot(actor.vx||0,actor.vz||0);
+          const stride=desired==='run'?4.3:2.7;
+          action.timeScale=THREE.MathUtils.clamp(speed*clip.duration/stride,.5,3.2);
+        }
       }
       mixer.update(Math.min(.05,Math.max(0,dt)));
       root.position.y=actor.y;

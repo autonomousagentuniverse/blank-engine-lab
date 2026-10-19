@@ -26,7 +26,9 @@ export function stepActor(actor, input, dt, move) {
   const x=Number(input?.x)||0,z=Number(input?.z)||0;
   const length=Math.hypot(x,z), nx=length>1?x/length:x, nz=length>1?z/length:z;
   const moving=Math.hypot(nx,nz)>0.001;
-  const speed=input?.run?RUN_SPEED:WALK_SPEED;
+  const scale=input?.speedScale??1;
+  if(!Number.isFinite(scale)||scale<.2||scale>1.5)throw Error('Invalid character movement speed scale');
+  const speed=(input?.run?RUN_SPEED:WALK_SPEED)*scale;
   // Exponential horizontal acceleration, frame-rate invariant on fixed steps.
   const blend=1-Math.exp(-(actor.grounded?19:8)*dt);
   const vx=actor.vx+((moving?nx:0)*speed-actor.vx)*blend;
