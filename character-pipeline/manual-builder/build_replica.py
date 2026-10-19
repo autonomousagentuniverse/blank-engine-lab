@@ -274,7 +274,7 @@ def main():
     body_metrics=mesh_topology_metrics(indices)
     eye_metrics=eye_diameter_metrics(verts,snap,controls)
     rendered=render_views(out,controls,height,verts)
-    animation_videos=render_animation_previews(rig,human,out,controls)
+    animation_videos=render_animation_previews(rig,human,out,controls,spec.get('selectedAnimation'))
     # Report reproducible exact vertex parity, without claiming human realism.
     max_error=max(abs(human.data.vertices[i].co[j]-verts[i][j])
                   for i in range(len(verts)) for j in range(3))

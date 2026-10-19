@@ -321,3 +321,24 @@ test('Biomechanical animation uses world-space root translation and denoised HD 
  assert.match(app,/job\.report\.animation\.biomechanics/);
  assert.match(app,/videoData\.cycles_samples/);
 });
+
+test('Nine-clip worker reports real progress and browser can reconnect after interrupted polling',async()=>{
+ const server=await readFile(join(base,'../character-pipeline/manual-builder/server.mjs'),'utf8');
+ const app=await readFile(join(base,'../character-pipeline/manual-builder/app.mjs'),'utf8');
+ const api=await readFile(join(base,'../api/anatomy.js'),'utf8');
+ const rig=await readFile(join(base,'../character-pipeline/manual-builder/animation_rig.py'),'utf8');
+ const html=await readFile(join(base,'../character-pipeline/manual-builder/index.html'),'utf8');
+ assert.match(server,/renderFrames/);
+ assert.match(server,/availablePreviews/);
+ assert.match(server,/estimatedRemainingSeconds/);
+ assert.match(server,/selectedAnimation:choice/);
+ assert.match(api,/selectedAnimation:choice/);
+ assert.match(app,/LAST_JOB_KEY/);
+ assert.match(app,/checkFailures/);
+ assert.match(app,/reconnectBuild/);
+ assert.match(app,/updateBuildProgress/);
+ assert.match(app,/selectedAnimation:activeAnimation/);
+ assert.match(html,/id="buildProgressPanel"/);
+ assert.match(rig,/pair\[0\]==selected/);
+ assert.match(rig,/encoding.replace\(dest\)/);
+});

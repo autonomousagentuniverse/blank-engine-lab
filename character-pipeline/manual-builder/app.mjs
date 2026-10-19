@@ -19,6 +19,8 @@ try{
 $('#presetName').textContent=PRESET_NAME;
 $('#presetDescription').textContent=PRESET_DESCRIPTION+' · Body morphology and ancestry-inspired references can be changed independently of skin tone.';
 let dirty=0,activeJob=null,poll=null;
+const LAST_JOB_KEY='blank-anatomy:last-running-job:v1';
+let checkFailures=0,checkingJob=false;
 let previewUpdater=()=>{}, previewSnapshot=null, previewPending=false;
 function queuePreview(){
  if(previewPending)return;
@@ -176,6 +178,11 @@ function showAnimationChoice(){
   const prefix=job.outputBaseUrl||'';
   const video=$('#activeAnimationVideo');
   video.pause();
+  if(job.status==='running'&&!job.progress?.availablePreviews?.includes(activeAnimation)){
+   video.removeAttribute('src');video.load();
+   $('#activeClipDescription').textContent='This clip is still rendering. The completed videos are available while Blender continues.';
+   return;
+  }
   video.src=prefix+'/outputs/'+id+'/'+activeAnimation+'_preview.mp4';
   video.load();
   const videoData=job.report.animation.previews.find(p=>p.kind===activeAnimation);
@@ -246,18 +253,59 @@ function showResults(job){
   const a=document.createElement('a');a.href=filesBase+'/outputs/'+id+'/'+name;a.textContent=label;a.download=name;links.append(a);
  }
 }
+function updateBuildProgress(job){
+ const p=job.progress;
+ if(!p)return;
+ $('#buildProgressPanel').hidden=false;
+ $('#buildProgress').value=p.renderedFrames;
+ const remaining=p.estimatedRemainingSeconds==null?'Estimating time remaining':Math.max(1,Math.ceil(p.estimatedRemainingSeconds/60))+' min remaining (estimate)';
+ const stalled=p.lastProgressSeconds>130?' · No new frames for '+p.lastProgressSeconds+'s':'';
+ $('#buildProgressDetail').textContent=(p.renderedFrames===p.totalFrames?'Finalizing Blender files':p.phase)+' · '+p.renderedFrames+'/'+p.totalFrames+
+  ' frames · '+p.availablePreviews.length+'/9 videos ready · '+remaining+stalled;
+ if(p.availablePreviews.includes(activeAnimation)){
+  $('#animations').hidden=false;
+  const src=(job.outputBaseUrl||'')+'/outputs/'+encodeURIComponent(job.workerJobId||job.id)+'/'+activeAnimation+'_preview.mp4';
+  const video=$('#activeAnimationVideo');
+  if(!renderedJob||renderedJob.id!==job.id){
+   renderedJob={...job,report:{animation:{previews:[],biomechanics:{}}}};
+  }
+  if(video.src!==new URL(src,location.href).href){video.src=src;video.load();}
+ }
+}
 async function check(id){
+ if(checkingJob)return;checkingJob=true;
  try{
-  const res=await fetch(API_STATUS(id),{cache:'no-store'});
-  if(!res.ok)throw Error('Build status request failed');
-  const job=await res.json();status(job.status.toUpperCase());
+  const res=await fetch(API_STATUS(id),{cache:'no-store',signal:AbortSignal.timeout(20000)});
+  const job=await res.json();
+  if(!res.ok){
+   if(res.status===410||res.status===404){
+    localStorage.removeItem(LAST_JOB_KEY);
+    clearInterval(poll);poll=null;activeJob=null;build.disabled=false;
+    $('#resumeBuild').hidden=true;
+    status('BUILD EXPIRED');
+    $('#buildProgressDetail').textContent=job.error||'The Blender worker has expired; start a new build.';
+    return;
+   }
+   throw Error(job.error||'HTTP '+res.status+' while checking Blender');
+  }
+  checkFailures=0;status(job.status.toUpperCase());updateBuildProgress(job);
   $('#log').textContent=job.log||'';
   if(job.status==='complete'||job.status==='failed'){
    clearInterval(poll);poll=null;activeJob=null;build.disabled=false;
+   localStorage.removeItem(LAST_JOB_KEY);$('#resumeBuild').hidden=true;
    if(job.status==='complete'){showResults(job);dirty=0;note();}
    else{$('#report').textContent='Blender failed: '+job.error+'. See the logs for the exact error.';status('BUILD FAILED')}
   }
- }catch(err){status('STATUS ERROR');$('#log').textContent=err.message;clearInterval(poll);poll=null;activeJob=null;build.disabled=false}
+ }catch(err){
+  checkFailures++;
+  status('RECONNECTING '+checkFailures+'/6');
+  $('#buildProgressPanel').hidden=false;
+  $('#buildProgressDetail').textContent='Status connection interrupted; Blender may still be rendering. '+err.message;
+  if(checkFailures>=6){
+   clearInterval(poll);poll=null;activeJob=null;build.disabled=false;
+   status('TRACKING PAUSED');$('#resumeBuild').hidden=false;
+  }
+ }finally{checkingJob=false}
 }
 build.addEventListener('click',async()=>{
  if(activeJob)return;
@@ -265,12 +313,31 @@ build.addEventListener('click',async()=>{
   // Snapshot matches the last displayed shape and is the only mesh Blender may use.
   if(!previewSnapshot)throw Error('MakeHuman geometry still loading; replica export refused');
   previewUpdater(values);
-  const payload={...validateRequest({schema:SCHEMA,controls:values}),snapshot:previewSnapshot()};
+  const payload={...validateRequest({schema:SCHEMA,controls:values}),snapshot:previewSnapshot(),selectedAnimation:activeAnimation};
   build.disabled=true;status('SUBMITTING…');$('#log').textContent='';
+  renderedJob=null;$('#animations').hidden=true;$('#images').hidden=true;
   const response=await fetch(API_REBUILD,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
   const result=await response.json();
   if(!response.ok)throw Error(result.error||'Blender service rejected submission');
-  activeJob=result.jobId;status('QUEUED');await check(activeJob);
-  if(activeJob)poll=setInterval(()=>{void check(activeJob)},1600);
+  activeJob=result.jobId;checkFailures=0;localStorage.setItem(LAST_JOB_KEY,JSON.stringify({id:activeJob,at:Date.now(),selected:activeAnimation}));
+  status('QUEUED');$('#buildProgressPanel').hidden=false;await check(activeJob);
+  if(activeJob)poll=setInterval(()=>{void check(activeJob)},3000);
  }catch(err){activeJob=null;build.disabled=false;status('SUBMIT ERROR');$('#log').textContent=err.message}
 });
+
+async function reconnectBuild(){
+ if(activeJob)return;
+ let saved;
+ try{saved=JSON.parse(localStorage.getItem(LAST_JOB_KEY)||'null')}catch{}
+ if(!saved?.id)return;
+ if(Date.now()-saved.at>30*60*1000){
+  localStorage.removeItem(LAST_JOB_KEY);status('PREVIOUS BUILD EXPIRED');return;
+ }
+ activeJob=saved.id;build.disabled=true;checkFailures=0;
+ if(ANIMATION_LABELS[saved.selected]){activeAnimation=saved.selected;showAnimationChoice();}
+ $('#resumeBuild').hidden=true;status('RECONNECTING TO BLENDER');
+ await check(activeJob);
+ if(activeJob&&!poll)poll=setInterval(()=>{void check(activeJob)},2500);
+}
+$('#resumeBuild').addEventListener('click',()=>{void reconnectBuild()});
+if(HOSTED)void reconnectBuild();

@@ -453,7 +453,7 @@ def audit_biomechanics(rig,height):
     bpy.context.scene.frame_set(1)
     return out
 
-def render_animation_previews(rig,body,out,controls):
+def render_animation_previews(rig,body,out,controls,selected=None):
     encoder=shutil.which('ffmpeg')
     if not encoder:raise RuntimeError('FFmpeg executable required for animation previews')
     scene=bpy.context.scene
@@ -473,7 +473,8 @@ def render_animation_previews(rig,body,out,controls):
         for layer in scene.view_layers:layer.cycles.use_denoising=True
         scene.frame_start=1;scene.frame_end=49;scene.frame_step=3
         scene.render.fps=12;scene.render.image_settings.file_format='PNG'
-        for kind,clip in PREVIEW_CLIPS:
+        clip_order=sorted(PREVIEW_CLIPS,key=lambda pair:0 if pair[0]==selected else 1)
+        for kind,clip in clip_order:
             scene.camera=bpy.data.objects['Camera-Face-Macro' if kind in FACE_KEYS else 'Camera-Front']
             for track in tracks:track.mute=track.name!=clip
             for track in face_tracks:track.mute=track.name!=clip
@@ -486,13 +487,15 @@ def render_animation_previews(rig,body,out,controls):
             if len(pngs)!=17:raise RuntimeError('Expected 17 rendered '+kind+' frames, got '+str(len(pngs)))
             filename=kind+'_preview.mp4'
             dest=out/filename
+            encoding=out/(kind+'_encoding.mp4')
             command=[encoder,'-y','-hide_banner','-loglevel','error',
                      '-framerate','12','-pattern_type','glob','-i',
                      str(folder/'frame_*.png'),'-c:v','libx264','-preset','fast',
-                     '-pix_fmt','yuv420p','-movflags','+faststart',str(dest)]
+                     '-pix_fmt','yuv420p','-movflags','+faststart',str(encoding)]
             result=subprocess.run(command,capture_output=True,text=True,timeout=90)
             if result.returncode:
                 raise RuntimeError('FFmpeg '+kind+': '+result.stderr[-300:])
+            encoding.replace(dest)
             size=dest.stat().st_size
             if size<6000:raise RuntimeError('Empty '+kind+' animation MP4')
             preview.append({'kind':kind,'clip':clip,'file':filename,

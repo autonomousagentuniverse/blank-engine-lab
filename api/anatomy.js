@@ -56,7 +56,9 @@ export default async function handler(req,res){
    if(Buffer.byteLength(JSON.stringify(req.body||{}),'utf8')>4400000)
     return res.status(413).json({error:'Anatomy snapshot exceeds maximum payload size'});
    const submitted=typeof req.body==='string'?JSON.parse(req.body):req.body;
-   payload={...validateRequest(submitted),snapshot:validateSnapshot(submitted.snapshot)};
+   const choice=submitted.selectedAnimation||'walk';
+   if(!['idle','walk','jog','run','happy','sad','angry','laugh','fight'].includes(choice))throw Error('Unsupported animation selection');
+   payload={...validateRequest(submitted),snapshot:validateSnapshot(submitted.snapshot),selectedAnimation:choice};
   }catch(error){return res.status(400).json({error:'Invalid anatomy specification: '+error.message.slice(0,180)})}
   const id=randomUUID(),name=sandboxName(id),token=randomBytes(32).toString('hex');
   let sandbox;

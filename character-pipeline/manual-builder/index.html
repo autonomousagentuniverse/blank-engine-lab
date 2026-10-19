@@ -37,7 +37,7 @@
 <div class="minor"><button id="save">Export JSON</button><label class="import">Import JSON<input id="import" type="file" accept=".json,application/json" hidden></label><button id="reset" title="Restore the previous character proportions">Restore figure</button></div></div>
 </aside>
 <section class="workspace"><div class="workspace-head"><div><span class="eyebrow">ANATOMY / INTERACTIVE GEOMETRY</span><h2>Human basemesh preview</h2></div><div id="buildStatus" class="indicator">Original figure preset</div></div>
-<div class="hero">
+<div id="buildProgressPanel" class="build-progress" hidden><strong>Blender build progress</strong><progress id="buildProgress" max="153" value="0"></progress><p id="buildProgressDetail" role="status">Preparing Blender...</p><button id="resumeBuild" hidden>Reconnect to generation</button></div><div class="hero">
 <div id="livePreview" class="live-preview" aria-label="Interactive anatomy preview">
  <div id="clayViewport" class="clay-viewport"></div>
  <div class="live-tag"><span class="live-dot"></span> CONNECTED HUMAN MESH · LIVE</div>

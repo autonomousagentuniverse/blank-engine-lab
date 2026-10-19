@@ -26,6 +26,7 @@ function pruneJobs(){
 const RENDER_FILES=new Set(['front.png','three_quarter.png','profile.png','face_macro.png','hand_macro.png','feet_macro.png','report.json','anatomical_character.blend','animated_character.glb','idle_preview.mp4','walk_preview.mp4','jog_preview.mp4','run_preview.mp4','happy_preview.mp4','sad_preview.mp4','angry_preview.mp4','laugh_preview.mp4','fight_preview.mp4']);
 const TYPES={'.html':'text/html; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.png':'image/png','.json':'application/json','.blend':'application/octet-stream','.glb':'model/gltf-binary','.mp4':'video/mp4'};
 const JOBS=new Map();
+const PREVIEWS=['idle','walk','jog','run','happy','sad','angry','laugh','fight'];
 let busy=false;
 const queue=[];
 const json=(res,status,body)=>respond(res,status,JSON.stringify(body),'.json');
@@ -44,6 +45,7 @@ async function limitedJson(req){
 }
 async function runOne(job,blenderBin){
  busy=true;job.status='running';job.startedAt=new Date().toISOString();
+ job.renderFrames=0;job.seenFrames=new Set();job.lastProgressAt=Date.now();job.phase='Preparing Blender anatomy and rig';
  try{
   await mkdir(job.output,{recursive:true});
   const settings=join(job.output,'settings.json');
@@ -51,14 +53,28 @@ async function runOne(job,blenderBin){
   const args=['--background','--factory-startup','--python',join(BASE,'build_replica.py'),'--',settings,job.output];
   await new Promise((ok,fail)=>{
    const child=spawn(blenderBin,args,{cwd:BASE,stdio:['ignore','pipe','pipe'],env:{...process.env,PYTHONUNBUFFERED:'1'}});
-   let done=false;
-   const append=data=>{job.log=(job.log+data.toString()).slice(-12000)};
+   let done=false,timedOut=false;
+   let lineTail='';
+   const append=data=>{
+    const chunk=data.toString();
+    job.log=(job.log+chunk).slice(-12000);
+    const combined=lineTail+chunk;
+    for(const match of combined.matchAll(/frames_([a-z]+)\/frame_(\d{4})\.png/g)){
+     const key=match[1]+'/'+match[2];
+     if(!job.seenFrames.has(key)){
+      job.seenFrames.add(key);job.renderFrames++;
+      job.phase='Rendering '+match[1]+' animation';
+      job.lastProgressAt=Date.now();
+     }
+    }
+    lineTail=combined.slice(-90);
+   };
    child.stdout.on('data',append);child.stderr.on('data',append);
-   const timeout=setTimeout(()=>{child.kill('SIGKILL')},15*60*1000);
+   const timeout=setTimeout(()=>{timedOut=true;child.kill('SIGKILL')},15*60*1000);
    child.on('error',err=>{if(!done){done=true;clearTimeout(timeout);fail(err)}});
    child.on('close',(code,signal)=>{
     if(done)return;done=true;clearTimeout(timeout);
-    if(code===0)ok();else fail(Error('Blender '+(signal||'exit '+code)));
+    if(code===0)ok();else fail(Error(timedOut?'Blender exceeded the 15-minute rendering limit. Try lower Cycles samples or image resolution.':'Blender '+(signal||'exit '+code)));
    });
   });
   const raw=JSON.parse(await readFile(join(job.output,'report.json'),'utf8'));
@@ -86,7 +102,9 @@ export function createBuilderServer({blenderBin=process.env.BLENDER_BIN||'blende
    if(req.method==='GET' && url.pathname==='/api/defaults')return json(res,200,defaultRequest());
    if(req.method==='POST'&&url.pathname==='/api/rebuild'){
     const submitted=await limitedJson(req);
-    const spec={...validateRequest(submitted),snapshot:validateSnapshot(submitted.snapshot)};
+    const choice=submitted.selectedAnimation||'walk';
+    if(!PREVIEWS.includes(choice))return json(res,400,{error:'Unsupported animation selection'});
+    const spec={...validateRequest(submitted),snapshot:validateSnapshot(submitted.snapshot),selectedAnimation:choice};
     if(queue.length>=3)return json(res,429,{error:'Rebuild queue is full'});
     const id=randomUUID();const job={id,status:'queued',submittedAt:new Date().toISOString(),spec,
       output:join(ARTIFACTS,id),createdMs:Date.now(),log:'',report:null,error:null};
@@ -97,15 +115,30 @@ export function createBuilderServer({blenderBin=process.env.BLENDER_BIN||'blende
    const jobMatch=url.pathname.match(/^\/api\/jobs\/([0-9a-f-]{36})$/);
    if(req.method==='GET'&&jobMatch){
     const j=JOBS.get(jobMatch[1]);if(!j)return json(res,404,{error:'Unknown job'});
+    const availablePreviews=[];
+    for(const kind of PREVIEWS){
+     const name=kind+'_preview.mp4';
+     try{if((await stat(join(j.output,name))).size>=6000)availablePreviews.push(kind)}catch{}
+    }
+    const frames=j.renderFrames||0;
+    const elapsedMs=j.startedAt?Date.now()-Date.parse(j.startedAt):0;
+    const etaSeconds=frames>=8&&j.status==='running'
+     ?Math.min(29*60,Math.round(elapsedMs/frames*(153-frames)/1000)):null;
+    const progress={phase:j.phase||(j.status==='queued'?'Waiting for Blender worker':j.status),
+      renderedFrames:frames,totalFrames:153,
+      renderedPercent:j.status==='complete'?100:Math.min(99,Math.round(frames/153*100)),
+      availablePreviews,elapsedSeconds:Math.round(elapsedMs/1000),
+      lastProgressSeconds:Math.round((Date.now()-(j.lastProgressAt||j.createdMs))/1000),
+      estimatedRemainingSeconds:etaSeconds};
     return json(res,200,{id:j.id,status:j.status,submittedAt:j.submittedAt,startedAt:j.startedAt,
-      completedAt:j.completedAt,error:j.error,log:j.log.slice(-1700),
+      completedAt:j.completedAt,error:j.error,progress,log:j.log.slice(-1700),
       report:j.status==='complete'?j.report:null});
    }
    const fileMatch=url.pathname.match(/^\/outputs\/([0-9a-f-]{36})\/([a-z0-9_.]+)$/);
    if(req.method==='GET'&&fileMatch){
     const [,id,name]=fileMatch;const job=JOBS.get(id);
-    if(!job||job.status!=='complete'||!RENDER_FILES.has(name))return json(res,404,{error:'Output not available'});
-    const bytes=await readFile(join(job.output,name));return respond(res,200,bytes,extname(name));
+    if(!job||!['complete','running'].includes(job.status)||!RENDER_FILES.has(name))return json(res,404,{error:'Output not available'});
+    const bytes=await readFile(join(job.output,name));if(bytes.length<6000)return json(res,404,{error:'Output still rendering'});return respond(res,200,bytes,extname(name));
    }
    const asset={'/':'index.html','/index.html':'index.html','/app.mjs':'app.mjs',
                 '/controls.mjs':'controls.mjs','/preview.mjs':'preview.mjs','/style.css':'style.css','/basemesh.json':'basemesh.json','/morph-engine.mjs':'morph-engine.mjs'}[url.pathname];

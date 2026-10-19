@@ -1056,3 +1056,29 @@ VISUAL INSPECTION OF ACTUAL RENDERS: existing 3D subject wears **blue shirt, jea
   truncated files from a connector binary transfer. That commit is invalid.
   Reconstructed complete sources have been independently checked by Git
   blob hash and their tests rerun; no production changes.
+
+### Phase 39 — 2026-10-19 — Recover nine-clip builds that seem stuck [EXPERIMENTAL]
+
+- User reported last generation "stuck". The current code rendered nine
+  animation clips (153 frames) for minutes, but UI only displayed RUNNING,
+  abandoned tracking after one failed status poll, and lost job ID on reload.
+  Protected Vercel runtime-log queries returned 403, so no specific user
+  job failure cause could be independently established.
+- Worker parses actual Cycles saved-frame output and reports phase, rendered
+  frames/153, completed preview availability, elapsed time and approximate
+  remaining seconds. Selected action is explicitly carried from client through
+  Vercel API and local worker to Blender; it renders FIRST.
+- MP4 output is atomically renamed after ffmpeg completes. The worker allows
+  viewing/downloading finished videos even while other clips render.
+- UI progress panel shows actual frames, clip, completed outputs, ETA.
+  Browser now survives transient polling failures, restores a running job ID
+  and selected action from localStorage after reload, offers reconnect after
+  repeated failures, and distinguishes 404/410 expirations from transient
+  errors. Explicit Blender 15-minute timeout diagnostics replace SIGKILL.
+- Genuine local HTTP submission with selected Jog: Jog became downloadable
+  while worker still RUNNING, actual frame counter advanced to 153/153, and
+  all nine animations plus full Blender result completed. Original 18 Node
+  tests plus recovery test pass. No physiological realism claim.
+- Project remains preview-only; no production merge or release. Sandbox
+  still expires in ~30 minutes and output storage remains ephemeral.
+- Investigation and verification in docs/anatomy-job-recovery-20261019.md.
