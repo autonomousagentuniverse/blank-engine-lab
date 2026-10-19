@@ -75,6 +75,9 @@ export function secondaryVertex(v,{ox,oy,oz,x,y,z,py,front,coreW,scale}){
  const knee=gauss(py,.31,.046),ankle=gauss(py,.085,.042);
  const head=smooth(.84,.88,py),face=head*(1-smooth(.995,1,py));
  const faceFront=smooth(.7,1.35,oz)*face;
+ // Correct formerly inert neck width and eye spacing on connected facial topology.
+ x+=sign*(cm(v,'body.neck_width')-.115)*.62*gauss(py,.849,.032)*gauss(px,.43,.49);
+ x+=sign*(cm(v,'face.eye_spacing')-.062)*.53*gauss(py,.934,.021)*gauss(px,.37,.24)*faceFront;
  const brow=gauss(py,.943,.021)*faceFront;
  const ears=face*gauss(py,.924,.042)*gauss(px,.72,.26);
  // Torso: depth (front-back), relative length, neck height and shoulder slope.

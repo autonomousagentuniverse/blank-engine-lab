@@ -707,7 +707,20 @@
       "browser_tests": "PENDING",
       "visual_approval": "PENDING",
       "vercel_preview": "PENDING",
-      "production_deployed": false
+      "production_deployed": false,
+      "real_chromium_loaded": true,
+      "macro_downloads": 6,
+      "browser_errors": [],
+      "first_sweep": {
+        "controls": 93,
+        "observable": 82,
+        "needs_correction": 11
+      },
+      "remaining_expected_blender_only": [
+        "render.samples"
+      ],
+      "next_sweep": "PENDING",
+      "preview_deployed": false
     }
   }
 }
