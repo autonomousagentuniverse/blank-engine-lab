@@ -705,7 +705,7 @@
       "cloud_blender_worker": false,
       "local_blender_nondefault_morphs": "EXPLICITLY REJECTED",
       "browser_tests": "PENDING",
-      "visual_approval": "technical pass; photorealism not approved",
+      "visual_approval": "preview only, photorealism unapproved",
       "vercel_preview": "PENDING",
       "production_deployed": false,
       "real_chromium_loaded": true,
@@ -738,7 +738,26 @@
         "masculine-african",
         "masculine-east-asian"
       ],
-      "mobile_selector_visibility": "FIXED default open, pending retest"
+      "mobile_selector_visibility": "FIXED default open, pending retest",
+      "phase": "MOBILE_BROWSER_QA_PASSED",
+      "real_user_selection": {
+        "mobile_viewport": "393x852",
+        "shape_before": "a2014c1c",
+        "shape_after": "43d15e08",
+        "gender": "masculine",
+        "morphology_has_geometry_change": true,
+        "bust_cm": 0.25,
+        "ancestry_reference": "european",
+        "preset_skin": "#dfb9a3",
+        "skin_manually_changed": "#186239",
+        "skin_reload_persisted": true,
+        "gender_reload_persisted": true,
+        "browser_errors": 0
+      },
+      "webgl_controls_effective": 92,
+      "blender_only_controls": [
+        "render.samples"
+      ]
     }
   }
 }

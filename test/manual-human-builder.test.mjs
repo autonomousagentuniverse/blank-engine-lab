@@ -108,7 +108,7 @@ test('live preview reads connected CC0 anatomy rather than a synthetic procedura
 });
 
 
-test('Original target human preset loads as actual validated 91-control defaults',async()=>{
+test('Original target human preset loads as actual validated 93-control defaults',async()=>{
  assert.equal(CONTROLS.length,93);
  assert.match(PRESET_ID,/original-figure/);
  assert.match(PRESET_NAME,/Afro/);

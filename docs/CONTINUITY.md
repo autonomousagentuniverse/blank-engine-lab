@@ -830,3 +830,11 @@ VISUAL INSPECTION OF ACTUAL RENDERS: existing 3D subject wears **blue shirt, jea
 - Captured genuine browser images for original African/feminine, African/masculine and East Asian/masculine (light pigment independently selected). Visuals demonstrate different anatomical bodies, though character remains non-photorealistic and the male screenshot from QA updated morphology without selecting the GUI-specific bust preset.
 - Mobile Playwright test revealed the new Appearance & morphology group was collapsed by default, causing user-facing gender dropdown not immediately visible. Open this group by default in addition to the Body/Hair/Skin/Feet groups, then retest actual UI selector input and persistence. Do not count geometry-mock pass as a mobile UX pass.
 - No preview deployment yet; production remains unchanged; cloud Blender worker still absent.
+
+
+### Phase 30 — 2026-10-19 — Real mobile UI selector, pigment independence and storage QA PASS [COMMITTED]
+
+- Mobile Playwright Chromium viewport 393x852, full real WebGL renderer with six MPFB CC0 macros, after opening Appearance & morphology by default: changed Body morphology with native select to masculine, and ancestry-inspired reference to european. Render shape signature changed a2014c1c -> 43d15e08. Body bust automatic preset changed to 0.25 cm; shape shows real male-specific mesh morph, not only skin pigment.
+- Appearance preset seeded independent skin #dfb9a3 and straight hair; then manually changed skin to #186239. After real browser reload the skin override #186239 and masculine morphology persisted in localStorage. Zero browser/page errors.
+- Functional controls: 92/93 live settings changed diagnostic geometry/material/hair/lighting/canvas pixels; `render.samples` intentionally Blender/Cycles only and labelled. 11/11 Node tests pass. Visually confirmed separate feminine African, masculine African and masculine East Asian renders. These are still anatomical previews, not photoreal quality; older approved Blender head not restored.
+- Next action: deploy tested branch to Vercel experimental preview (not production), verify READY and exact commit. Cloud Blender worker absent. Do not claim supported cloud Blender generation.
