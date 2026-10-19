@@ -1248,3 +1248,10 @@ replace all locomotion from scratch was too broad: reuse this infrastructure.
   camera and skin deformation. Second character and visual acceptance
   remain pending. Human locomotion **QUALITY GATE BLOCKED**, not accepted.
 - Reference: docs/anatomy-playable-integration-20261019.md.
+
+### Phase 42 — 2026-10-19 — Existing engine locomotion integration started [INCOMPLETE]
+
+- Inspected existing Rapier character controller, rigged GLB import, animation selection and rotation retargeting. The game already contains reusable locomotion infrastructure; do not replace it blindly.
+- Fixed the humanoid mapping priority for Blender-generated `UpperArm.L`, `UpperArm.R`, `Thigh.L` and `Thigh.R` in `character/retarget.mjs` (commit `9802273b8c6fbd82ba7069ee41bc90e76d919e99`). Existing `Walk_InPlace`/`Run_InPlace` aliases were already implemented in `character/gltf.mjs`.
+- **Not yet tested end-to-end:** import an actual newly generated human GLB into the playable editor, verify the mapped bones and animation sources, test grounded foot contact, movement speed, turns, starts/stops, mobile controls and screenshots. Do not claim integration complete or locomotion quality accepted.
+- Next: add a deterministic GLB import/animation regression using a real Blender-generated file, then a browser playable-scene test and fix defects discovered there. No production deployment in this phase.
