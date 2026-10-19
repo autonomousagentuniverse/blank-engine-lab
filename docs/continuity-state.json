@@ -635,6 +635,22 @@
     "visual_status": "AWAITING REVIEW",
     "photorealism_approved": false,
     "production_deployed": false,
-    "workflow_manual_only": true
+    "workflow_manual_only": true,
+    "live_preview": {
+      "date": "2026-10-18",
+      "source": "character-pipeline/manual-builder/preview.mjs",
+      "controls": 91,
+      "event_wiring": "numeric, color and option controls queue 3D redraw",
+      "authored_geometry": "torso loft; arms; hands; fingers; feet with toes; head; hair",
+      "webgl_test": "NOT RUN",
+      "js_syntax_preflight": "PASS",
+      "static_source_test": "ADDED NOT RUN",
+      "vercel_initial_preview": "dpl_3r8RRzcX4hwMCn3NZGjHpj3cQ2fZ",
+      "vercel_updated_preview": "PENDING",
+      "live_blender_worker": false,
+      "hosted_submit": "export validated JSON",
+      "production_deployed": false,
+      "photorealism_approved": false
+    }
   }
 }

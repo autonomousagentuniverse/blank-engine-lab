@@ -1,6 +1,14 @@
-# Manual Human Anatomy Builder — experimental, NOT DEPLOYED
+# Manual Human Anatomy Builder — experimental browser preview + local Blender worker
 
-This is a fresh procedural Blender-model pipeline, not another shape-key or width-warp pass over the rejected October 18 character. It lives on a separate branch; production Vercel remains unchanged.
+This is a fresh procedural Blender-model pipeline, not another shape-key or width-warp pass over the rejected October 18 character. Preview-branch Vercel now serves a live WebGL clay viewport, distinct from the actual Blender executor. Production Vercel remains unchanged.
+
+## Live browser preview (2026-10-18)
+- Open /character-pipeline/manual-builder/index.html on the Vercel branch preview, or click the Human Anatomy Builder sidebar entry from the main Blank Engine lab.
+- The figure is present on page load. Editing anatomy, color, hair, feet and fingers reconstructs visible Three.js geometry without a server or Submit click; drag to orbit, wheel to zoom. Every control remains in the validated JSON schema. Blender-only render sample count/resolution and subsurface strength are not directly represented in WebGL.
+- The standalone browser preview is NOT actual Blender output and is not anatomically approved; the clay approximation will differ from Blender/Cycles.
+- Vercel has no Blender executable or queue. Hosted Submit therefore exports a JSON rebuild request rather than pretending to render. On a local Node+Blender runner Submit still launches the real headless Blender job.
+- External pinned Three.js module is loaded from jsdelivr, matching Blank Engine's existing use of that CDN.
+
 
 ## Local use
 

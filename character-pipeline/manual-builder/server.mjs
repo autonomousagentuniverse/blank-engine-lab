@@ -17,7 +17,7 @@ const json=(res,status,body)=>respond(res,status,JSON.stringify(body),'.json');
 function respond(res,status,body,extension){
  res.writeHead(status,{'Content-Type':TYPES[extension]||'application/octet-stream',
   'Cache-Control':'no-store','X-Content-Type-Options':'nosniff',
-  'Content-Security-Policy':"default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; script-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"});
+  'Content-Security-Policy':"default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; script-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://cdn.jsdelivr.net; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"});
  res.end(body);
 }
 async function limitedJson(req){

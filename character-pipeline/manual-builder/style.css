@@ -30,3 +30,16 @@ h2{font-size:25px;margin-top:6px}.top p{color:var(--muted);margin-top:6px;font-s
 #log{font-size:10px;color:#a9adba;max-height:145px;white-space:pre-wrap;word-break:break-word;overflow:auto;line-height:1.5}.footnote{padding:20px 2px 5px;color:#8e95a5;font-size:11px;line-height:1.6}
 @media(max-width:960px){.layout{grid-template-columns:1fr}.controls{max-height:none;position:static;border-right:0}.sections{max-height:500px}.workspace{padding:18px}.top{padding:20px}.empty{height:370px}}
 @media(max-width:600px){.top{flex-direction:column;align-items:flex-start}.topside{text-align:left}.bottom-grid{grid-template-columns:1fr}.workspace-head{align-items:flex-start;flex-direction:column}.images{gap:3px;padding:6px}.images figcaption{font-size:8px}.controls{min-height:0}}
+
+/* Full-height live WebGL proportion canvas. The old non-reactive silhouette is retired. */
+.live-preview{height:min(70vh,710px);min-height:510px;position:relative;background:radial-gradient(circle at 50% 34%,#484a54 0%,#24262e 62%,#181b22 100%)}
+.clay-viewport{height:100%;width:100%;position:absolute;inset:0}
+.clay-viewport canvas{display:block;width:100%;height:100%;outline:none;cursor:grab}
+.clay-viewport canvas:active{cursor:grabbing}
+.live-tag{position:absolute;left:20px;top:20px;background:rgba(17,20,28,.80);border:1px solid #4c5d50;border-radius:30px;color:#caff9d;padding:9px 12px;font-size:10px;font-weight:800;letter-spacing:.1em;pointer-events:none}
+.live-dot{display:inline-block;width:7px;height:7px;border-radius:100%;background:#c0ff9b;margin-right:6px}
+.preview-hint{position:absolute;left:20px;bottom:18px;color:#e0e1e6;text-shadow:0 1px 5px #000;font-size:10px;font-weight:800;letter-spacing:.07em;pointer-events:none}
+.preview-state{position:absolute;right:16px;top:20px;max-width:240px;text-align:right;color:#cbd0da;font-size:11px;line-height:1.4;pointer-events:none}
+@media(max-width:600px){.live-preview{height:530px;min-height:490px}.preview-hint{left:12px;bottom:12px;font-size:9px;max-width:245px}.live-tag{left:12px;top:12px;padding:8px;font-size:9px}.preview-state{top:57px;left:12px;right:auto;text-align:left}}
+
+[hidden]{display:none!important}

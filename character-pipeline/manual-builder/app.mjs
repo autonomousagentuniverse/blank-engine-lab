@@ -12,11 +12,26 @@ try{
  if(previous?.schema===SCHEMA)values=validateRequest(previous).controls;
 }catch{}
 let dirty=0,activeJob=null,poll=null;
+let previewUpdater=()=>{}, previewPending=false;
+function queuePreview(){
+ if(previewPending)return;
+ previewPending=true;
+ requestAnimationFrame(()=>{previewPending=false;previewUpdater(values)});
+}
+import('./preview.mjs').then(({mountClayPreview})=>{
+ const viewport=mountClayPreview($('#clayViewport'),values);
+ previewUpdater=next=>viewport.update(next);
+ $('#previewState').textContent='LIVE · Full body, turntable view';
+}).catch(err=>{
+ $('#previewState').textContent='3D renderer unavailable: '+err.message;
+ $('#report').textContent='WebGL preview could not initialize; your controls and exported JSON still work.';
+});
 const numberText=(c,value)=>c.unit==='ratio'&&c.step<.01?Number(value).toFixed(3):String(value);
 function note(){
  $('#dirty').textContent=dirty?dirty+' parameter change'+(dirty===1?'':'s')+' since last rebuild':'Ready to submit current anatomy';
  $('#count').textContent=CONTROLS.length+' fully bound adjustable variables';
  localStorage.setItem(SAVED,JSON.stringify({schema:SCHEMA,controls:values}));
+ queuePreview();
 }
 function makeInput(c){
  const wrap=document.createElement('div');wrap.className='control';wrap.dataset.search=(c.label+' '+c.id).toLowerCase();
@@ -99,10 +114,20 @@ $('#import').addEventListener('change',async(event)=>{
  event.target.value='';
 });
 const build=$('#submit');
+const HOSTED=!['localhost','127.0.0.1'].includes(location.hostname);
+function exportSpecification(data,name){
+ const blob=new Blob([JSON.stringify(data,null,2)+'\n'],{type:'application/json'});
+ const url=URL.createObjectURL(blob),a=document.createElement('a');
+ a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),500);
+}
+if(HOSTED){
+ build.innerHTML='Export Blender rebuild request <span aria-hidden="true">↗</span>';
+ $('#report').textContent='Live geometry preview ready. This hosted preview has no cloud Blender executor. Export the exact controls for a real Blender build.';
+}
 function status(value){$('#buildStatus').textContent=value}
 function showResults(job){
  const id=encodeURIComponent(job.id);
- $('#empty').hidden=true;$('#images').hidden=false;
+ $('#images').hidden=false;
  for(const name of ['front','three_quarter','profile']){
   $('#'+name).src='/outputs/'+id+'/'+name+'.png';
  }
@@ -138,6 +163,12 @@ build.addEventListener('click',async()=>{
  if(activeJob)return;
  try{
   const payload=validateRequest({schema:SCHEMA,controls:values});
+  if(HOSTED){
+   exportSpecification(payload,'blank-human-anatomy-rebuild-request.json');
+   status('REBUILD SETTINGS EXPORTED');
+   $('#report').textContent='The JSON of the current anatomy has been exported. Live WebGL geometry reacts immediately. A Blender/Cycles render is NOT generated on Vercel until a cloud worker is connected.';
+   return;
+  }
   build.disabled=true;status('SUBMITTING…');$('#log').textContent='';
   const response=await fetch('/api/rebuild',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
   const result=await response.json();
