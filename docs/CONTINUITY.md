@@ -1206,3 +1206,45 @@ technical building blocks, but the procedural locomotion system is not an
 approved foundation for a complete game. This entry is a documentation/
 architecture checkpoint only; it does not implement locomotion, merge to
 main, or deploy to production.
+
+
+### Phase 42 — 2026-10-19 — Blender human in existing playable locomotion runtime [EXPERIMENTAL]
+
+**Finding and implementation:** The main game repo already had real movement
+infrastructure: 60Hz physics/actor states (\`physics/locomotion.mjs\`), Rapier
+character collision and contact probes (\`physics/rapier.mjs\`), GLTF humanoid
+import/animation blending (\`character/gltf.mjs\`), basic rotation retargeting
+(\`character/retarget.mjs\`), stance foot-lock/two-bone IK
+(\`character/ik.mjs\`, \`character/motion.mjs\`), and keyboard/touch controls
+in the playable Night Market (\`editor.mjs\`). This is a crude but functional
+engine foundation, NOT production humanoid locomotion. The previous advice to
+replace all locomotion from scratch was too broad: reuse this infrastructure.
+
+- Repaired actual Blender NLA clip aliases \`Idle_Breath\`, \`Walk_InPlace\`
+  and \`Run_InPlace\` in engine GLB importer, with Pelvis preferred as humanoid
+  hips over motion Root; no synthetic replacement GLB.
+- Anatomy Builder now offers a Play-test link after a completed one-shot.
+  Experimental same-origin, server-authorized GET routes the short-lived
+  \`animated_character.glb\` to the existing game without exposing worker
+  tokens or relying on cross-origin browser fetch. Game imports the GLB,
+  preserves scene/Rapier physics, and displays authored/fallback clip status.
+- Blender-human-only prototype speed reduction and runtime clip-cadence
+  matching to Rapier motion. Existing procedural-avatar speeds unaffected.
+  This is an approximate anti-foot-skate measure, not gait validation.
+- Real Blender 5.0.1 generated 13,524-vertex, ~1.5 MB GLB with all nine
+  clips and 22 bones. True \`GLTFLoader\`: 1 SkinnedMesh, 15 recognized
+  humanoid roles, 4 mapped two-bone IK chains, authored Idle/Walk/Run and
+  fallback Jump/Fall. 360 Rapier 60Hz steps passed Walk → Run → Walk → Idle,
+  sideways turning, finite actor transforms and 194 stance-locked steps.
+- Repo Node regression: **195 PASS, 2 SKIP, 0 FAIL**. Added real Blender
+  GLB-to-Rapier smoke and four pure handoff/alias/physics regression tests.
+- Browser WebGL playthrough is **NOT VERIFIED**: isolated Vercel Sandbox
+  Ubuntu 26.04 test Chromium failed WebGL initialization both under
+  headless SwiftShader and Xvfb. This does not prove real user-device failure;
+  it prevents declaring a device/visual pass. Protected live Vercel
+  button flow still needs device check and genuine temporary job.
+- Continuation: use real phone/desktop gameplay video from experimental
+  preview, examine foot slide, knee/hip motion, actor turning, collision,
+  camera and skin deformation. Second character and visual acceptance
+  remain pending. Human locomotion **QUALITY GATE BLOCKED**, not accepted.
+- Reference: docs/anatomy-playable-integration-20261019.md.
