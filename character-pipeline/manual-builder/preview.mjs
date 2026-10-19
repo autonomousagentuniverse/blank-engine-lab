@@ -1,239 +1,308 @@
-// Interactive proportion preview: browser-generated geometry, not a Blender/Cycles render.
+// Blank Engine — anatomical proxy v2. Browser WebGL preview (not Blender/Cycles).
+// Sculpted variable-section topology, deliberately no ball-joint or capsule anatomy.
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js';
 
-export function mountClayPreview(host, initial) {
-  const renderer = new THREE.WebGLRenderer({antialias:true, powerPreference:'high-performance'});
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.22;
-  host.replaceChildren(renderer.domElement);
-  renderer.domElement.setAttribute('aria-label','Interactive full-body anatomical clay model. Drag to rotate and scroll to zoom.');
-  renderer.domElement.style.touchAction='none';
+export function mountClayPreview(host, initial){
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(33, 1, .02, 50);
-  const group = new THREE.Group();
-  scene.add(group);
-  const hemi = new THREE.HemisphereLight(0xf7f5ee,0x24242d,2);
-  scene.add(hemi);
-  const key = new THREE.DirectionalLight(0xffffff,3);
-  key.position.set(-2,4,5);scene.add(key);
-  const fill = new THREE.DirectionalLight(0xb5c5ec,1.6);
-  fill.position.set(3,2,-2);scene.add(fill);
-  const stage = new THREE.Mesh(new THREE.CircleGeometry(1.12,64),new THREE.MeshStandardMaterial({color:0x34343d,roughness:1}));
-  stage.rotation.x=-Math.PI/2; stage.position.y=-.013;scene.add(stage);
-  let azimuth=.24,elevation=.06,distance=4.15,height=1.72;
-  const sph=new THREE.SphereGeometry(1,16,12);
-  const pick=(v,id)=>Number(v[id]);
-  const cm=(v,id)=>pick(v,id)/100;
-  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-  function material(color,roughness=.77,metalness=0){
-    return new THREE.MeshPhysicalMaterial({color,roughness,metalness, clearcoat:0.015});
+  const renderer = new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
+  renderer.setPixelRatio(Math.min(1.6,window.devicePixelRatio||1));
+  renderer.outputColorSpace=THREE.SRGBColorSpace;
+  renderer.toneMapping=THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure=1.2;
+  host.replaceChildren(renderer.domElement);
+  const canvas=renderer.domElement;
+  canvas.style.touchAction='none';
+  canvas.style.cursor='grab';
+  canvas.setAttribute('aria-label','Live full-body human anatomy preview; drag to rotate, pinch or scroll to zoom');
+  const camera=new THREE.PerspectiveCamera(32,1,.02,30);
+  const model=new THREE.Group();scene.add(model);
+  scene.add(new THREE.HemisphereLight(0xffffff,0x4e4b52,2.4));
+  const key=new THREE.DirectionalLight(0xfff4e9,3.0);key.position.set(-2.1,3.1,5);scene.add(key);
+  const rim=new THREE.DirectionalLight(0xb2bdde,1.3);rim.position.set(2.2,2.9,-3);scene.add(rim);
+  const floor=new THREE.Mesh(new THREE.CircleGeometry(1.2,64),new THREE.MeshStandardMaterial({color:0x444650,roughness:1}));
+  floor.rotation.x=-Math.PI/2;floor.position.y=-.016;scene.add(floor);
+  const sphere=new THREE.SphereGeometry(1,16,12);
+  let height=1.72,azimuth=.21,elevation=.015,distance=3.65,drag=false,last=[0,0];
+  const N=(v,id)=>Number(v[id]);
+  const C=(v,id)=>N(v,id)*.01;
+  const clamp=(x,lo,hi)=>Math.max(lo,Math.min(hi,x));
+  const lerp=(a,b,t)=>a+(b-a)*t;
+  const sat=x=>clamp(x,0,1);
+  const smooth=t=>{t=sat(t);return t*t*(3-2*t)};
+  const bulge=(x,s)=>Math.exp(-x*x/(s*s));
+  const mat=(color,roughness=.89)=>{const m=new THREE.MeshStandardMaterial({color,roughness,metalness:0});materials.push(m);return m};
+  const buffers=[];
+  const materials=[];
+  function attach(geometry,material){const mesh=new THREE.Mesh(geometry,material);model.add(mesh);buffers.push(geometry);return mesh}
+  function ball(x,y,z,rx,ry,rz,material){const m=new THREE.Mesh(sphere,material);m.position.set(x,y,z);m.scale.set(Math.max(.001,rx),Math.max(.001,ry),Math.max(.001,rz));model.add(m);return m}
+  function sample(controls,t){
+    const j=Math.min(controls.length-2,Math.floor(t*(controls.length-1))),u=t*(controls.length-1)-j;
+    const a=controls[Math.max(0,j-1)],b=controls[j],c=controls[j+1],d=controls[Math.min(controls.length-1,j+2)];
+    // Shape-preserving smooth interpolation avoids the segmented cylinders of v1.
+    return b.map((_,i)=>{
+      const t1=(c[i]-a[i])*.5,t2=(d[i]-b[i])*.5;
+      return (2*u*u*u-3*u*u+1)*b[i]+(u*u*u-2*u*u+u)*t1+(-2*u*u*u+3*u*u)*c[i]+(u*u*u-u*u)*t2;
+    });
   }
-  function ell(x,y,z,w,h,d,mat,rot=0){
-    const o=new THREE.Mesh(sph,mat);
-    o.position.set(x,y,z);o.scale.set(Math.max(.001,w),Math.max(.001,h),Math.max(.001,d));
-    o.rotation.z=rot;group.add(o);return o;
+  function surfaceHorizontal(stations,material,segments=36,detail=90,deform=null){
+    const pos=[],tri=[];
+    for(let k=0;k<=detail;k++){
+      const [y,rx,rz,z]=sample(stations,k/detail);
+      for(let j=0;j<segments;j++){
+        const a=2*Math.PI*j/segments,co=Math.cos(a),si=Math.sin(a);
+        let x=rx*co,depth=z+rz*si;
+        if(deform){const adjusted=deform(x,y,depth,si,co);x=adjusted[0];depth=adjusted[1]}
+        pos.push(x,y,depth);
+      }
+    }
+    for(let k=0;k<detail;k++)for(let j=0;j<segments;j++){
+      const a=k*segments+j,b=k*segments+(j+1)%segments,c=(k+1)*segments+j,d=(k+1)*segments+(j+1)%segments;
+      tri.push(a,c,b,b,c,d);
+    }
+    const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));geo.setIndex(tri);geo.computeVertexNormals();attach(geo,material);
   }
-  function limb(a,b,ra,rb,mat){
-    const p=new THREE.Vector3(...a),q=new THREE.Vector3(...b),vec=q.clone().sub(p);
-    const length=vec.length();if(length<.001)return;
-    const mesh=new THREE.Mesh(new THREE.CylinderGeometry(Math.max(.001,rb),Math.max(.001,ra),length,14,1),mat);
-    mesh.position.copy(p.clone().add(q).multiplyScalar(.5));
-    mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),vec.normalize());
-    group.add(mesh);
-    ell(...a,ra,ra,ra,mat);ell(...b,rb,rb,rb,mat);
+  function tube(stations,material,detail=52,segments=20,cap=true){
+    // Stations: x, y, z, horizontal cross-section radius, front-back radius.
+    const pos=[],tri=[];
+    for(let k=0;k<=detail;k++){
+      const t=k/detail,[x,y,z,rx,rz]=sample(stations,t);
+      const p=sample(stations,clamp(t+.002,0,1)),m=sample(stations,clamp(t-.002,0,1));
+      const dx=p[0]-m[0],dy=p[1]-m[1],len=Math.hypot(dx,dy)||1;
+      const ux=-dy/len,uy=dx/len;
+      for(let j=0;j<segments;j++){
+        const a=j*2*Math.PI/segments;
+        pos.push(x+ux*Math.cos(a)*rx,y+uy*Math.cos(a)*rx,z+Math.sin(a)*rz);
+      }
+    }
+    for(let k=0;k<detail;k++)for(let j=0;j<segments;j++){
+      const a=k*segments+j,b=k*segments+(j+1)%segments,c=(k+1)*segments+j,d=(k+1)*segments+(j+1)%segments;
+      // Reverse visible normals when centers run downward rather than upward.
+      const flip=stations[stations.length-1][1] < stations[0][1];
+      if(flip)tri.push(a,b,c,b,d,c);else tri.push(a,c,b,b,c,d);
+    }
+    if(cap){
+      const [sx,sy,sz]=stations[0], [ex,ey,ez]=stations[stations.length-1];
+      const aidx=pos.length/3;pos.push(sx,sy,sz,ex,ey,ez);
+      for(let j=0;j<segments;j++){tri.push(aidx,(j+1)%segments,j);const b=detail*segments;tri.push(aidx+1,b+j,b+(j+1)%segments)}
+    }
+    const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));geo.setIndex(tri);geo.computeVertexNormals();attach(geo,material);
   }
-  function torso(sections,mat,v){
-    const sides=32,vertices=[],indices=[];
-    for(const [y,w,d,zoff] of sections){
+  function foot(x,length,width,heel,instep,arch,material){
+    // Low-poly shoe primitives replaced by an authored smooth forefoot and heel skin.
+    const z0=-length*.35,z1=length*.59;
+    const st=[
+      [z0,.012,.014,.022],[z0+length*.12,heel*.44,.028,.035],
+      [z0+length*.32,heel*.52,.038,.042],[z0+length*.55,width*.44,.034+arch*.15,.041],
+      [z0+length*.76,width*.52,.029,.030],[z1,width*.39,.018,.017],
+      [z1+.007,.006,.004,.007]
+    ];
+    const pos=[],tri=[],rings=56,sides=28;
+    for(let k=0;k<=rings;k++){
+      const [z,w,high,depth]=sample(st,k/rings);
       for(let j=0;j<sides;j++){
-        const a=j*2*Math.PI/sides,s=Math.sin(a);
-        vertices.push(Math.cos(a)*w*.5,y,s*d*.5+zoff +
-          (s>0?cm(v,'body.abdomen')*.12: -cm(v,'body.glutes')*.25));
+        const a=j*Math.PI*2/sides,co=Math.cos(a),si=Math.sin(a);
+        pos.push(x+co*w,Math.max(.008,instep*.22+si*high),z+si*depth*.09);
       }
     }
-    for(let i=0;i<sections.length-1;i++)for(let j=0;j<sides;j++){
-      const a=i*sides+j,b=i*sides+(j+1)%sides,c=(i+1)*sides+j,d=(i+1)*sides+(j+1)%sides;
-      indices.push(a,b,c,b,d,c);
+    for(let k=0;k<rings;k++)for(let j=0;j<sides;j++){
+      const a=k*sides+j,b=k*sides+(j+1)%sides,c=(k+1)*sides+j,d=(k+1)*sides+(j+1)%sides;
+      tri.push(a,b,c,b,d,c);
     }
-    const geo=new THREE.BufferGeometry();
-    geo.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
-    geo.setIndex(indices);geo.computeVertexNormals();
-    group.add(new THREE.Mesh(geo,mat));
-    for(const [y,w,d,z] of [sections[0],sections[sections.length-1]])ell(0,y,z,w*.48,.013,d*.48,mat);
+    const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));geo.setIndex(tri);geo.computeVertexNormals();attach(geo,material);
   }
-  const radial=(a,s)=>[Math.cos(a)*s,Math.sin(a)*s];
-  function create(v){
-    height=cm(v,'body.height');
-    scene.background=new THREE.Color(v['render.background']);
-    stage.material.color.set(v['render.background']).multiplyScalar(.88);
-    key.intensity=3*pick(v,'render.light');
-    const clay=v['render.clay']==='true';
-    const skinColor=new THREE.Color(v['skin.color']);
-    const tone=clay?new THREE.Color('#aaa3a0').lerp(skinColor,.32):skinColor;
-    const skin=material(tone,pick(v,'skin.roughness'),0);
-    skin.clearcoat=pick(v,'skin.specular')*.1;
-    skin.subsurface=0; // SSS strength is reserved for the Blender material pass.
-    const lightSkin=material(tone.clone().lerp(new THREE.Color('#f3d6b7'),clamp(pick(v,'skin.variation')*.33,0,.2)),.81);
-    const hair=material(v['hair.color'],.91);
-    const iris=material(v['eye.iris_color'],.32);
-    const sclera=material(v['eye.sclera_tint'],.35);
-    const dark=material('#211e22',.65);
-    const mouth=material(clay?'#877779':'#854f4e',.68);
-    const nails=material(clay?'#c1b9b2':'#9c756f',.5);
-    const H=height,hh=cm(v,'face.head_length'),nw=cm(v,'body.neck_width'),nl=cm(v,'body.neck_length');
-    const headY=H-hh*.5,neckBase=H-hh-nl,shoulderY=neckBase+.016;
-    const crotch=H*pick(v,'legs.length_ratio'),torsoLength=shoulderY-crotch;
-    const waistY=crotch+torsoLength*(.43+(pick(v,'body.torso_ratio')-.31)*.9);
-    const chestY=crotch+torsoLength*.77,posture=Math.tan(pick(v,'body.posture')*Math.PI/180)*torsoLength*.3;
-    const sw=cm(v,'body.shoulders'),rw=cm(v,'body.chest'),ww=cm(v,'body.waist'),hw=cm(v,'body.hips');
-    const rd=cm(v,'body.chest_depth'),wd=cm(v,'body.waist_depth'),hd=cm(v,'body.hip_depth');
-    const fat=pick(v,'body.fat'),muscle=pick(v,'body.muscle');
-    torso([
-      [crotch-.022,hw*.42,hd*.55,0],
-      [crotch+.015,hw*.84,hd*.77,0],
-      [crotch+torsoLength*.14,hw,hd,0],
-      [crotch+torsoLength*.27,hw*.91,hd*.92,.001],
-      [waistY,ww,wd,posture*.3],
-      [chestY,rw,rd,posture*.75],
-      [shoulderY-.032,sw*.89,rd*.82,posture],
-      [shoulderY, nw*.96,nw*.89,posture]],skin,v);
-    ell(0,crotch+torsoLength*.16,-cm(v,'body.glutes')*.35,hw*.43,torsoLength*.23,hd*.39,lightSkin);
-    if(cm(v,'body.bust')>.002)for(const s of [-1,1]){
-      ell(s*cm(v,'body.bust_spacing')*.5,chestY,rd*.48+cm(v,'body.bust')*.27,
-          rw*.17+fat*.005,.075+cm(v,'body.bust')*.32,cm(v,'body.bust')*.7+.014,skin);
-    }
-    limb([0,neckBase,posture],[0,H-hh+.026,0],nw*.42,nw*.44,skin);
-    // Left/right anatomy derived independently from landmark widths and joint angles.
-    for(const s of [-1,1]){
-      const L=cm(v,'arms.length'),upper=L*pick(v,'arms.upper_ratio');
-      const angle=pick(v,'arms.relax')*Math.PI/180;
-      const shoulder=[s*(sw*.5-.017),shoulderY-pick(v,'body.shoulder_slope')*.002,posture];
-      const elbow=[shoulder[0]+s*Math.sin(angle)*upper,shoulder[1]-Math.cos(angle)*upper,cm(v,'arms.forward')*.55];
-      const wrist=[elbow[0]+s*Math.sin(angle*.6)*(L-upper),elbow[1]-(L-upper)*Math.cos(angle*.6),cm(v,'arms.forward')];
-      const ud=(cm(v,'arms.upper_width')*(1+muscle*.09))*0.5;
-      limb(shoulder,elbow,ud,cm(v,'arms.elbow_width')*.5,skin);
-      limb(elbow,wrist,cm(v,'arms.forearm_width')*.5,cm(v,'arms.wrist_width')*.5,skin);
-      const pl=cm(v,'hands.length'),pw=cm(v,'hands.width'),pd=cm(v,'hands.depth');
-      const palm=[wrist[0]+s*.001,wrist[1]-pl*.46,wrist[2]+.005];
-      ell(...palm,pw*.49,pl*.51,pd*.51,skin,s*.05);
-      const spread=pick(v,'hands.spread')*Math.PI/180;
-      const fw=cm(v,'hands.finger_width'),fl=cm(v,'hands.fingers');
+  function make(v){
+    height=C(v,'body.height');
+    scene.background=new THREE.Color(v['render.background']);floor.material.color.set(v['render.background']).multiplyScalar(1.12);
+    key.intensity=2.8*N(v,'render.light');
+    const clay=v['render.clay']==='true',skinShade=new THREE.Color(v['skin.color']);
+    if(clay)skinShade.lerp(new THREE.Color('#b0a8a3'),.72);
+    const skin=mat(skinShade,clamp(N(v,'skin.roughness')-.08*N(v,'skin.specular'),.3,.98));
+    const shade=mat(skinShade.clone().multiplyScalar(.93+.07*N(v,'skin.variation')),.85);
+    const lipmat=mat(skinShade.clone().lerp(new THREE.Color('#874e50'),clay?.20:.34),.83);
+    const hair=mat(v['hair.color'],.98);
+    const eye=mat(v['eye.sclera_tint'],.44);
+    const iris=mat(v['eye.iris_color'],.44);
+    const pupil=mat('#101012',.44);
+    const nails=mat(skinShade.clone().lerp(new THREE.Color('#c79d92'),.3),.68);
+    const H=height,headH=C(v,'face.head_length'),neckL=C(v,'body.neck_length');
+    const headY=H-headH*.51,chinY=H-headH;
+    const shoulderY=chinY-neckL*.65,crotch=H*N(v,'legs.length_ratio');
+    const trunk=shoulderY-crotch,waistY=crotch+trunk*(.49+(N(v,'body.torso_ratio')-.31)*.5),chestY=crotch+trunk*.78;
+    const shoulder=C(v,'body.shoulders'),chest=C(v,'body.chest'),waist=C(v,'body.waist'),hip=C(v,'body.hips');
+    const hipDepth=C(v,'body.hip_depth'),chestDepth=C(v,'body.chest_depth'),waistDepth=C(v,'body.waist_depth');
+    const fat=N(v,'body.fat'),muscle=N(v,'body.muscle'),glute=C(v,'body.glutes'),abdomen=C(v,'body.abdomen'),bust=C(v,'body.bust');
+    const pitch=Math.tan(N(v,'body.posture')*Math.PI/180)*.032;
+    const bustX=C(v,'body.bust_spacing')*.5;
+    surfaceHorizontal([
+      [crotch-.02,hip*.21,hipDepth*.23,0],[crotch+.005,hip*.31,hipDepth*.3,0],
+      [crotch+.057,hip*.48,hipDepth*.47,0],[crotch+trunk*.22,hip*.5,hipDepth*.5,0],
+      [waistY,waist*.5,waistDepth*.5,pitch*.2],[chestY,chest*.5,chestDepth*.5,pitch*.6],
+      [shoulderY-.082,shoulder*.46,chestDepth*.39,pitch],
+      [shoulderY-.032,shoulder*.39,chestDepth*.34,pitch],
+      [shoulderY+.009,C(v,'body.neck_width')*.38,C(v,'body.neck_width')*.36,pitch]],skin,48,96,
+      (x,y,z,front)=>{
+       const bs=front>0?bust*.55*(bulge((x-bustX),.056)+bulge((x+bustX),.056))*bulge(y-chestY,.07)*Math.pow(front,3):0;
+       const ab=front>0?abdomen*.35*bulge(y-waistY+.02,.1)*front:0;
+       const gs=front<0?glute*.42*bulge(y-(crotch+trunk*.24),.084)*(-front):0;
+       return [x,z+bs+ab-gs];
+      });
+    // Anatomically sloped neck with embedded sternocleidomastoid transition.
+    const neckW=C(v,'body.neck_width');
+    surfaceHorizontal([
+      [shoulderY-.052,neckW*.65,neckW*.48,pitch],
+      [shoulderY-.025,neckW*.49,neckW*.42,pitch*.7],
+      [chinY-.027,neckW*.41,neckW*.4,0],
+      [chinY+.029,neckW*.39,neckW*.35,0]],skin,32,32);
+    for(const side of [-1,1]){
+      const s=side;
+      // Seam-minimized upper limb sweeps begin inside the shoulder and pelvis, without visible ball joints.
+      const L=C(v,'arms.length'),up=L*N(v,'arms.upper_ratio'),ang=N(v,'arms.relax')*Math.PI/180;
+      const sy=shoulderY-.046-C(v,'body.shoulder_slope')*.14;
+      const shoulderX=s*(shoulder*.43),ex=shoulderX+s*up*Math.sin(ang),ey=sy-up*Math.cos(ang);
+      const wx=ex+s*(L-up)*Math.sin(ang*.69),wy=ey-(L-up)*Math.cos(ang*.69);
+      const u=C(v,'arms.upper_width')*.5*(1+muscle*.035),e=C(v,'arms.elbow_width')*.5,w=C(v,'arms.wrist_width')*.5;
+      tube([[s*shoulder*.37,sy+.03,pitch,u*.98,u*.96],
+            [shoulderX,sy-.024,pitch,u*1.1,u],
+            [lerp(shoulderX,ex,.47),lerp(sy,ey,.47),C(v,'arms.forward')*.25,u*.9,u*.85],
+            [ex,ey,C(v,'arms.forward')*.52,e,e*.92],
+            [lerp(ex,wx,.48),lerp(ey,wy,.48),C(v,'arms.forward')*.78,C(v,'arms.forearm_width')*.45,C(v,'arms.forearm_width')*.42],
+            [wx,wy,C(v,'arms.forward'),w,w*.9]],skin);
+      const palmL=C(v,'hands.length'),palmW=C(v,'hands.width'),pd=C(v,'hands.depth');
+      const pz=C(v,'arms.forward');
+      tube([[wx,wy+.008,pz,w*.91,w*.83],
+           [wx,wy-palmL*.20,pz,palmW*.40,pd*.50],
+           [wx,wy-palmL*.64,pz+.002,palmW*.46,pd*.44],
+           [wx,wy-palmL*.97,pz+.004,palmW*.45,pd*.39]],skin,28,16);
+      const fw=C(v,'hands.finger_width'),fL=C(v,'hands.fingers'),spread=N(v,'hands.spread')*Math.PI/180;
       for(let j=0;j<4;j++){
-        const offset=(j-1.5)*pw*.235;
-        const y=palm[1]-pl*.48;
-        const length=fl*[.86,1,.97,.78][j];
-        const x=palm[0]+offset;
-        const out=offset*Math.tan(spread)*1.8;
-        limb([x,y,palm[2]],[x+out,y-length,palm[2]+.008],fw*.47,fw*.33,skin);
-        ell(x+out,y-length,palm[2]+.009,cm(v,'hands.nails')*.42,cm(v,'hands.nails')*.42,.002,nails);
+       const fx=wx+(j-1.5)*palmW*.22,fy=wy-palmL*.92,fl=fL*[.81,.96,1,.75][j],dx=(j-1.5)*Math.tan(spread)*.033;
+       tube([[fx,fy,pz+.002,fw*.46,fw*.43],[fx+dx*.55,fy-fl*.62,pz+.004,fw*.36,fw*.34],
+             [fx+dx,fy-fl,pz+.006,fw*.21,fw*.2]],skin,17,10);
+       ball(fx+dx,fy-fl,pz+.011,C(v,'hands.nails')*.33,C(v,'hands.nails')*.39,.0015,nails);
       }
-      const thumb=cm(v,'hands.thumb'),tx=palm[0]+s*pw*.48,ty=palm[1]+pl*.12;
-      limb([tx,ty,palm[2]],[tx+s*thumb*.62,ty-thumb*.75,palm[2]+.017],fw*.63,fw*.4,skin);
-      const yfoot=cm(v,'feet.instep')*.56;
-      const ankleX=s*cm(v,'legs.stance')*.5;
-      const thighX=s*hw*.285,kneeX=(thighX+ankleX)*.5-s*cm(v,'legs.knee_in');
-      const hip=[thighX,crotch+torsoLength*.11,0];
-      const knee=[kneeX,crotch*.52,.002];
-      const ankle=[ankleX,yfoot,0];
-      const thigh=cm(v,'legs.thigh')*.5*(.89+fat*.13+pick(v,'legs.muscle')*.1);
-      limb(hip,knee,thigh,cm(v,'legs.knee')*.5,skin);
-      limb(knee,ankle,cm(v,'legs.calf')*.5*(1+muscle*.08),cm(v,'legs.ankle')*.5,skin);
-      ell(knee[0],knee[1],-cm(v,'legs.calf_curve')*.15,cm(v,'legs.knee')*.47,cm(v,'legs.knee')*.48,cm(v,'legs.knee')*.45,skin);
-      const footL=cm(v,'feet.length'),footW=cm(v,'feet.width'),heelW=cm(v,'feet.heel');
-      ell(ankleX,yfoot*.48,footL*.25,footW*.5,yfoot*.6,footL*.47,skin);
-      ell(ankleX,yfoot*.28,-footL*.11,heelW*.5,yfoot*.43,heelW*.55,skin);
-      const toeBase=footL*.54,tl=cm(v,'feet.toe_length'),sp=cm(v,'feet.toe_splay');
+      const thumb=C(v,'hands.thumb'),tx=wx+s*palmW*.43,ty=wy-palmL*.32;
+      tube([[tx,ty,pz,fw*.55,fw*.47],[tx+s*thumb*.37,ty-thumb*.35,pz+.012,fw*.43,fw*.35],
+         [tx+s*thumb*.65,ty-thumb*.8,pz+.019,fw*.27,fw*.24]],skin,17,10);
+      const stance=C(v,'legs.stance')*.5,ankx=s*stance,hipx=s*hip*.25;
+      const kneeX=lerp(hipx,ankx,.47)-s*C(v,'legs.knee_in'),kneeY=crotch*.53;
+      const thigh=C(v,'legs.thigh')*.5*(.93+fat*.06+N(v,'legs.muscle')*.04);
+      const knee=C(v,'legs.knee')*.5,calf=C(v,'legs.calf')*.5,ankle=C(v,'legs.ankle')*.5;
+      tube([[hipx,crotch+.081,-.007,thigh*1.01,thigh*1.02],
+        [hipx*.99,crotch+.028,-.004,thigh,thigh*.94],
+        [lerp(hipx,kneeX,.48),lerp(crotch,kneeY,.48),-.002,thigh*.86,thigh*.84],
+        [kneeX,kneeY,.003,knee,knee*.92],
+        [lerp(kneeX,ankx,.29),lerp(kneeY,.092,.29),-C(v,'legs.calf_curve')*.38,calf,calf*.98],
+        [lerp(kneeX,ankx,.75),lerp(kneeY,.092,.75),0,ankle*1.15,ankle*1.06],
+        [ankx,.092,0,ankle,ankle]],skin,70,24);
+      const footL=C(v,'feet.length'),footW=C(v,'feet.width'),instep=C(v,'feet.instep');
+      foot(ankx,footL,footW,C(v,'feet.heel'),instep,C(v,'feet.arch'),skin);
+      const toeL=C(v,'feet.toe_length'),toes=C(v,'feet.toe_splay'),end=footL*.59;
       for(let j=0;j<5;j++){
-        const x=ankleX+s*((j-2)*footW*.177);
-        const length=tl*([1,.93,.83,.72,.61][j])+(j===0?cm(v,'feet.big_toe'):0);
-        ell(x+s*(j-2)*sp*.13,yfoot*.22,toeBase+length*.48,footW*(j===0?.115:.084),yfoot*.24,length*.54,skin);
+        const q=(j-2)*footW*.175,baseX=ankx+q;
+        const length=toeL*[.89,1,.93,.83,.74][j]+(j===0?C(v,'feet.big_toe'):0);
+        const dx=s*(j-2)*toes*.18;
+        tube([[baseX,.033,end-.018,footW*(j===0?.083:.07),.019],
+              [baseX+dx*.65,.031,end+length*.45,footW*(j===0?.076:.058),.015],
+              [baseX+dx,.025,end+length*.8,footW*.042,.009]],skin,15,10);
       }
-      // Feet arch produces a visible instep/heel transition.
-      ell(ankleX,yfoot*.5-cm(v,'feet.arch')*.1,footL*.07,footW*.36,yfoot*.35,footL*.3,skin);
     }
-    // New head constructed from dimensions; does not reuse prior Blender meshes.
-    const faceW=cm(v,'face.head_width'),faceD=cm(v,'face.head_depth');
-    ell(0,headY,0,faceW*.5,hh*.49,faceD*.5,skin);
-    ell(0,headY-hh*.235,faceD*.042,cm(v,'face.jaw')*.5,hh*.26,faceD*.39,skin);
-    ell(0,headY-hh*.425,faceD*.09,cm(v,'face.chin')*.49,hh*.085,faceD*.27,skin);
+    // Cranial and jaw silhouettes formed as one continuous variable radius surface.
+    const headW=C(v,'face.head_width'),headD=C(v,'face.head_depth'),jaw=C(v,'face.jaw'),chin=C(v,'face.chin');
+    const cy=headY,hh=headH;
+    surfaceHorizontal([
+      [cy-hh*.51,chin*.17,headD*.18,headD*.035],
+      [cy-hh*.43,chin*.45,headD*.25,headD*.048],
+      [cy-hh*.30,jaw*.5,headD*.38,headD*.028],
+      [cy-hh*.16,headW*.435,headD*.455,headD*.018],
+      [cy+hh*.07,headW*.49,headD*.5,0],
+      [cy+hh*.27,headW*.495,headD*.48,-headD*.015],
+      [cy+hh*.40,headW*.41,headD*.39,-headD*.015],
+      [cy+hh*.50,headW*.055,headD*.07,-headD*.012]],skin,48,80,
+      (x,y,z,front)=>{
+        const cheek=front>0?N(v,'face.cheeks')*.0045*bulge(Math.abs(x)-headW*.27,.025)*bulge(y-(cy-hh*.12),.042)*front:0;
+        return [x,z+cheek];
+      });
+    const eyeSpacing=C(v,'face.eye_spacing'),eyeR=C(v,'face.eye_size')*.5,eyeY=cy+hh*.047;
+    const frontDepth=headD*.475;
     for(const s of [-1,1]){
-      ell(s*faceW*.31,headY-hh*.12,faceD*.25,
-          .017+pick(v,'face.cheeks')*.012,hh*.145,.018,skin);
-      const eyex=s*cm(v,'face.eye_spacing')*.5,eyey=headY+hh*.06+s*pick(v,'face.eye_tilt')*.0008,eyez=faceD*.444;
-      const er=cm(v,'face.eye_size')*.49;
-      ell(eyex,eyey,eyez,er,er*.65,er*.47,sclera);
-      ell(eyex,eyey,eyez+er*.43,cm(v,'face.iris')*.49,cm(v,'face.iris')*.49,.0029,iris);
-      ell(eyex,eyey,eyez+er*.48,cm(v,'face.iris')*.24,cm(v,'face.iris')*.24,.0031,dark);
-      ell(eyex,eyey+er*.63,eyez+.002,er*1.13,er*.24,er*.36,skin);
-      ell(eyex,eyey-er*.63,eyez+.002,er*1.13,er*.18,er*.35,skin);
-      const browY=eyey+er*1.8+cm(v,'face.brows')*.16;
-      ell(eyex,browY,eyez+.001,er*1.32,cm(v,'face.brow_width')*.5,.005,hair,s*.12);
-      ell(s*(faceW*.5+cm(v,'face.ear_projection')*.25),headY-hh*.08,-.003,
-          cm(v,'face.ear_projection')*.64,cm(v,'face.ears')*.5,.014,skin);
+      const x=s*eyeSpacing*.5,y=eyeY+s*N(v,'face.eye_tilt')*.00065,z=frontDepth;
+      // Recess sclera, tint with eyelid geometry, limit white exposure.
+      ball(x,y,z-.002,eyeR*.97,eyeR*.57,eyeR*.20,eye);
+      ball(x,y,z+eyeR*.155,C(v,'face.iris')*.48,C(v,'face.iris')*.46,.0019,iris);
+      ball(x,y,z+eyeR*.17,C(v,'face.iris')*.24,C(v,'face.iris')*.25,.0021,pupil);
+      ball(x,y+eyeR*.64,z,eyeR*1.15,eyeR*.19,.0055,skin);
+      ball(x,y-eyeR*.60,z,eyeR*1.08,eyeR*.20,.0052,skin);
+      ball(x,y+eyeR*1.65+C(v,'face.brows')*.09,z-.002,eyeR*1.27,C(v,'face.brow_width')*.34,.0038,hair);
+      const earH=C(v,'face.ears'),earP=C(v,'face.ear_projection');
+      ball(s*(headW*.47+earP*.12),cy-hh*.14,-.01,earP*.51,earH*.42,.011,skin);
+      ball(s*(headW*.47+earP*.24),cy-hh*.12,.001,earP*.28,earH*.22,.0036,shade);
     }
-    const noseLen=cm(v,'face.nose_length'),noseDepth=cm(v,'face.nose_depth'),noseW=cm(v,'face.nose_width');
-    ell(0,headY-hh*.05,faceD*.46+noseDepth*.22,noseW*.27,noseLen*.47,noseDepth*.51,skin);
-    ell(0,headY-hh*.2,faceD*.46+noseDepth*.47,noseW*.49,noseLen*.16,noseDepth*.42,skin);
-    const mouthY=headY-hh*.285;
-    ell(0,mouthY+.004,faceD*.39,cm(v,'face.mouth')*.5,cm(v,'face.lips')*.35,.011,mouth);
-    ell(0,mouthY-.007,faceD*.4,cm(v,'face.mouth')*.48,cm(v,'face.lips')*.42,.013,mouth);
-    // Deterministic follicles with controllable hairstyle, density, length, volume and asymmetry.
-    const style=v['hair.style'],length=cm(v,'hair.length')*pick(v,'hair.volume'),density=pick(v,'hair.density');
-    if(style!=='bald'){
-      const curl=pick(v,'hair.curl'),recede=cm(v,'hair.hairline'),asym=pick(v,'hair.asymmetry');
-      ell(0,headY+hh*.34-recede*.19,-.003,faceW*.51,hh*.17,faceD*.5,hair);
-      for(let k=0;k<density;k++){
-        const t=(k+.5)/density,theta=Math.acos(1-1.76*t),a=k*2.399963229728653;
-        const x=Math.cos(a)*Math.sin(theta),z=Math.sin(a)*Math.sin(theta),y=Math.cos(theta);
-        // Keep guides around scalp; prevent opaque curtain across the face.
-        const fx=faceW*.48*x,fy=headY+hh*.39+hh*.13*y,fz=faceD*.47*z;
-        if(style==='afro'||style==='short-curls'){
-          const radius=(style==='afro'?.018:.009)+length*(style==='afro'?.22:.09);
-          ell(fx*(1+length*.75)+asym*length*.45,fy+length*y*.53,
-              fz*(1+length*.5),radius*(.88+.18*Math.sin(k*4.27)),
-              radius*(.8+curl*.37),radius,hair);
-        }else{
-          const strandL=length*(.38+.62*(.5+.5*Math.sin(k*1.71)));
-          const tip=[fx+asym*strandL*.3,fy-strandL,fz+Math.sin(k*1.87)*curl*.007];
-          limb([fx,fy,fz],tip,style==='locs'?.009:.0045,style==='locs'?.008:.0028,hair);
+    const noseW=C(v,'face.nose_width'),noseH=C(v,'face.nose_length'),noseD=C(v,'face.nose_depth');
+    ball(0,cy-hh*.09,frontDepth+noseD*.19,noseW*.22,noseH*.45,noseD*.47,skin);
+    ball(0,cy-hh*.24,frontDepth+noseD*.41,noseW*.45,noseH*.13,noseD*.36,skin);
+    for(const s of [-1,1])ball(s*noseW*.37,cy-hh*.24,frontDepth+noseD*.23,noseW*.17,noseH*.09,.009,skin);
+    const mouthY=cy-hh*.34,mouthW=C(v,'face.mouth'),lipH=C(v,'face.lips');
+    ball(0,mouthY+.004,frontDepth*.93,mouthW*.47,lipH*.33,.005,lipmat);
+    ball(0,mouthY-.0045,frontDepth*.94,mouthW*.45,lipH*.42,.005,lipmat);
+    // Short, irregular scalp-hugging afro. Sphere instances replace the towering gridded wig.
+    if(v['hair.style']!=='bald'){
+      const style=v['hair.style'];
+      const length=C(v,'hair.length'),volume=N(v,'hair.volume'),curl=N(v,'hair.curl');
+      const density=Math.min(420,Math.max(35,Math.floor(N(v,'hair.density'))));
+      const radius=clamp(length*.17*volume,.012,style==='afro'?.045:.03);
+      const cap=mat(v['hair.color'],.97);
+      ball(0,cy+hh*.29,-.004,headW*.505+radius*.29,hh*.21+radius*.24,headD*.46+radius*.31,cap);
+      const instances=new THREE.InstancedMesh(sphere,hair,density);
+      const marker=new THREE.Object3D();
+      for(let i=0;i<density;i++){
+        const f=(i+.5)/density,theta=Math.acos(1-1.87*f),phi=i*2.399963229728653;
+        const dx=Math.cos(phi)*Math.sin(theta),dy=Math.cos(theta),dz=Math.sin(phi)*Math.sin(theta);
+        // Positive z is face. Avoid solid fringe descending onto eyelids and upper face.
+        if(dz>.35&&dy<.05&&i%2===0){marker.scale.setScalar(.0001);marker.updateMatrix();instances.setMatrixAt(i,marker.matrix);continue}
+        const jitter=1+.14*Math.sin(i*1.179)+.08*Math.sin(i*3.59),r=radius*jitter;
+        const extent=style==='afro'?1:style==='short-curls'?.68:.85;
+        const x=dx*(headW*.485+r*.58*extent)+N(v,'hair.asymmetry')*.012;
+        const y=cy+hh*.27+dy*(hh*.25+r*.58*extent)+r*.26-C(v,'hair.hairline')*(dz>.3?.35:.1);
+        const z=dz*(headD*.44+r*.55*extent)-.009;
+        marker.position.set(x,y,z);
+        const rr=style==='locs'? r*.28:style==='straight'?r*.30:r*(.29+.1*curl);
+        marker.scale.set(rr*(.7+.2*Math.sin(i*5.2)),rr*(.78+.2*Math.cos(i*2.41)),rr);
+        marker.rotation.set(i*.03,i*.19,i*.07);marker.updateMatrix();instances.setMatrixAt(i,marker.matrix);
+      }
+      instances.instanceMatrix.needsUpdate=true;instances.computeBoundingSphere();
+      model.add(instances);
+      // Locs/straight shapes follow the scalp without creating a tall artificial dome.
+      if(style==='locs'||style==='straight'){
+        for(let j=0;j<Math.min(54,density/4);j++){
+          const a=j*2.39996,xx=Math.cos(a)*headW*.40,zz=Math.sin(a)*headD*.42;
+          if(zz>.025&&Math.sin(a)<0.15)continue;
+          tube([[xx,cy+hh*.32,zz,.006,.005],
+            [xx*1.07,cy+hh*.12,zz*.93,.0048,.0048],
+            [xx*1.09,cy+hh*.12-length*.42,zz*.90,.004,.004]],hair,20,9);
         }
       }
     }
-    return {skin,clay};
   }
   function clear(){
-    while(group.children.length){
-      const child=group.children[0];group.remove(child);
-      if(child.geometry!==sph)child.geometry.dispose();
-      // Shared material objects may be disposed more than once, which is harmless.
-      if(child.material && child.material.dispose)child.material.dispose();
-    }
-  }
-  function size(){
-    const w=Math.max(250,host.clientWidth),h=Math.max(340,host.clientHeight);
-    renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
-    draw();
+    while(model.children.length){const m=model.children[0];model.remove(m);if(m.isInstancedMesh)m.dispose();}
+    for(const g of buffers)g.dispose();buffers.length=0;
+    for(const m of materials)m.dispose();materials.length=0;
   }
   function draw(){
-    const target=new THREE.Vector3(0,height*.54,0);
-    camera.position.set(Math.sin(azimuth)*distance,target.y+Math.sin(elevation)*distance,Math.cos(azimuth)*distance);
-    camera.lookAt(target);renderer.render(scene,camera);
+    camera.position.set(Math.sin(azimuth)*distance, height*.53+Math.sin(elevation)*distance,Math.cos(azimuth)*distance);
+    camera.lookAt(0,height*.53,0);renderer.render(scene,camera);
   }
-  let last,dragging=false;
-  const canvas=renderer.domElement;
-  canvas.addEventListener('pointerdown',event=>{dragging=true;last=[event.clientX,event.clientY];canvas.setPointerCapture(event.pointerId)});
-  canvas.addEventListener('pointerup',()=>{dragging=false});
-  canvas.addEventListener('pointercancel',()=>{dragging=false});
-  canvas.addEventListener('pointermove',event=>{
-    if(!dragging)return;
-    const [x,y]=last;azimuth+=(event.clientX-x)*.008;elevation=clamp(elevation+(event.clientY-y)*.006,-.9,.9);
-    last=[event.clientX,event.clientY];draw();
-  });
-  canvas.addEventListener('wheel',event=>{event.preventDefault();distance=clamp(distance*Math.exp(event.deltaY*.001),2,7.5);draw()},{passive:false});
-  const resize=new ResizeObserver(size);resize.observe(host);
-  function update(v){clear();create(v);size();}
+  function resize(){
+    const w=Math.max(240,host.clientWidth),h=Math.max(340,host.clientHeight);
+    renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();draw();
+  }
+  function update(values){clear();make(values);resize()}
+  canvas.addEventListener('pointerdown',e=>{drag=true;last=[e.clientX,e.clientY];canvas.setPointerCapture(e.pointerId)});
+  canvas.addEventListener('pointerup',()=>drag=false);
+  canvas.addEventListener('pointercancel',()=>drag=false);
+  canvas.addEventListener('pointermove',e=>{if(!drag)return;azimuth+=(e.clientX-last[0])*.007;elevation=clamp(elevation+(e.clientY-last[1])*.006,-.65,.65);last=[e.clientX,e.clientY];draw()});
+  canvas.addEventListener('wheel',e=>{e.preventDefault();distance=clamp(distance*Math.exp(e.deltaY*.001),2.5,7.5);draw()},{passive:false});
+  const observer=new ResizeObserver(resize);observer.observe(host);
   update(initial);
-  return {update,dispose(){resize.disconnect();clear();sph.dispose();stage.geometry.dispose();stage.material.dispose();renderer.dispose()}};
+  return {update,dispose(){observer.disconnect();clear();renderer.dispose();sphere.dispose();floor.geometry.dispose();floor.material.dispose()}};
 }

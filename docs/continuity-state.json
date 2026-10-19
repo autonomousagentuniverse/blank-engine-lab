@@ -650,7 +650,15 @@
       "live_blender_worker": false,
       "hosted_submit": "export validated JSON",
       "production_deployed": false,
-      "photorealism_approved": false
+      "photorealism_approved": false,
+      "version": "organic-section-v2",
+      "visual_basis": "2026-10-18 owner screenshot rejected previous mannequin",
+      "body_topology": "Continuous-section torso, spline limbs, without separate oval chest or sphere joints",
+      "head": "Unified loft jaw/cranium proxy, eyelids and scaled-down curly afro",
+      "test": "Node syntax + 16 controlled model rebuilds with fake Three runtime PASS",
+      "visual_status": "UNVERIFIED V2 - OWNER REVIEW REQUIRED",
+      "blender_render": "NOT RUN",
+      "preview_deployment": "PENDING"
     },
     "original_figure_preset": {
       "date": "2026-10-18",
