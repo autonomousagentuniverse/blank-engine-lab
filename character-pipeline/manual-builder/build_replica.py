@@ -104,15 +104,15 @@ def setup_world(controls,height,resolved):
     bpy.context.scene.world=world; world.use_nodes=True
     node=world.node_tree.nodes.get('Background')
     node.inputs['Color'].default_value=color(resolved['world_color'])
-    node.inputs['Strength'].default_value=.6
+    node.inputs['Strength'].default_value=.28
     def area(name,loc,power,size):
         bpy.ops.object.light_add(type='AREA',location=loc)
         o=bpy.context.object;o.name=name
         o.data.energy=power*float(controls['render.light']);o.data.shape='DISK';o.data.size=size
         point(o,(0,0,height*.53))
-    area('Key',(1,-3,3.2),500,3)
-    area('Fill',(-2,-1,height*.8),260,3)
-    area('Rim',(0,2,2.6),350,2.4)
+    area('Key',(1,-3,3.2),220,3)
+    area('Fill',(-2,-1,height*.8),110,3)
+    area('Rim',(0,2,2.6),160,2.4)
 def point(ob,location):
     direction=Vector(location)-ob.location
     ob.rotation_euler=direction.to_track_quat('-Z','Y').to_euler()
