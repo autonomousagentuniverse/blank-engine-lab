@@ -44,3 +44,33 @@ Acceptance means the server truly executed Blender, GLB has exactly one 22-joint
 - FFprobe H.264 stream validation, 25 frames, 346x480 for baseline.
 - Real Chromium browser-sourced masculine/African snapshot with 286 scalp follicles is tested independently before deployment.
 
+
+
+## Animation Studio v2 — nine selectable actions (2026-10-19)
+
+The visible Animation Studio panel now appears before the 93 anatomy sliders, with
+a jump shortcut in the page header. The buttons select Idle/Breathing, Walk,
+Jog, Run, Fight, Happy Face, Sad Face, Angry Face, and Laugh. Each selection
+updates immediately. Build once to generate all nine, then switch the playable
+MP4 instantly by tapping another button without rebuilding.
+
+Nine real Blender NLA actions: Idle_Breath, Walk_InPlace, Jog_InPlace,
+Run_InPlace, Happy_Face, Sad_Face, Angry_Face, Laugh and Fight_Combo.
+
+The facial expressions use four actual MakeHuman-body shape key targets with
+keyframed GLB weights, not head tilts or 2D photo filters. Expressions remain
+region-based approximations, not FACS-grade anatomical face work.
+
+Each action produces a Cycles-derived H264 MP4 (13 rendered frames, 8 fps,
+1.625 seconds). Face clips show a face close-up; motions show the whole body.
+The glTF export contains nine named clips, one 22-bone skin and four facial
+morph targets. An editable .blend and six static Cycles views also remain.
+
+Verified before preview deployment: 17 Node regression tests; real Chromium
+393px mobile nine-button visibility and selection with no page errors; real
+Blender 5.0.1 nine videos and skinned GLB; local Node HTTP complete-job and
+downloads including happy, sad, run and fight MP4s plus .blend and .glb.
+
+Motion visual quality remains unapproved: no physical foot contacts, finger
+articulation, face muscle simulation or mocap. Temporary Sandbox downloads
+must be saved promptly.

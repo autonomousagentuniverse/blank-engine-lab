@@ -152,16 +152,57 @@ if(HOSTED){
  $('#report').textContent='Submit runs real Blender in an isolated Vercel Sandbox. Six Cycles views and an editable .blend are available for approximately 30 minutes.';
 }
 function status(value){$('#buildStatus').textContent=value}
+const ANIMATION_LABELS={
+ idle:'Idle / Breathing',walk:'Walk in place',jog:'Jog in place',
+ run:'Run in place',happy:'Happy face',sad:'Sad face',
+ angry:'Angry face',laugh:'Laugh',fight:'Fight combo'
+};
+let activeAnimation='walk';
+let renderedJob=null;
+function showAnimationChoice(){
+ document.querySelectorAll('[data-action]').forEach(button=>{
+  const selected=button.dataset.action===activeAnimation;
+  button.setAttribute('aria-pressed',String(selected));
+  button.classList.toggle('selected',selected);
+ });
+ const title=ANIMATION_LABELS[activeAnimation];
+ $('#animationChoiceStatus').textContent=renderedJob
+   ?title+' selected · press Play or choose another action'
+   :title+' selected · Generate a Blender build to play it';
+ $('#activeClipTitle').textContent=title;
+ if(renderedJob){
+  const job=renderedJob;
+  const id=encodeURIComponent(job.workerJobId||job.id);
+  const prefix=job.outputBaseUrl||'';
+  const video=$('#activeAnimationVideo');
+  video.pause();
+  video.src=prefix+'/outputs/'+id+'/'+activeAnimation+'_preview.mp4';
+  video.load();
+  const face=['happy','sad','angry','laugh'].includes(activeAnimation);
+  $('#activeClipDescription').textContent=face
+   ?'Blender face close-up with keyframed facial mesh deformation'
+   :'Full-body Blender motion preview. Running, jogging and fighting are first-pass in-place performances';
+ }
+}
+document.querySelectorAll('[data-action]').forEach(button=>{
+ button.addEventListener('click',()=>{
+  activeAnimation=button.dataset.action;
+  showAnimationChoice();
+  if(renderedJob){
+   const video=$('#activeAnimationVideo');
+   video.play().catch(()=>{ /* native Play button remains available */ });
+   $('#animations').scrollIntoView({behavior:'smooth',block:'nearest'});
+  }
+ });
+});
+showAnimationChoice();
 function showResults(job){
  const id=encodeURIComponent(job.workerJobId||job.id);
  const filesBase=job.outputBaseUrl||'';
  $('#images').hidden=false;
  $('#animations').hidden=false;
- for(const [clip,idVideo] of [['idle_preview','idleVideo'],['walk_preview','walkVideo']]){
-  const video=$('#'+idVideo);
-  video.src=filesBase+'/outputs/'+id+'/'+clip+'.mp4';
-  video.load();
- }
+ renderedJob=job;
+ showAnimationChoice();
  for(const name of ['front','three_quarter','profile','face_macro','hand_macro','feet_macro']){
   $('#'+name).src=filesBase+'/outputs/'+id+'/'+name+'.png';
  }
@@ -177,12 +218,13 @@ function showResults(job){
   'Degenerate faces: '+g.degenerate_triangles,
   'Hair instances: '+job.report.hair_instances,
   'Animation: '+job.report.animation.bones+' bones · '+job.report.animation.clips.join(' / '),
-  'Motion quality: FIRST PASS · walk is in place',
+  'Animation choices: '+job.report.animation.clips.length+' · 4 facial shape-key expressions',
+  'Motion quality: FIRST PASS · in-place motion and approximate expressions',
   'Human realism is NOT visually approved',
   'Sandbox downloads expire after approximately 30 minutes; save your .blend immediately'
  ].join('\n');
  const links=$('#artifactLinks');links.replaceChildren();
- for(const [label,name] of [['Animated GLB (22 bones)','animated_character.glb'],['Editable Blender','anatomical_character.blend'],['Walk MP4','walk_preview.mp4'],['Idle MP4','idle_preview.mp4'],['JSON evidence','report.json']]){
+ for(const [label,name] of [['Animated GLB · all 9 clips','animated_character.glb'],['Editable Blender','anatomical_character.blend'],['Build evidence','report.json']]){
   const a=document.createElement('a');a.href=filesBase+'/outputs/'+id+'/'+name;a.textContent=label;a.download=name;links.append(a);
  }
 }

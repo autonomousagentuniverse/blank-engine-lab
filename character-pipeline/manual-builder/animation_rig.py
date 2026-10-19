@@ -175,10 +175,102 @@ def key_pose(rig,action_name,poses,frames):
     strip.extrapolation='NOTHING'
     return action
 
-def create_animations(rig):
-    # Blender pose axes belong to each bone's local frame. Low-amplitude
-    # motion is intentionally conservative until deformation QA approves
-    # more expressive locomotion.
+CLIPS={
+ 'idle':'Idle_Breath','walk':'Walk_InPlace','jog':'Jog_InPlace',
+ 'run':'Run_InPlace','happy':'Happy_Face','sad':'Sad_Face',
+ 'angry':'Angry_Face','laugh':'Laugh','fight':'Fight_Combo'
+}
+FACE_KEYS={'happy':'Happy','sad':'Sad','angry':'Angry','laugh':'Laugh'}
+PREVIEW_CLIPS=list(CLIPS.items())
+
+def make_face_shape_keys(body,height):
+    """Author actual expressive mesh morphs in the current MakeHuman head.
+    No face texture swapping or head rotations posing as facial expression.
+    This initial region-based rig is approximate, not facial FACS certification.
+    """
+    h=height
+    body.shape_key_add(name='Basis')
+    shapes={}
+    for kind in FACE_KEYS.values():
+        shapes[kind]=body.shape_key_add(name=kind)
+    modified={name:0 for name in shapes}
+    for v in body.data.vertices:
+        x,y,z=v.co
+        # Front-side face only. Blender face points toward negative Y.
+        visible=mix(.025*h,.075*h,-y)
+        mouth=math.exp(-((z-.886*h)/(.022*h))**2)
+        brow=math.exp(-((z-.932*h)/(.018*h))**2)
+        cheek=math.exp(-((z-.906*h)/(.018*h))**2)
+        corner=math.exp(-((abs(x)-.037*h)/(.023*h))**2)
+        center=math.exp(-(x/(.042*h))**2)
+        brow_inner=math.exp(-((abs(x)-.026*h)/(.025*h))**2)
+        if visible<.02:continue
+        for key,shape in shapes.items():
+            # Pull corners upward for a smile, lower for sadness. Laughter
+            # also opens the lower lip and raises cheeks; anger tightens brow.
+            dx=dy=dz=0.0
+            if key=='Happy':
+                dz=.0052*h*mouth*corner
+                dx=math.copysign(.0025*h*mouth*corner,x)
+                dy=-.0016*h*cheek*corner
+            elif key=='Sad':
+                dz=-.0042*h*mouth*corner+.0018*h*brow*brow_inner
+                dx=-math.copysign(.0012*h*mouth*corner,x)
+            elif key=='Angry':
+                dz=-.0045*h*brow*brow_inner
+                dx=-math.copysign(.002*h*brow*brow_inner,x)
+                dy=-.002*h*brow*brow_inner
+            elif key=='Laugh':
+                dz=.006*h*mouth*corner-.008*h*mouth*center*(1-mix(.886,.896,z/h))
+                dx=math.copysign(.0045*h*mouth*corner,x)
+                dy=-.003*h*cheek*corner
+            power=visible
+            if abs(dx)+abs(dy)+abs(dz)>1e-7:
+                pt=shape.data[v.index].co
+                pt.x+=dx*power;pt.y+=dy*power;pt.z+=dz*power
+                modified[key]+=1
+    if any(count<25 for count in modified.values()):
+        raise RuntimeError('Facial region selection insufficient: '+str(modified))
+    return modified
+
+def face_key_track(body,clip,kind):
+    shape_keys=body.data.shape_keys
+    if not shape_keys.animation_data:shape_keys.animation_data_create()
+    act=bpy.data.actions.new('Face_'+clip)
+    shape_keys.animation_data.action=act
+    for frame,weight in [(1,0),(13,.85),(25,1),(37,.85),(49,0)]:
+        for name in FACE_KEYS.values():
+            key=shape_keys.key_blocks[name]
+            key.value=weight if name==FACE_KEYS[kind] else 0
+            key.keyframe_insert(data_path='value',frame=frame)
+    shape_keys.animation_data.action=None
+    track=shape_keys.animation_data.nla_tracks.new()
+    track.name=clip
+    strip=track.strips.new('Face_'+clip,1,act)
+    strip.action_frame_start=1;strip.action_frame_end=49
+    strip.extrapolation='NOTHING'
+    for name in FACE_KEYS.values():shape_keys.key_blocks[name].value=0
+
+def gait_action(rig,name,stride,arm,frequency,knee_lift,bob):
+    poses=[]
+    frames=[1,7,13,19,25,31,37,43,49]
+    for i in range(len(frames)):
+        t=2*math.pi*i/(len(frames)-1)*frequency
+        s=math.sin(t)
+        poses.append({
+         'RootLocation':(0,0,bob*.5*(1-math.cos(2*t))),
+         'Pelvis':(0,0,.035*math.sin(t)),
+         'Spine':(.025*math.sin(2*t),0,-.02*math.sin(t)),
+         'Thigh.L':(stride*s,0,0),'Thigh.R':(-stride*s,0,0),
+         'Shin.L':(-knee_lift*max(0,math.sin(t+1.0)),0,0),
+         'Shin.R':(-knee_lift*max(0,math.sin(t+math.pi+1.0)),0,0),
+         'UpperArm.L':(-arm*s,0,0),'UpperArm.R':(arm*s,0,0),
+         'Forearm.L':(-.12,0,0),'Forearm.R':(-.12,0,0)
+        })
+    return key_pose(rig,name,poses,frames)
+
+def create_animations(rig,body):
+    actions=[]
     idle=[]
     for i in range(5):
         t=i*math.pi/2
@@ -190,28 +282,46 @@ def create_animations(rig):
             'UpperArm.R':(-.028*math.sin(t+.2),0,0),
             'RootLocation':(0,0,.004*math.sin(t))
         })
-    idle_act=key_pose(rig,'Idle_Breath',idle,[1,13,25,37,49])
-    walk=[]
+    actions.append(key_pose(rig,CLIPS['idle'],idle,[1,13,25,37,49]))
+    for kind,params in [
+      ('walk',(.23,.18,1,.24,.012)),
+      ('jog',(.39,.29,1.5,.36,.023)),
+      ('run',(.56,.45,2,.5,.045))]:
+        actions.append(gait_action(rig,CLIPS[kind],*params))
+    for kind in FACE_KEYS:
+        clip=CLIPS[kind]
+        face_key_track(body,clip,kind)
+        poses=[]
+        for i in range(5):
+            t=i*math.pi/2
+            poses.append({
+             'Head':(.035*math.sin(t+(.7 if kind=='laugh' else 0)),0,
+                     .02*math.sin(t)),
+             'Chest':(.018*math.sin(t),0,0),
+             'UpperArm.L':(.06*math.sin(t),0,0),
+             'UpperArm.R':(-.06*math.sin(t),0,0)
+            })
+        actions.append(key_pose(rig,clip,poses,[1,13,25,37,49]))
+    # No weapon geometry. This is a stylised guard, alternating punches,
+    # torso recoil and returning neutral; no impacts/collision are implied.
+    fight=[]
     for i in range(9):
         t=i*math.pi/4
-        swing=.23*math.sin(t)
-        knee=.24*max(0,math.sin(t+math.pi/4))
-        walk.append({
-            'RootLocation':(0,0,.012*math.cos(2*t)),
-            'Pelvis':(0,0,.027*math.sin(t)),
-            'Spine':(.012*math.sin(2*t),0,-.014*math.sin(t)),
-            'Thigh.L':(swing,0,0),
-            'Thigh.R':(-swing,0,0),
-            'Shin.L':(-knee,0,0),
-            'Shin.R':(-.24*max(0,math.sin(t+math.pi+math.pi/4)),0,0),
-            'UpperArm.L':(-.18*math.sin(t),0,0),
-            'UpperArm.R':(.18*math.sin(t),0,0),
-            'Forearm.L':(-.045,0,0),
-            'Forearm.R':(-.045,0,0)
+        punch_l=max(0,math.sin(t))
+        punch_r=max(0,-math.sin(t))
+        fight.append({
+          'Chest':(.04*math.sin(t*2),0,.13*math.sin(t)),
+          'Pelvis':(0,0,-.05*math.sin(t)),
+          'UpperArm.L':(-.45-.55*punch_l,0,.22),
+          'UpperArm.R':(-.45-.55*punch_r,0,-.22),
+          'Forearm.L':(-.75+.5*punch_l,0,0),
+          'Forearm.R':(-.75+.5*punch_r,0,0),
+          'Thigh.L':(.08*math.sin(t),0,0),
+          'Thigh.R':(-.08*math.sin(t),0,0),
+          'RootLocation':(0,0,.01*math.sin(t*2))
         })
-    walk_act=key_pose(rig,'Walk_InPlace',walk,list(range(1,50,6)))
-    # The rig has two separate named NLA tracks that glTF can export as clips.
-    return [idle_act,walk_act]
+    actions.append(key_pose(rig,CLIPS['fight'],fight,list(range(1,50,6))))
+    return actions
 
 def export_glb(rig,body,attachments,out):
     scene=bpy.context.scene
@@ -237,8 +347,10 @@ def audit_deformation(rig,body,clip_names):
     for v in body.data.vertices:rest.append(v.co.copy())
     tests={}
     tracks=list(rig.animation_data.nla_tracks)
+    face_tracks=list(body.data.shape_keys.animation_data.nla_tracks)
     for clip in clip_names:
         for track in tracks:track.mute=track.name!=clip
+        for track in face_tracks:track.mute=track.name!=clip
         per_clip={}
         for frame in (7,13,19,25):
             bpy.context.scene.frame_set(frame)
@@ -254,61 +366,63 @@ def audit_deformation(rig,body,clip_names):
         if not any(v['moving_vertices']>500 for v in per_clip.values()):
             raise RuntimeError(clip+' animation has no substantive vertex motion')
         tests[clip]=per_clip
-    for track in tracks:track.mute=True
+    for track in tracks+face_tracks:track.mute=True
     bpy.context.scene.frame_set(1)
     return tests
 
 
-def render_animation_previews(rig,out,controls):
-    # Actual keyframed Cycles frames, encoded by OS ffmpeg.
-    # This Blender distribution does not support scene.image_format='FFMPEG'.
+def render_animation_previews(rig,body,out,controls):
     encoder=shutil.which('ffmpeg')
-    if not encoder:raise RuntimeError('FFmpeg executable required for Blender animation preview')
+    if not encoder:raise RuntimeError('FFmpeg executable required for animation previews')
     scene=bpy.context.scene
     original=(scene.render.image_settings.file_format,scene.render.resolution_x,
               scene.render.resolution_y,scene.render.filepath,
               scene.cycles.samples,scene.frame_start,scene.frame_end,
               scene.frame_step,scene.render.fps)
-    previews=[]
+    preview=[]
+    tracks=list(rig.animation_data.nla_tracks)
+    face_tracks=list(body.data.shape_keys.animation_data.nla_tracks)
     try:
-        scene.camera=bpy.data.objects['Camera-Front']
-        scene.render.resolution_y=min(480,int(controls['render.resolution']))
+        # Short preview clips; full editable animation stays in GLB and .blend.
+        scene.render.resolution_y=min(360,int(controls['render.resolution']))
         scene.render.resolution_x=2*round(scene.render.resolution_y*.72/2)
-        scene.cycles.samples=min(5,int(controls['render.samples']))
-        scene.frame_start=1;scene.frame_end=49;scene.frame_step=2
-        scene.render.fps=12
-        scene.render.image_settings.file_format='PNG'
-        for clip,name in [('Idle_Breath','idle_preview.mp4'),
-                          ('Walk_InPlace','walk_preview.mp4')]:
-            for track in rig.animation_data.nla_tracks:track.mute=track.name!=clip
+        scene.cycles.samples=min(2,int(controls['render.samples']))
+        scene.frame_start=1;scene.frame_end=49;scene.frame_step=4
+        scene.render.fps=8;scene.render.image_settings.file_format='PNG'
+        for kind,clip in PREVIEW_CLIPS:
+            scene.camera=bpy.data.objects['Camera-Face-Macro' if kind in FACE_KEYS else 'Camera-Front']
+            for track in tracks:track.mute=track.name!=clip
+            for track in face_tracks:track.mute=track.name!=clip
             scene.frame_set(1)
-            frames=out/('frames_'+clip)
-            frames.mkdir(exist_ok=True)
-            scene.render.filepath=str(frames/'frame_')
+            folder=out/('frames_'+kind)
+            folder.mkdir(exist_ok=True)
+            scene.render.filepath=str(folder/'frame_')
             bpy.ops.render.render(animation=True)
-            pngs=sorted(frames.glob('frame_*.png'))
-            if len(pngs)!=25:
-                raise RuntimeError('Blender produced '+str(len(pngs))+' frames, expected 25 for '+clip)
-            dest=out/name
+            pngs=sorted(folder.glob('frame_*.png'))
+            if len(pngs)!=13:raise RuntimeError('Expected 13 rendered '+kind+' frames, got '+str(len(pngs)))
+            filename=kind+'_preview.mp4'
+            dest=out/filename
             command=[encoder,'-y','-hide_banner','-loglevel','error',
-                    '-framerate','12','-pattern_type','glob','-i',
-                    str(frames/'frame_*.png'),'-c:v','libx264','-preset','fast',
-                    '-pix_fmt','yuv420p','-movflags','+faststart',str(dest)]
+                     '-framerate','8','-pattern_type','glob','-i',
+                     str(folder/'frame_*.png'),'-c:v','libx264','-preset','fast',
+                     '-pix_fmt','yuv420p','-movflags','+faststart',str(dest)]
             result=subprocess.run(command,capture_output=True,text=True,timeout=90)
-            if result.returncode!=0:
-                raise RuntimeError('FFmpeg '+clip+': '+result.stderr[-250:])
+            if result.returncode:
+                raise RuntimeError('FFmpeg '+kind+': '+result.stderr[-300:])
             size=dest.stat().st_size
-            if size<10000:raise RuntimeError('Empty encoded animation '+clip)
-            previews.append({'clip':clip,'file':name,'bytes':size,
-                            'fps':12,'frames':len(pngs),'duration_seconds':25/12})
-            shutil.rmtree(frames)
-        return previews
+            if size<6000:raise RuntimeError('Empty '+kind+' animation MP4')
+            preview.append({'kind':kind,'clip':clip,'file':filename,
+                            'bytes':size,'frames':len(pngs),'fps':8,
+                            'duration_seconds':13/8,
+                            'camera':'face' if kind in FACE_KEYS else 'body'})
+            shutil.rmtree(folder)
+        return preview
     finally:
         fmt,width,height,path,samples,start,end,step,fps=original
         scene.render.image_settings.file_format=fmt
         scene.render.resolution_x=width;scene.render.resolution_y=height
         scene.render.filepath=path;scene.cycles.samples=samples
-        scene.frame_start=start;scene.frame_end=end
-        scene.frame_step=step;scene.render.fps=fps
-        for track in rig.animation_data.nla_tracks:track.mute=True
+        scene.frame_start=start;scene.frame_end=end;scene.frame_step=step
+        scene.render.fps=fps
+        for track in tracks+face_tracks:track.mute=True
         scene.frame_set(1)

@@ -5,11 +5,33 @@
 <body>
 <header class="top"><div><div class="eyebrow">BLANK ENGINE / CHARACTER LAB / EXPERIMENTAL</div>
 <h1>Human Anatomy Builder <span>01</span></h1><p>Switch feminine/masculine anatomy or ancestry-inspired starting shapes, independently customize complexion, face and body. All shape controls update live; cloud Blender remains separate.</p></div>
-<div class="topside"><div class="state"><i></i> LIVE CONTROLS · VERCEL PREVIEW</div><div id="count" class="subtext">93 adjustable variables</div></div></header>
+<div class="topside"><div class="state"><i></i> LIVE CONTROLS · VERCEL PREVIEW</div><div id="count" class="subtext">93 adjustable variables</div><a class="animation-jump" href="#animationStudio">Animation Studio ↓</a></div></header>
 <main class="layout">
 <aside class="controls"><div class="toolbar"><div><strong>Manual measurements</strong><small>Preview updates instantly; Blender/Cycles samples are export-only.</small></div><div class="seed-preset"><span class="eyebrow">LOADED CHARACTER PRESET</span><strong id="presetName">Original figure · Dark skin / natural Afro</strong><small id="presetDescription">Full-body woman, medium build, dark skin, natural Afro · parameter approximation of our previous target, not the preserved Blender head geometry.</small></div>
 <input id="search" aria-label="Search controls" placeholder="Search anatomy, hair, toe…" autocomplete="off"></div>
-<p style="margin:8px 14px 13px;color:#b9bebf;font-size:11px;line-height:1.55">Anatomy references are broad presets, not biological definitions of race or identity. You can independently edit complexion, hair and every feature. <b>Cycles samples</b> are Blender-only.</p><div id="sections" class="sections"></div>
+<p style="margin:8px 14px 13px;color:#b9bebf;font-size:11px;line-height:1.55">Anatomy references are broad presets, not biological definitions of race or identity. You can independently edit complexion, hair and every feature. <b>Cycles samples</b> are Blender-only.</p><section id="animationStudio" class="studio-controls" aria-label="Animation Studio">
+ <div class="eyebrow">ANIMATION STUDIO / SELECT AND PLAY</div>
+ <h3>Character animation</h3>
+ <p>Choose any animation. Submit once to create all nine real Blender clips; then tap any action to play it without another rebuild.</p>
+ <div class="studio-subtitle">Body movement</div>
+ <div class="studio-buttons" role="group" aria-label="Body animation choices">
+  <button type="button" class="studio-action" data-action="idle">Idle</button>
+  <button type="button" class="studio-action" data-action="walk" aria-pressed="true">Walk</button>
+  <button type="button" class="studio-action" data-action="jog">Jog</button>
+  <button type="button" class="studio-action" data-action="run">Run</button>
+  <button type="button" class="studio-action" data-action="fight">Fight</button>
+ </div>
+ <div class="studio-subtitle">Facial expressions</div>
+ <div class="studio-buttons" role="group" aria-label="Facial expression choices">
+  <button type="button" class="studio-action" data-action="happy">Happy face</button>
+  <button type="button" class="studio-action" data-action="sad">Sad face</button>
+  <button type="button" class="studio-action" data-action="angry">Angry face</button>
+  <button type="button" class="studio-action" data-action="laugh">Laugh</button>
+ </div>
+ <p id="animationChoiceStatus" role="status" aria-live="polite">Walk selected. Generate a Blender build to play it.</p>
+</section>
+<div id="sections" class="sections"></div>
+
 <div class="actions"><div id="dirty" class="muted">Default specification</div>
 <button id="submit" class="primary">Rebuild full character in Blender <span aria-hidden="true">↗</span></button>
 <div class="minor"><button id="save">Export JSON</button><label class="import">Import JSON<input id="import" type="file" accept=".json,application/json" hidden></label><button id="reset" title="Restore the previous character proportions">Restore figure</button></div></div>
@@ -30,14 +52,12 @@
 <figure><img id="hand_macro" alt="Blender hand and fingers detail"><figcaption>05 · HAND DETAIL</figcaption></figure>
 <figure><img id="feet_macro" alt="Blender feet and toes detail"><figcaption>06 · FOOT DETAIL</figcaption></figure></div>
 </div>
-<section id="animations" class="animation-section" hidden aria-label="Real Blender animations">
- <div class="eyebrow">ANIMATION / RIGGED BLENDER OUTPUT</div>
- <h3>Watch the generated character move</h3>
- <p>Two real keyframed Blender clips. The downloadable GLB contains both animations and the 22-joint skeleton.</p>
- <div class="animation-grid">
-  <figure><video id="idleVideo" controls muted loop playsinline preload="metadata" aria-label="Idle breathing animation"></video><figcaption>01 · IDLE / BREATHING</figcaption></figure>
-  <figure><video id="walkVideo" controls muted loop playsinline preload="metadata" aria-label="Walking in place animation"></video><figcaption>02 · WALK / IN PLACE</figcaption></figure>
- </div>
+<section id="animations" class="animation-section" hidden aria-label="Playable Blender animation">
+ <div class="eyebrow">REAL BLENDER ANIMATION</div>
+ <h3 id="activeClipTitle">Walk in place</h3>
+ <p id="activeClipDescription">Select any action in Animation Studio to play its corresponding Blender-rendered clip. The GLB contains all nine animation clips.</p>
+ <video id="activeAnimationVideo" controls muted loop playsinline preload="metadata" aria-label="Selected animation playback"></video>
+ <p>Facial expressions use actual mesh shape keys. Motions and expressions are prototype animations, not motion-capture-quality performances.</p>
 </section>
 <div class="bottom-grid"><article class="info"><div class="eyebrow">BUILD EVIDENCE</div><div id="report">This preview deforms a connected MakeHuman CC0 anatomical basemesh instead of synthetic cylinders. Blender/Cycles output still requires a real worker.</div><div id="artifactLinks" class="links"></div></article>
 <article class="info"><div class="eyebrow">PIPELINE STATUS</div><div class="pipeline"><span>01 · Adjust controls</span><span>02 · Submit JSON</span><span>03 · Reconstruct topology</span><span>04 · Blender Cycles render</span><span>05 · Rig 22 joints</span><span>06 · Animate + export GLB</span></div><pre id="log"></pre></article></div>

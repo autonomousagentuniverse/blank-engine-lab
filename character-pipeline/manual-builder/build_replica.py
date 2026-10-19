@@ -12,7 +12,7 @@ import bpy, bmesh, json, math, os, sys, hashlib
 from pathlib import Path
 from mathutils import Matrix, Vector
 sys.path.insert(0,str(Path(__file__).resolve().parent))
-from animation_rig import make_armature, assign_weights, attach_to_head, create_animations, export_glb, audit_deformation, render_animation_previews
+from animation_rig import make_armature, assign_weights, attach_to_head, create_animations, export_glb, audit_deformation, render_animation_previews, make_face_shape_keys, CLIPS
 
 SOURCE='makehumancommunity/mpfb2:3af0cd5a2ffba072e93a34e5f6f494fdc4813ddf'
 def fail(message):
@@ -246,12 +246,13 @@ def main():
     attachments=eyes+([hair_obj] if hair_obj else [])
     rig=make_armature(height)
     bone_counts=assign_weights(human,rig,height)
+    face_counts=make_face_shape_keys(human,height)
     for item in attachments:attach_to_head(item,rig)
-    animations=create_animations(rig)
+    animations=create_animations(rig,human)
     glb_path=export_glb(rig,human,attachments,out)
     motion=audit_deformation(rig,human,[a.name for a in animations])
     # Preserve the original static character as a neutral inspection pose.
-    for track in rig.animation_data.nla_tracks:track.mute=True
+    for track in list(rig.animation_data.nla_tracks)+list(human.data.shape_keys.animation_data.nla_tracks):track.mute=True
     bpy.context.scene.frame_set(1)
     setup_world(controls,height,snap['resolved_materials'])
     scene=bpy.context.scene
@@ -265,13 +266,14 @@ def main():
     # Idle is the visible default in the editable Blender file.
     for track in rig.animation_data.nla_tracks:
         track.mute=track.name!='Idle_Breath'
+    for track in human.data.shape_keys.animation_data.nla_tracks:track.mute=True
     scene.frame_set(1)
     blend_file=out/'anatomical_character.blend'
     bpy.ops.wm.save_as_mainfile(filepath=str(blend_file))
     body_metrics=mesh_topology_metrics(indices)
     eye_metrics=eye_diameter_metrics(verts,snap,controls)
     rendered=render_views(out,controls,height,verts)
-    animation_videos=render_animation_previews(rig,out,controls)
+    animation_videos=render_animation_previews(rig,human,out,controls)
     # Report reproducible exact vertex parity, without claiming human realism.
     max_error=max(abs(human.data.vertices[i].co[j]-verts[i][j])
                   for i in range(len(verts)) for j in range(3))
@@ -297,9 +299,10 @@ def main():
           'glb_bytes':os.stat(glb_path).st_size,
           'vertex_motion_audit':motion,
           'previews':animation_videos,
+          'facial_shape_keys':face_counts,
           'skinning_bone_coverage':bone_counts,
           'quality_status':'FIRST_PASS_NEEDS_HUMAN_MOTION_REVIEW',
-          'limitations':['No finger phalanx articulation','Procedural weights need deformation review',
+          'limitations':['Facial shapes are region approximations','No finger phalanx articulation','Procedural weights need deformation review',
                          'Walk is in place and not foot-contact corrected']
         },
         'visual_anatomy_approval':False,

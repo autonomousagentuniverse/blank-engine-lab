@@ -23,7 +23,7 @@ function pruneJobs(){
   }
  }
 }
-const RENDER_FILES=new Set(['front.png','three_quarter.png','profile.png','face_macro.png','hand_macro.png','feet_macro.png','report.json','anatomical_character.blend','animated_character.glb','idle_preview.mp4','walk_preview.mp4']);
+const RENDER_FILES=new Set(['front.png','three_quarter.png','profile.png','face_macro.png','hand_macro.png','feet_macro.png','report.json','anatomical_character.blend','animated_character.glb','idle_preview.mp4','walk_preview.mp4','jog_preview.mp4','run_preview.mp4','happy_preview.mp4','sad_preview.mp4','angry_preview.mp4','laugh_preview.mp4','fight_preview.mp4']);
 const TYPES={'.html':'text/html; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.png':'image/png','.json':'application/json','.blend':'application/octet-stream','.glb':'model/gltf-binary','.mp4':'video/mp4'};
 const JOBS=new Map();
 let busy=false;
@@ -64,9 +64,9 @@ async function runOne(job,blenderBin){
   const raw=JSON.parse(await readFile(join(job.output,'report.json'),'utf8'));
   if(raw.schema!=='blank.anatomy-rebuild-report.v1'||raw.controls_applied!==Object.keys(job.spec.controls).length
        ||!Array.isArray(raw.renders)||raw.renders.length!==6
-       ||raw.animation?.bones!==22||raw.animation?.clips?.length!==2
-       ||raw.animation?.previews?.length!==2)throw Error('Rigged Blender evidence contract failed');
-  for(const name of ['front.png','three_quarter.png','profile.png','face_macro.png','hand_macro.png','feet_macro.png','anatomical_character.blend','animated_character.glb','idle_preview.mp4','walk_preview.mp4']){
+       ||raw.animation?.bones!==22||raw.animation?.clips?.length!==9
+       ||raw.animation?.previews?.length!==9)throw Error('Rigged Blender evidence contract failed');
+  for(const name of ['front.png','three_quarter.png','profile.png','face_macro.png','hand_macro.png','feet_macro.png','anatomical_character.blend','animated_character.glb','idle_preview.mp4','walk_preview.mp4','jog_preview.mp4','run_preview.mp4','happy_preview.mp4','sad_preview.mp4','angry_preview.mp4','laugh_preview.mp4','fight_preview.mp4']){
    if((await stat(join(job.output,name))).size<7000)throw Error('Missing output '+name);
   }
   job.report=raw;job.status='complete';job.completedAt=new Date().toISOString();

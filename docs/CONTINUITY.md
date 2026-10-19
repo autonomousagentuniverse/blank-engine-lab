@@ -1004,3 +1004,30 @@ VISUAL INSPECTION OF ACTUAL RENDERS: existing 3D subject wears **blue shirt, jea
   or mocap-retargeting; eyes, hair and detailed anatomy still not certified.
 - Production remains unchanged. Files on Vercel Sandbox are temporary,
   normally available only during a ~30 minute sandbox lifetime.
+
+
+### Phase 37 — 2026-10-19 — Visible nine-action Animation Studio [EXPERIMENTAL]
+
+- User reports no animation controls and requires Walk, Jog, Run, Happy face,
+  Sad face, Angry face, Laugh and Fight. Added a visible Animation Studio
+  above the anatomy-slider sections with a top-of-page shortcut, selected
+  button state, accessibility labels, and a single selectable video player.
+- One Blender Submit builds all nine actions including Idle/Breathing. The
+  22-bone original rig remains. Distinct keyframed body actions include
+  Walk_InPlace, Jog_InPlace, Run_InPlace, Fight_Combo.
+- New actual shape keys Happy/Sad/Angry/Laugh displace selected facial
+  geometry with keyframed weights. GLB inspected: one 22-joint skin, nine
+  named animation clips, 4 morph targets on body mesh; each facial clip
+  includes a keyframed weights channel. Body geometry still matches
+  source within ~5.96e-8m.
+- All nine Cycles MP4 previews generated from 13 actual Blender animation
+  frames (8fps), with face closeups for expressions and body camera for
+  movements. All can be played by selecting a button after build without
+  rerunning Blender; GLB and .blend include all actions.
+- 17 Node tests PASS, actual Chromium 393px mobile verifies all nine
+  controls visible, selected and accessible with no browser errors.
+- Real local HTTP Submit -> Blender -> complete -> downloadable GLB,
+  .blend and run/fight/happy/sad MP4 verified. Browser exports are
+  transient Sandbox artifacts, no persistent Blob service.
+- Current motion/expression quality VISUAL HOLD: gestures stylized,
+  facial morph approximation, no foot IK or contact-aware locomotion.

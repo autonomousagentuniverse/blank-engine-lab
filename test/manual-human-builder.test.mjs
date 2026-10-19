@@ -268,8 +268,34 @@ test('Animation outputs include editable rig, native GLB skin and actual H264 vi
  assert.match(server,/idle_preview.mp4/);
  assert.match(server,/raw.animation\?\.bones!==22/);
  assert.match(server,/\[a-z0-9_.\]/);
- assert.match(html,/id="idleVideo"/);
- assert.match(html,/id="walkVideo"/);
- assert.match(app,/video\.src=filesBase/);
+ assert.match(html,/id="activeAnimationVideo"/);
+ assert.match(html,/data-action="walk"/);
+ assert.match(app,/video\.src=prefix/);
  assert.match(app,/animated_character.glb/);
+});
+
+
+test('Nine persistent Animation Studio controls map to real rig/NLA and face shape key clips',async()=>{
+ const html=await readFile(join(base,'../character-pipeline/manual-builder/index.html'),'utf8');
+ const app=await readFile(join(base,'../character-pipeline/manual-builder/app.mjs'),'utf8');
+ const rig=await readFile(join(base,'../character-pipeline/manual-builder/animation_rig.py'),'utf8');
+ const blender=await readFile(join(base,'../character-pipeline/manual-builder/build_replica.py'),'utf8');
+ const server=await readFile(join(base,'../character-pipeline/manual-builder/server.mjs'),'utf8');
+ for(const action of ['idle','walk','jog','run','happy','sad','angry','laugh','fight']){
+  assert.match(html,new RegExp('data-action="'+action+'"'));
+  assert.match(app,new RegExp(action+":'"));
+  assert.match(server,new RegExp(action+'_preview.mp4'));
+ }
+ for(const clip of ['Jog_InPlace','Run_InPlace','Happy_Face','Sad_Face','Angry_Face','Laugh','Fight_Combo']){
+  assert.match(rig,new RegExp(clip));
+ }
+ assert.match(html,/id="animationStudio"/);
+ assert.match(html,/aria-label="Facial expression choices"/);
+ assert.match(app,/showAnimationChoice/);
+ assert.match(app,/renderedJob/);
+ assert.match(server,/raw\.animation\?\.clips\?\.length!==9/);
+ assert.match(server,/raw\.animation\?\.previews\?\.length!==9/);
+ assert.match(rig,/shape_key_add/);
+ assert.match(rig,/face_key_track/);
+ assert.match(blender,/make_face_shape_keys\(human,height\)/);
 });
