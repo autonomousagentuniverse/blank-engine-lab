@@ -153,7 +153,24 @@ def camera(name,loc,height,target=None):
     cam.data.ortho_scale=height*1.32
     point(cam,target if target is not None else (0,0,height*.52))
     return cam
-def render_views(out,controls,height):
+def anatomical_detail_targets(vertices,height):
+    # Camera landmarks are measured from this generated character, not
+    # fixed offsets fitted to one preset. This matters when stance, limb
+    # proportions or body morphology change.
+    mid_arm=[v for v in vertices if .46*height<v[2]<.78*height and v[0]>0]
+    if not mid_arm:fail('Missing right arm anatomy for detail camera')
+    outer_x=max(v[0] for v in mid_arm)
+    hands=[v for v in mid_arm if v[0]>outer_x-.12 and v[2]<.72*height]
+    feet=[v for v in vertices if v[0]>.06 and v[2]<.17*height]
+    if len(hands)<35 or len(feet)<100:
+        fail('Unable to frame hand or toe geometry from generated character')
+    def bounds(points):
+        return tuple((min(v[i] for v in points)+max(v[i] for v in points))*.5 for i in range(3))
+    hand=bounds(hands)
+    foot=bounds(feet)
+    return hand,foot
+
+def render_views(out,controls,height,vertices):
     scene=bpy.context.scene
     scene.render.engine='CYCLES'
     scene.cycles.samples=int(controls['render.samples'])
@@ -171,13 +188,18 @@ def render_views(out,controls,height):
     # Inspection views are first-class evidence, not artist recollections:
     # close crops reveal eye/lid placement, digit structure, toes and seams.
     # These camera-only views do not alter the body geometry.
+    hand_target,foot_target=anatomical_detail_targets(vertices,height)
+    # Inspect a right hand and a single complete foot, rather than cropping
+    # the outer edges of both feet in a too-narrow portrait frame.
+    hand_look=(hand_target[0],hand_target[1],hand_target[2])
+    foot_look=(foot_target[0],foot_target[1],max(.09,foot_target[2]))
     cams.extend([
         ('face_macro',camera('Camera-Face-Macro',(0,-.84,height*.905),height,(0,0,height*.91))),
-        ('hand_macro',camera('Camera-Hand-Macro',(.49,-.76,height*.60),height,(.45,0,height*.60))),
-        ('feet_macro',camera('Camera-Feet-Macro',(.33,-.66,.37),height,(0,0,.085)))
+        ('hand_macro',camera('Camera-Hand-Macro',(hand_look[0]+.03,hand_look[1]-.72,hand_look[2]+.12),height,hand_look)),
+        ('feet_macro',camera('Camera-Feet-Macro',(foot_look[0]+.08,foot_look[1]-.66,foot_look[2]+.34),height,foot_look))
     ])
     for name,cam in cams[3:]:
-        cam.data.ortho_scale={'face_macro':.38,'hand_macro':.34,'feet_macro':.45}[name]
+        cam.data.ortho_scale={'face_macro':.38,'hand_macro':.44,'feet_macro':.44}[name]
     files=[]
     for name,cam in cams:
         scene.camera=cam
@@ -226,7 +248,7 @@ def main():
     bpy.ops.wm.save_as_mainfile(filepath=str(blend_file))
     body_metrics=mesh_topology_metrics(indices)
     eye_metrics=eye_diameter_metrics(verts,snap,controls)
-    rendered=render_views(out,controls,height)
+    rendered=render_views(out,controls,height,verts)
     # Report reproducible exact vertex parity, without claiming human realism.
     max_error=max(abs(human.data.vertices[i].co[j]-verts[i][j])
                   for i in range(len(verts)) for j in range(3))

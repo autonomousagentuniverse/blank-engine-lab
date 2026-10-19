@@ -164,15 +164,15 @@ function showResults(job){
   'Generator: '+job.report.generator,
   'Controls: '+job.report.controls_applied+' / 93',
   'Morphology: '+job.report.morphology+' · reference: '+job.report.population_reference,
-  'Source: '+g.native_source,
-  'CC0 body: '+g.vertices.toLocaleString()+' vertices / '+g.triangles.toLocaleString()+' faces',
+  'Source: CC0 MakeHuman (full provenance in report.json)',
+  'Body geometry: '+g.vertices.toLocaleString()+' vertices / '+g.triangles.toLocaleString()+' triangles',
   'Stature: '+(g.height_m*100).toFixed(1)+' cm',
   'Browser/Blender vertex deviation: '+g.max_blender_vertex_deviation_m.toFixed(8)+' m',
   'Degenerate faces: '+g.degenerate_triangles,
   'Hair instances: '+job.report.hair_instances,
   'Human realism is NOT visually approved',
   'Sandbox downloads expire after approximately 30 minutes; save your .blend immediately'
- ].join('\\n');
+ ].join('\n');
  const links=$('#artifactLinks');links.replaceChildren();
  for(const [label,name] of [['Editable Blender','anatomical_character.blend'],['JSON evidence','report.json']]){
   const a=document.createElement('a');a.href=filesBase+'/outputs/'+id+'/'+name;a.textContent=label;a.download=name;links.append(a);

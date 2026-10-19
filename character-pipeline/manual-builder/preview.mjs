@@ -73,11 +73,19 @@ export async function mountClayPreview(host,initial){
       const origin=positions.length/3;
       for(let j=0;j<rings;j++){
         const t=j/(rings-1),ang=2*Math.PI*turns*t+phase;
-        const x=offX+Math.sin(ang)*.24*t,z=offZ+Math.cos(ang)*.24*t;
-        const radius=.067*(1-.67*t)*(strand%2===0?1:.85);
+        // Curly follicles DOUBLE BACK rather than pointing straight outward:
+        // most visible material lives in rounded closed-looking loops, with
+        // strand tips returning near the scalp. This prevents rigid spines.
+        const coiled=turns>=1.5;
+        const arc=coiled?Math.sin(Math.PI*t):t;
+        const spread=coiled?(0.24+0.22*arc):0.12;
+        const x=offX+Math.sin(ang)*spread + (coiled?0.10*t*Math.cos(phase):0);
+        const z=offZ+Math.cos(ang)*spread + (coiled?0.10*t*Math.sin(phase):0);
+        const y=coiled?(.09*t+.72*arc):t;
+        const radius=.057*(1-.48*t)*(strand%2===0?1:.82);
         for(let side=0;side<sides;side++){
           const a=2*Math.PI*side/sides;
-          positions.push(x+radius*Math.cos(a),t,z+radius*Math.sin(a));
+          positions.push(x+radius*Math.cos(a),y,z+radius*Math.sin(a));
         }
       }
       for(let j=0;j<rings-1;j++)for(let k=0;k<sides;k++){

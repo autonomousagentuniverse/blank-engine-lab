@@ -231,3 +231,18 @@ test('Hosted build cannot falsely export JSON and worker requires token before c
  const app=await readFile(join(base,'../character-pipeline/manual-builder/app.mjs'),'utf8');
  assert.match(app,/job\.workerJobId\|\|job\.id/);
 });
+
+
+test('Mobile Blender evidence renders real line breaks and follows anatomy-framed detail cameras',async()=>{
+ const app=await readFile(join(base,'../character-pipeline/manual-builder/app.mjs'),'utf8');
+ const blender=await readFile(join(base,'../character-pipeline/manual-builder/build_replica.py'),'utf8');
+ const preview=await readFile(join(base,'../character-pipeline/manual-builder/preview.mjs'),'utf8');
+ assert.ok(app.includes("].join('\\n');"),'Evidence should use actual JS newline escape');
+ assert.ok(!app.includes("].join('\\\\n');"),'Literal slash+n would display on mobile');
+ assert.match(app,/full provenance in report.json/);
+ assert.match(blender,/def anatomical_detail_targets\(vertices,height\):/);
+ assert.match(blender,/hand_target,foot_target=anatomical_detail_targets\(vertices,height\)/);
+ assert.match(blender,/foot_look=\(foot_target\[0\],foot_target\[1\]/);
+ assert.match(preview,/const y=coiled\?\(\.09\*t\+\.72\*arc\):t/);
+ assert.match(preview,/positions.push\(x\+radius\*Math.cos\(a\),y,z/);
+});

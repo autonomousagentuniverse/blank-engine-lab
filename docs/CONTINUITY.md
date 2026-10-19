@@ -944,3 +944,28 @@ VISUAL INSPECTION OF ACTUAL RENDERS: existing 3D subject wears **blue shirt, jea
   gets a fresh random token stored in its own sandbox file and only used
   server-to-worker. UI job ID not used as authorization for worker API.
 - Docs: `docs/hosted-blender-worker.md`. Anatomical visual realism remains HOLD.
+
+
+### Phase 35 — 2026-10-19 — Screenshot-driven visual QA and mobile evidence repairs [EXPERIMENTAL]
+
+- Real user mobile screenshot of successful Vercel one-shot: masculine
+  African-reference body, 6 Blender PNGs, 13,524 CC0 vertices, 26,756
+  body triangles, 286 hair instances. Numeric parity remains verified;
+  realistic eyelids/fingers/hair/feet are NOT visually approved.
+- Fixed HTML Build Evidence literal escaped slash-n sequences; JS now emits
+  real newline characters, matching existing CSS pre-line whitespace.
+  Readable "Source: CC0 MakeHuman" text; full provenance in report JSON.
+- Replaced stiff upward Afro hair tufts with return-loop curved strand
+  geometry sent identically to browser and Blender. Human face closeup
+  looks less spike-like but still needs higher-realism fiber layering.
+- Fixed poor close-up camera framing, derived from the current generated
+  body vertices. Right-hand ROI uses outer arm extent; right-foot ROI
+  uses toe/foot vertices and no longer crops each side of the frame.
+- REAL Chromium @393px captured dark-skin African/masculine WebGL geometry
+  (286 follicles, 0 browser errors). REAL Blender 5.0.1 reproduced it in
+  6 PNGs + ~5.5MB .blend, measured max error 5.96008e-8m. Inspectable
+  latest macros show complete wrist/fingers and one foot/toes.
+- 15 Node tests PASS with explicit regression for newline formatting,
+  curved-loop hair geometry, and measured-region macro cameras.
+- Vercel prepared base Sandbox must be refreshed to the new source commit
+  before claiming these improvements on deployed hosted builder.
