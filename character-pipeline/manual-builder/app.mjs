@@ -145,16 +145,19 @@ function exportSpecification(data,name){
  const url=URL.createObjectURL(blob),a=document.createElement('a');
  a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),500);
 }
+const API_REBUILD=HOSTED?'/api/anatomy':'/api/rebuild';
+const API_STATUS=id=>HOSTED?('/api/anatomy?job='+encodeURIComponent(id)):('/api/jobs/'+encodeURIComponent(id));
 if(HOSTED){
- build.innerHTML='Export Blender rebuild request <span aria-hidden="true">↗</span>';
- $('#report').textContent='Loading licensed human basemesh. Hosted preview has no cloud Blender executor; Submit exports the 91-control rebuild request.';
+ build.textContent='Generate actual Blender build';
+ $('#report').textContent='Submit sends the current connected anatomy to the secured Blender worker, generates six Cycles renders and an editable .blend. Rendering may take a few minutes.';
 }
 function status(value){$('#buildStatus').textContent=value}
 function showResults(job){
  const id=encodeURIComponent(job.id);
+ const filesBase=job.outputBaseUrl||'';
  $('#images').hidden=false;
  for(const name of ['front','three_quarter','profile','face_macro','hand_macro','feet_macro']){
-  $('#'+name).src='/outputs/'+id+'/'+name+'.png';
+  $('#'+name).src=filesBase+'/outputs/'+id+'/'+name+'.png';
  }
  const g=job.report.mesh;
  $('#report').textContent=[
@@ -171,12 +174,12 @@ function showResults(job){
  ].join('\\n');
  const links=$('#artifactLinks');links.replaceChildren();
  for(const [label,name] of [['Editable Blender','anatomical_character.blend'],['JSON evidence','report.json']]){
-  const a=document.createElement('a');a.href='/outputs/'+id+'/'+name;a.textContent=label;a.download=name;links.append(a);
+  const a=document.createElement('a');a.href=filesBase+'/outputs/'+id+'/'+name;a.textContent=label;a.download=name;links.append(a);
  }
 }
 async function check(id){
  try{
-  const res=await fetch('/api/jobs/'+encodeURIComponent(id));
+  const res=await fetch(API_STATUS(id),{cache:'no-store'});
   if(!res.ok)throw Error('Build status request failed');
   const job=await res.json();status(job.status.toUpperCase());
   $('#log').textContent=job.log||'';
@@ -194,14 +197,8 @@ build.addEventListener('click',async()=>{
   if(!previewSnapshot)throw Error('MakeHuman geometry still loading; replica export refused');
   previewUpdater(values);
   const payload={...validateRequest({schema:SCHEMA,controls:values}),snapshot:previewSnapshot()};
-  if(HOSTED){
-   exportSpecification(payload,'blank-human-one-shot-replica.json');
-   status('REBUILD SETTINGS EXPORTED');
-   $('#report').textContent='Canonical MakeHuman mesh and every control exported for a Blender one-shot rebuild. Geometry is identical at the vertex level; hosted Vercel cannot execute Blender until a worker is connected.';
-   return;
-  }
   build.disabled=true;status('SUBMITTING…');$('#log').textContent='';
-  const response=await fetch('/api/rebuild',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  const response=await fetch(API_REBUILD,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
   const result=await response.json();
   if(!response.ok)throw Error(result.error||'Blender service rejected submission');
   activeJob=result.jobId;status('QUEUED');await check(activeJob);

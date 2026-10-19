@@ -891,3 +891,28 @@ VISUAL INSPECTION OF ACTUAL RENDERS: existing 3D subject wears **blue shirt, jea
   source discrepancy stayed 5.96e-8 metres. 13/13 Node tests passed.
 - Human realism, eyelid contact, detailed hair, hand and foot anatomy remain
   VISUALLY UNAPPROVED. No Vercel deployment. Experiments stay on GitHub.
+
+
+### Phase 33 — 2026-10-19 — Real hosted one-shot Blender execution integration [CODE COMPLETE / HOSTING PENDING]
+
+- Added Docker Render service for Blender worker (Dockerfile.anatomy), a
+  server-side Vercel proxy at /api/anatomy, authenticated job status/rebuild,
+  direct short-lived UUID-scoped PNG/.blend downloads, and actual hosted
+  Generate Blender Build button (rather than misleading JSON export).
+- Security: high-entropy BLENDER_WORKER_TOKEN is required on the worker,
+  Vercel proxy supplies it server-side; no secret is sent to browsers.
+- Tested a real 845,394-byte browser-origin CC0 MakeHuman snapshot in the
+  Chromium QA sandbox through the Vercel API handler to a token-protected Node
+  worker to Blender 5.0.1. Result: six real Cycles PNG files, editable
+  .blend (5,708,094 bytes), successful status polling and downloads.
+  Unauthenticated worker POST was rejected HTTP 401; 14/14 Node tests passed.
+- Peak isolated Blender memory on one 480px / 8-sample job: 425,036KB.
+  Free Render 512MB may fail when Node overhead is included; >=2GB advisable
+  but needs owner authorization before paid plan selection.
+- **NOT YET HOSTED:** Render connector requests explicit workspace selection
+  before service creation; awaiting user approval for workspace. Production
+  remains untouched; do not claim the deployed Vercel preview executes Blender
+  until Render service + matched env variables + manual preview deployment
+  + actual browser cloud test succeed.
+- Implementation docs: docs/hosted-blender-worker.md. Visual human-quality
+  gate remains HOLD notwithstanding successful technical execution.

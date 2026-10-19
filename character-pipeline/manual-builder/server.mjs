@@ -1,14 +1,28 @@
 import http from 'node:http';
-import {readFile, mkdir, writeFile, stat} from 'node:fs/promises';
+import {readFile, mkdir, writeFile, stat, rm} from 'node:fs/promises';
 import {spawn} from 'node:child_process';
-import {randomUUID} from 'node:crypto';
+import {randomUUID, timingSafeEqual} from 'node:crypto';
 import {dirname, resolve, join, extname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {defaultRequest,validateRequest} from './controls.mjs';
 import {validateSnapshot} from './snapshot-validation.mjs';
 
 const BASE=dirname(fileURLToPath(import.meta.url));
-const ARTIFACTS=resolve(BASE,'../../artifacts/manual-human-builder');
+const ARTIFACTS=process.env.ARTIFACT_DIR ? resolve(process.env.ARTIFACT_DIR) : resolve(BASE,'../../artifacts/manual-human-builder');
+const TTL_MS=60*60*1000;
+function bearerAccepted(req,expected){
+ const header=req.headers.authorization||'';
+ if(typeof expected!=='string'||expected.length<32||!header.startsWith('Bearer '))return false;
+ const actual=Buffer.from(header.slice(7));const token=Buffer.from(expected);
+ return actual.length===token.length&&timingSafeEqual(actual,token);
+}
+function pruneJobs(){
+ for(const [id,job] of JOBS){
+  if((job.status==='complete'||job.status==='failed')&&Date.now()-job.createdMs>TTL_MS){
+   JOBS.delete(id);void rm(job.output,{recursive:true,force:true}).catch(()=>{});
+  }
+ }
+}
 const RENDER_FILES=new Set(['front.png','three_quarter.png','profile.png','face_macro.png','hand_macro.png','feet_macro.png','report.json','anatomical_character.blend']);
 const TYPES={'.html':'text/html; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.png':'image/png','.json':'application/json','.blend':'application/octet-stream'};
 const JOBS=new Map();
@@ -57,17 +71,23 @@ async function runOne(job,blenderBin){
  }catch(err){job.status='failed';job.error=err.message;job.completedAt=new Date().toISOString()}
  busy=false;const next=queue.shift();if(next)void runOne(next,blenderBin);
 }
-export function createBuilderServer({blenderBin=process.env.BLENDER_BIN||'blender'}={}){
+export function createBuilderServer({blenderBin=process.env.BLENDER_BIN||'blender',workerMode=process.env.WORKER_MODE==='1',workerToken=process.env.BLENDER_WORKER_TOKEN}={}){
+ if(workerMode&&(!workerToken||workerToken.length<32))throw Error('Secure BLENDER_WORKER_TOKEN is required for hosted Blender worker');
  return http.createServer(async(req,res)=>{
   try{
+   pruneJobs();
    const url=new URL(req.url||'/', 'http://localhost');
+   if(req.method==='GET'&&url.pathname==='/healthz')
+     return json(res,200,{ok:true,service:workerMode?'blank-blender-worker':'local-anatomy-builder',blenderEnabled:true});
+   if(workerMode&&url.pathname.startsWith('/api/')&&
+      !bearerAccepted(req,workerToken))return json(res,401,{error:'Worker authorization required'});
    if(req.method==='GET' && url.pathname==='/api/defaults')return json(res,200,defaultRequest());
    if(req.method==='POST'&&url.pathname==='/api/rebuild'){
     const submitted=await limitedJson(req);
     const spec={...validateRequest(submitted),snapshot:validateSnapshot(submitted.snapshot)};
     if(queue.length>=3)return json(res,429,{error:'Rebuild queue is full'});
     const id=randomUUID();const job={id,status:'queued',submittedAt:new Date().toISOString(),spec,
-      output:join(ARTIFACTS,id),log:'',report:null,error:null};
+      output:join(ARTIFACTS,id),createdMs:Date.now(),log:'',report:null,error:null};
     JOBS.set(id,job);
     if(!busy)void runOne(job,blenderBin);else queue.push(job);
     return json(res,202,{jobId:id,status:job.status});
@@ -87,7 +107,7 @@ export function createBuilderServer({blenderBin=process.env.BLENDER_BIN||'blende
    }
    const asset={'/':'index.html','/index.html':'index.html','/app.mjs':'app.mjs',
                 '/controls.mjs':'controls.mjs','/preview.mjs':'preview.mjs','/style.css':'style.css','/basemesh.json':'basemesh.json','/morph-engine.mjs':'morph-engine.mjs'}[url.pathname];
-   if(req.method==='GET'&&asset)return respond(res,200,await readFile(join(BASE,asset)),extname(asset));
+   if(req.method==='GET'&&asset&&!workerMode)return respond(res,200,await readFile(join(BASE,asset)),extname(asset));
    return json(res,404,{error:'Not found'});
   }catch(err){return json(res,400,{error:err.message})}
  });
@@ -96,5 +116,6 @@ if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
  const port=Number(process.env.PORT||4388);
  if(!Number.isInteger(port)||port<1024||port>65535)throw Error('Invalid local port');
  const server=createBuilderServer();
- server.listen(port,'127.0.0.1',()=>console.log('Blank manual human builder: http://127.0.0.1:'+port));
+ const host=process.env.WORKER_MODE==='1'?'0.0.0.0':'127.0.0.1';
+ server.listen(port,host,()=>console.log('Blank anatomical Blender '+(process.env.WORKER_MODE==='1'?'worker':'local builder')+' listening on '+host+':'+port));
 }

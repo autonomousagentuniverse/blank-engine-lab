@@ -124,7 +124,9 @@ test('live preview reads connected CC0 anatomy rather than a synthetic procedura
  assert.equal(asset.body_indices.length/3,26756);
  assert.match(app,/queuePreview\(\)/);
  assert.match(app,/previewUpdater\(values\)/);
- assert.match(app,/exportSpecification\(payload,'blank-human-one-shot-replica\.json'\)/);
+ assert.match(app,/const API_REBUILD=HOSTED\?'\/api\/anatomy'/);
+ assert.match(app,/response=await fetch\(API_REBUILD/);
+ assert.doesNotMatch(app,/if\(HOSTED\)\{\s*exportSpecification\(payload/);
  assert.match(html,/id="clayViewport"/);
  assert.doesNotMatch(html,/id="empty"/);
  assert.match(game,/Human Anatomy Builder/);
@@ -197,4 +199,29 @@ test('Measured eye geometry, six view renderer and shared curved follicle templa
    assert.match(server,new RegExp(view+'.png'));
  }
  assert.match(server,/raw\.renders\.length!==6/);
+});
+
+
+test('Hosted build cannot falsely export JSON and worker requires token before costly execution',async()=>{
+ const {createBuilderServer}=await import('../character-pipeline/manual-builder/server.mjs');
+ assert.throws(()=>createBuilderServer({workerMode:true,workerToken:'short'}),/BLENDER_WORKER_TOKEN/);
+ const secret='secure-token-'+('a'.repeat(60));
+ const server=createBuilderServer({workerMode:true,workerToken:secret,blenderBin:'definitely-no-blender'});
+ await new Promise(ok=>server.listen(0,'127.0.0.1',ok));
+ const url='http://127.0.0.1:'+server.address().port;
+ try{
+  const health=await fetch(url+'/healthz');assert.equal(health.status,200);
+  const anon=await fetch(url+'/api/rebuild',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(defaultRequest())});
+  assert.equal(anon.status,401);
+  const status=await fetch(url+'/api/jobs/11111111-1111-1111-1111-111111111111');assert.equal(status.status,401);
+  const authorized=await fetch(url+'/api/rebuild',{method:'POST',headers:{authorization:'Bearer '+secret,'content-type':'application/json'},body:JSON.stringify({...defaultRequest(),snapshot:canonicalFixture()})});
+  assert.equal(authorized.status,202);
+ }finally{await new Promise(ok=>server.close(ok))}
+ const endpoint=await readFile(join(base,'../api/anatomy.js'),'utf8');
+ assert.match(endpoint,/BLENDER_WORKER_TOKEN/);
+ assert.match(endpoint,/outputBaseUrl=worker/);
+ assert.match(endpoint,/maxDuration:60/);
+ const docker=await readFile(join(base,'../Dockerfile.anatomy'),'utf8');
+ assert.match(docker,/apt-get install.*blender/);
+ assert.match(docker,/WORKER_MODE=1/);
 });
