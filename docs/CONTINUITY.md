@@ -969,3 +969,38 @@ VISUAL INSPECTION OF ACTUAL RENDERS: existing 3D subject wears **blue shirt, jea
   curved-loop hair geometry, and measured-region macro cameras.
 - Vercel prepared base Sandbox must be refreshed to the new source commit
   before claiming these improvements on deployed hosted builder.
+
+
+### Phase 36 — 2026-10-19 — One-shot Blender rig + animation [EXPERIMENTAL, TECHNICAL PASS]
+
+- Each user-selected 93-variable live WebGL human can now be reconstructed
+  into a fresh Blender 5.0.1 character with a deterministic 22-bone armature,
+  normalized body skinning, hair/eyes attached to head and two independent
+  NLA actions: Idle_Breath and Walk_InPlace.
+- The one-shot produces animated_character.glb (one skin, 22 joints, two
+  named clips), editable anatomical_character.blend with NLA tracks,
+  two ACTUAL 25-frame H.264 videos (idle_preview.mp4/walk_preview.mp4),
+  six static Cycles anatomy views and report.json with individual per-clip
+  vertex deformation audits.
+- Blender Debian environment required python3-numpy for glTF export and OS
+  ffmpeg for MP4; Blender's built-in FFmpeg image format unavailable.
+  H264 needed even-numbered width. Server output-route regex also fixed
+  for filenames containing digits (.mp4).
+- Genuine Chromium 393px masculine/African snapshot with 286 hair roots
+  and 13,524 vertices ran in Blender; GLB 6.8 MB and both motion previews
+  produced with source/Blender mesh discrepancy about 5.96e-8 m.
+- Local full HTTP service accepted source snapshot, polled complete and
+  downloaded both video clips, animated GLB and editable Blender file.
+  GitHub animation commit f03b788, 16/16 Node regressions PASS.
+- Vercel base Sandbox blank-anatomy-blender-base refreshed from f03b788
+  with Blender, NumPy and FFmpeg and stopped into snapshot
+  snap_vzF9wAw7zpo7V0gQoGFYDXTUhoc5.
+- Vercel Preview dpl_74mU1W5gvGFWpybnB6g6KtZ1bJKZ deployed READY,
+  URL blank-engine-3oc51yqnw-autonomousagentuniverse-3582.vercel.app.
+  The protected preview HTTP fetch returns Vercel 403 for this connector:
+  a real external click-to-render is not independently certified.
+- Technical animation milestone succeeds. VISUAL HOLD: walk is in place,
+  no grounded foot IK, toe-roll, finger articulation, muscle correctives
+  or mocap-retargeting; eyes, hair and detailed anatomy still not certified.
+- Production remains unchanged. Files on Vercel Sandbox are temporary,
+  normally available only during a ~30 minute sandbox lifetime.
