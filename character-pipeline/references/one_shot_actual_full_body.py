@@ -78,7 +78,16 @@ if RENDER_CONFIG_FILE:
   print("BLANK_REAL_FACE_SHAPE_KEYS_CREATED",json.dumps(face_data),flush=True)
 # Body and skinned garments get same controlled rest-geometry warp.
 # Apply after any face shape-key creation so expression keys are preserved.
-BODY_RESULT=apply_blender_body_widths(body=body,rig=rig,scene=scene,values=BODY_VALUES)
+# Two mutually exclusive geometry paths; the anatomical run never invokes
+# the old shoulder/waist/hip field. Both read the ORIGINAL source blend.
+ANATOMY_RESULT={"applied":False,"three_slider_morphology_used":False}
+if os.environ.get("BLANK_HUMAN_ANATOMICAL_REBUILD","0")=="1":
+ from rebuild_body_anatomy import rebuild_source_body
+ ANATOMY_RESULT=rebuild_source_body(body=body,rig=rig,scene=scene)
+ BODY_RESULT={"applied":False,"old_three_slider_method_skipped":True}
+ print("BLANK_REAL_ANATOMICAL_RECONSTRUCTION",json.dumps(ANATOMY_RESULT,sort_keys=True),flush=True)
+else:
+ BODY_RESULT=apply_blender_body_widths(body=body,rig=rig,scene=scene,values=BODY_VALUES)
 # Geometry fingerprint of actual existing head above neck, before and after body change.
 print("BLANK_REAL_BODY_GEOMETRY",json.dumps(BODY_RESULT,sort_keys=True),flush=True)
 STANCE_RESULT={"applied":False,"previous_head_preserved":True}
@@ -254,8 +263,8 @@ report={
  "image_generation_tool_used":False,
  "human":"Existing Blender 3D synthetic MPFB-derived dark-skinned woman; optionally adjusted torso/garment morphology from original 3D source; not independent identity generation",
  "single_blender_process_multiple_views":True,
- "mesh_geometry_changed":bool(face_keys) or BODY_RESULT["applied"],
- "morphs_changed":bool(face_keys) or BODY_RESULT["applied"],"light_powers_changed":False,
+ "mesh_geometry_changed":bool(face_keys) or BODY_RESULT["applied"] or ANATOMY_RESULT["applied"],
+ "morphs_changed":bool(face_keys) or BODY_RESULT["applied"] or ANATOMY_RESULT["applied"],"light_powers_changed":False,
  "bone_count":53,"source_light_names_watts":lights,
  "revised_world_studio_background":WORLD_STUDIO_CHANGED,
  "actual_armature_pose":STANCE_RESULT,
@@ -263,6 +272,7 @@ report={
  "model_height_m":height,
  "actual_face_geometry_morphs":face_data,
  "body_morphology":{"values":BODY_VALUES,**BODY_RESULT},
+ "anatomical_reconstruction":ANATOMY_RESULT,
  "controlled_face_render_AB":face_comparison,
  "control_provenance":{"contract":"blank.human.visual-variables.v1",
   "compiled_config_applied":bool(RENDER_CONFIG_FILE),

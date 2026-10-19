@@ -1,0 +1,101 @@
+name: EXPERIMENTAL Real Blender Anatomical Body Reconstruction Once
+# This one-time branch-only push trigger is temporary and must be restored to manual.
+on:
+  push:
+    branches:
+      - experiment/anatomical-rebuild-not-width-warp-20261018
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  anatomical-full-body:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Verify new skeletal anatomy interpolation
+        run: |
+          python3 -m unittest discover -s character-pipeline/references -p test_anatomical_reconstruction.py -v
+          python3 -m py_compile character-pipeline/references/rebuild_body_anatomy.py character-pipeline/references/one_shot_actual_full_body.py
+      - name: Recover original pinned Blender human without old modified .blend
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p source
+          gh run download 39143615834 --repo autonomousagentuniverse/blank-engine-lab --name afro-mask-respected-geometry-and-glb --dir source
+          printf 'a1c38165ae2d8d100e04919e4e57b35623ac9fabc1b0d2cb44bdfb7829fef570  source/afro_mask_respected_uv_pbr.blend\n' | sha256sum -c -
+      - name: Prepare original Blender 4.5.3 Cycles runtime
+        run: |
+          python3 -m pip install --disable-pip-version-check --no-cache-dir bpy==4.5.3 numpy pillow
+          mkdir -p artifacts/anatomy/neutral artifacts/anatomy/rebuilt
+      - name: Render real untouched original, three Cycles angles
+        env:
+          BLANK_HUMAN_OUTPUT_DIR: artifacts/anatomy/neutral
+          BLANK_HUMAN_STUDIO_BACKGROUND: '1'
+          OMP_NUM_THREADS: '4'
+        run: |
+          timeout -k 20s 1000s python3 -u character-pipeline/references/one_shot_actual_full_body.py
+      - name: Reconstruct genuine body mesh via rig regions; render three Cycles angles
+        env:
+          BLANK_HUMAN_OUTPUT_DIR: artifacts/anatomy/rebuilt
+          BLANK_HUMAN_STUDIO_BACKGROUND: '1'
+          BLANK_HUMAN_ANATOMICAL_REBUILD: '1'
+          BLANK_HUMAN_RELAX_STANCE: '1'
+          OMP_NUM_THREADS: '4'
+        run: |
+          timeout -k 20s 1000s python3 -u character-pipeline/references/one_shot_actual_full_body.py
+      - name: Independent geometry and render verification
+        run: |
+          python3 - <<'PY'
+          import json,hashlib,base64,io,pathlib
+          import numpy as np
+          from PIL import Image
+          root=pathlib.Path('artifacts/anatomy')
+          a=json.loads((root/'neutral/actual-full-body-report.json').read_text())
+          b=json.loads((root/'rebuilt/actual-full-body-report.json').read_text())
+          assert a['source_blend_sha256']==b['source_blend_sha256']
+          assert a['source_unchanged'] and b['source_unchanged']
+          assert not a['mesh_geometry_changed'] and b['mesh_geometry_changed']
+          assert a['bone_count']==b['bone_count']==53
+          assert b['anatomical_reconstruction']['applied']
+          assert not b['anatomical_reconstruction']['three_slider_morphology_used']
+          assert not b['body_morphology']['applied']
+          assert b['anatomical_reconstruction']['head_topology_and_vertex_positions_preserved']
+          assert b['anatomical_reconstruction']['changed_regions']['torso']>120
+          assert b['anatomical_reconstruction']['changed_regions']['thigh']>80
+          assert len(b['anatomical_reconstruction']['reconstructed_objects'])>=2
+          assert b['actual_armature_pose']['head_pose_preserved']
+          assert a['revised_world_studio_background'] == b['revised_world_studio_background'] == True
+          result={"source_sha":b['source_blend_sha256'],
+             "new_algorithm":b['anatomical_reconstruction']['method'],
+             "anatomy":b['anatomical_reconstruction'],
+             "body_slider_reused":False,
+             "same_lighting":True,"pixel_differences":{},
+             "photorealism_approved":False,"no_production_deploy":True}
+          for angle in ['front','three_quarter_25','profile_90']:
+              f='actual_blender_full_body_'+angle+'.png'
+              neutral=np.asarray(Image.open(root/'neutral'/f).convert('RGB'),dtype=np.int16)
+              rebuilt=np.asarray(Image.open(root/'rebuilt'/f).convert('RGB'),dtype=np.int16)
+              assert neutral.shape==rebuilt.shape==(1260,840,3)
+              delta=int(np.count_nonzero(np.max(np.abs(neutral-rebuilt),axis=2)>16))
+              assert delta>500,(angle,delta)
+              result['pixel_differences'][angle]=delta
+              pair=Image.new('RGB',(576,432))
+              pair.paste(Image.open(root/'neutral'/f).convert('RGB').resize((288,432)),(0,0))
+              pair.paste(Image.open(root/'rebuilt'/f).convert('RGB').resize((288,432)),(288,0))
+              blob=io.BytesIO();pair.save(blob,format='JPEG',quality=64,optimize=True)
+              print('ANATOMY_AB_JPEG_'+angle.upper()+'::'+base64.b64encode(blob.getvalue()).decode())
+          (root/'anatomy-ab-verification.json').write_text(json.dumps(result,indent=2)+'\n')
+          print('REAL_BLENDER_ANATOMICAL_REBUILD_VERIFIED',json.dumps(result,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: true-anatomy-rig-blender-full-body-cycles
+          path: artifacts/anatomy/
+          retention-days: 7
+          if-no-files-found: warn
