@@ -45,3 +45,12 @@ h2{font-size:25px;margin-top:6px}.top p{color:var(--muted);margin-top:6px;font-s
 [hidden]{display:none!important}
 
 .seed-preset{margin-top:16px;padding:13px;border-radius:9px;border:1px solid #4c5949;background:linear-gradient(120deg,#29332a,#1b2021)}.seed-preset strong{display:block;font-size:13px;margin-top:7px;color:#dffecb}.seed-preset small{display:block;font-size:11px;color:#b9c8b7;line-height:1.55;margin-top:6px}
+
+.animation-section{margin-top:20px;padding:18px;border:1px solid #383c46;border-radius:10px;background:#181a20;color:#cad0d8}
+.animation-section h3{margin:10px 0 5px;font-size:18px;color:#f2f2f5}
+.animation-section p{font-size:12px;line-height:1.6;color:#aab2bf;margin-bottom:15px}
+.animation-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.animation-grid figure{margin:0;min-width:0}
+.animation-grid video{display:block;width:100%;aspect-ratio:0.72;background:#27272c;object-fit:contain;border-radius:6px}
+.animation-grid figcaption{font-size:10px;letter-spacing:.1em;font-weight:bold;margin-top:9px;color:#c6c9d2}
+@media(max-width:640px){.animation-grid{grid-template-columns:1fr}.animation-section{padding:12px}}

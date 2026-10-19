@@ -246,3 +246,30 @@ test('Mobile Blender evidence renders real line breaks and follows anatomy-frame
  assert.match(preview,/const y=coiled\?\(\.09\*t\+\.72\*arc\):t/);
  assert.match(preview,/positions.push\(x\+radius\*Math.cos\(a\),y,z/);
 });
+
+
+test('Animation outputs include editable rig, native GLB skin and actual H264 video clips',async()=>{
+ const rig=await readFile(join(base,'../character-pipeline/manual-builder/animation_rig.py'),'utf8');
+ const blender=await readFile(join(base,'../character-pipeline/manual-builder/build_replica.py'),'utf8');
+ const server=await readFile(join(base,'../character-pipeline/manual-builder/server.mjs'),'utf8');
+ const html=await readFile(join(base,'../character-pipeline/manual-builder/index.html'),'utf8');
+ const app=await readFile(join(base,'../character-pipeline/manual-builder/app.mjs'),'utf8');
+ assert.match(rig,/BONES=\('Root','Pelvis'/);
+ assert.match(rig,/Idle_Breath/);
+ assert.match(rig,/Walk_InPlace/);
+ assert.match(rig,/export_animation_mode='NLA_TRACKS'/);
+ assert.match(rig,/ffmpeg/);
+ assert.match(rig,/assign_weights/);
+ assert.match(blender,/animation_videos=render_animation_previews/);
+ assert.match(blender,/rig=make_armature\(height\)/);
+ assert.match(blender,/bone_counts=assign_weights/);
+ assert.match(server,/animated_character.glb/);
+ assert.match(server,/walk_preview.mp4/);
+ assert.match(server,/idle_preview.mp4/);
+ assert.match(server,/raw.animation\?\.bones!==22/);
+ assert.match(server,/\[a-z0-9_.\]/);
+ assert.match(html,/id="idleVideo"/);
+ assert.match(html,/id="walkVideo"/);
+ assert.match(app,/video\.src=filesBase/);
+ assert.match(app,/animated_character.glb/);
+});

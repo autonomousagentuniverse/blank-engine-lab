@@ -11,6 +11,8 @@ Usage: blender -b --factory-startup --python build_replica.py -- spec.json out/
 import bpy, bmesh, json, math, os, sys, hashlib
 from pathlib import Path
 from mathutils import Matrix, Vector
+sys.path.insert(0,str(Path(__file__).resolve().parent))
+from animation_rig import make_armature, assign_weights, attach_to_head, create_animations, export_glb, audit_deformation, render_animation_previews
 
 SOURCE='makehumancommunity/mpfb2:3af0cd5a2ffba072e93a34e5f6f494fdc4813ddf'
 def fail(message):
@@ -112,8 +114,9 @@ def make_eyes(pos,snap,controls):
     white=material('Sclera',snap['resolved_materials']['sclera_color'],.46)
     iris=material('Iris',snap['resolved_materials']['iris_color'],.38)
     pupil=material('Pupil','#0d0c0c',.4)
+    objects=[]
     for name,indices in [('Left',snap['eye_left_indices']),('Right',snap['eye_right_indices'])]:
-        indexed_mesh(name+'-Sclera',pos,indices,white)
+        objects.append(indexed_mesh(name+'-Sclera',pos,indices,white))
     ornaments=snap.get('eye_ornaments',{})
     for group,mat in [('irises',iris),('pupils',pupil)]:
         candidates=ornaments.get(group)
@@ -130,6 +133,8 @@ def make_eyes(pos,snap,controls):
             # Three.js uses x/y-plane discs with small z depth; Z-up conversion:
             obj.scale=(scales[0],scales[2],scales[1])
             obj.data.materials.append(mat)
+            objects.append(obj)
+    return objects
 def setup_world(controls,height,resolved):
     world=bpy.data.worlds.new('Studio-World') if not bpy.data.worlds else bpy.data.worlds[0]
     bpy.context.scene.world=world; world.use_nodes=True
@@ -236,19 +241,37 @@ def main():
     human['vertex_precision_m']=.000001
     human['morphology']=controls['body.gender']
     human['population_reference']=controls['appearance.population']
-    make_eyes(verts,snap,controls)
-    make_hair(snap,material('Hair',snap['resolved_materials']['hair_color'],.9))
+    eyes=make_eyes(verts,snap,controls)
+    hair_obj=make_hair(snap,material('Hair',snap['resolved_materials']['hair_color'],.9))
+    attachments=eyes+([hair_obj] if hair_obj else [])
+    rig=make_armature(height)
+    bone_counts=assign_weights(human,rig,height)
+    for item in attachments:attach_to_head(item,rig)
+    animations=create_animations(rig)
+    glb_path=export_glb(rig,human,attachments,out)
+    motion=audit_deformation(rig,human,[a.name for a in animations])
+    # Preserve the original static character as a neutral inspection pose.
+    for track in rig.animation_data.nla_tracks:track.mute=True
+    bpy.context.scene.frame_set(1)
     setup_world(controls,height,snap['resolved_materials'])
     scene=bpy.context.scene
     scene.unit_settings.system='METRIC'
     # Store entire user specification in the Blender scene for reproducible editing.
     scene['control_specification']=json.dumps(controls,sort_keys=True)
     scene['anatomy_source']=SOURCE
+    scene.frame_start=1
+    scene.frame_end=49
+    scene.render.fps=24
+    # Idle is the visible default in the editable Blender file.
+    for track in rig.animation_data.nla_tracks:
+        track.mute=track.name!='Idle_Breath'
+    scene.frame_set(1)
     blend_file=out/'anatomical_character.blend'
     bpy.ops.wm.save_as_mainfile(filepath=str(blend_file))
     body_metrics=mesh_topology_metrics(indices)
     eye_metrics=eye_diameter_metrics(verts,snap,controls)
     rendered=render_views(out,controls,height,verts)
+    animation_videos=render_animation_previews(rig,out,controls)
     # Report reproducible exact vertex parity, without claiming human realism.
     max_error=max(abs(human.data.vertices[i].co[j]-verts[i][j])
                   for i in range(len(verts)) for j in range(3))
@@ -266,12 +289,25 @@ def main():
         'population_reference':controls['appearance.population'],
         'hair_instances':snap['hair_count'],
         'renders':rendered,
+        'animation':{
+          'rig':'ANATOMICAL_HUMAN_ARMATURE',
+          'bones':len(rig.data.bones),
+          'clips':[a.name for a in animations],
+          'glb':'animated_character.glb',
+          'glb_bytes':os.stat(glb_path).st_size,
+          'vertex_motion_audit':motion,
+          'previews':animation_videos,
+          'skinning_bone_coverage':bone_counts,
+          'quality_status':'FIRST_PASS_NEEDS_HUMAN_MOTION_REVIEW',
+          'limitations':['No finger phalanx articulation','Procedural weights need deformation review',
+                         'Walk is in place and not foot-contact corrected']
+        },
         'visual_anatomy_approval':False,
         'visual_inspection_required':['face_macro','hand_macro','feet_macro'],
         'limitations':['Face and hands are original MakeHuman low-detail baseline with local morphs',
                        'Vertex parity is not evidence of realistic skin/hair/eyes',
                        'Photographic identity and previous approved head not restored']}
     (out/'report.json').write_text(json.dumps(report,indent=2)+'\n')
-    print('ANATOMY_ONE_SHOT_REPLICA_COMPLETE '+json.dumps({'verts':len(verts),'max_error_m':max_error,'morphology':controls['body.gender']}))
+    print('ANATOMY_ONE_SHOT_REPLICA_COMPLETE '+json.dumps({'verts':len(verts),'max_error_m':max_error,'morphology':controls['body.gender'],'rig_bones':len(rig.data.bones),'clips':[a.name for a in animations]}))
 if __name__=='__main__':main()
 

@@ -30,8 +30,17 @@
 <figure><img id="hand_macro" alt="Blender hand and fingers detail"><figcaption>05 · HAND DETAIL</figcaption></figure>
 <figure><img id="feet_macro" alt="Blender feet and toes detail"><figcaption>06 · FOOT DETAIL</figcaption></figure></div>
 </div>
+<section id="animations" class="animation-section" hidden aria-label="Real Blender animations">
+ <div class="eyebrow">ANIMATION / RIGGED BLENDER OUTPUT</div>
+ <h3>Watch the generated character move</h3>
+ <p>Two real keyframed Blender clips. The downloadable GLB contains both animations and the 22-joint skeleton.</p>
+ <div class="animation-grid">
+  <figure><video id="idleVideo" controls muted loop playsinline preload="metadata" aria-label="Idle breathing animation"></video><figcaption>01 · IDLE / BREATHING</figcaption></figure>
+  <figure><video id="walkVideo" controls muted loop playsinline preload="metadata" aria-label="Walking in place animation"></video><figcaption>02 · WALK / IN PLACE</figcaption></figure>
+ </div>
+</section>
 <div class="bottom-grid"><article class="info"><div class="eyebrow">BUILD EVIDENCE</div><div id="report">This preview deforms a connected MakeHuman CC0 anatomical basemesh instead of synthetic cylinders. Blender/Cycles output still requires a real worker.</div><div id="artifactLinks" class="links"></div></article>
-<article class="info"><div class="eyebrow">PIPELINE STATUS</div><div class="pipeline"><span>01 · Adjust controls</span><span>02 · Submit JSON</span><span>03 · Reconstruct topology</span><span>04 · Blender Cycles render</span><span>05 · Review proportions</span></div><pre id="log"></pre></article></div>
+<article class="info"><div class="eyebrow">PIPELINE STATUS</div><div class="pipeline"><span>01 · Adjust controls</span><span>02 · Submit JSON</span><span>03 · Reconstruct topology</span><span>04 · Blender Cycles render</span><span>05 · Rig 22 joints</span><span>06 · Animate + export GLB</span></div><pre id="log"></pre></article></div>
 <div class="footnote">This is a live browser-authored anatomical clay preview, NOT a Blender Cycles render or photoreal human. Use skin color mode (disable Clay mode) to preview selected pigment. Full Blender rebuild remains a separate worker operation.</div>
 </section>
 </main><script type="module" src="./app.mjs"></script>

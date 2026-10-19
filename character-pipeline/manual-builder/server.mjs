@@ -23,8 +23,8 @@ function pruneJobs(){
   }
  }
 }
-const RENDER_FILES=new Set(['front.png','three_quarter.png','profile.png','face_macro.png','hand_macro.png','feet_macro.png','report.json','anatomical_character.blend']);
-const TYPES={'.html':'text/html; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.png':'image/png','.json':'application/json','.blend':'application/octet-stream'};
+const RENDER_FILES=new Set(['front.png','three_quarter.png','profile.png','face_macro.png','hand_macro.png','feet_macro.png','report.json','anatomical_character.blend','animated_character.glb','idle_preview.mp4','walk_preview.mp4']);
+const TYPES={'.html':'text/html; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.png':'image/png','.json':'application/json','.blend':'application/octet-stream','.glb':'model/gltf-binary','.mp4':'video/mp4'};
 const JOBS=new Map();
 let busy=false;
 const queue=[];
@@ -32,7 +32,7 @@ const json=(res,status,body)=>respond(res,status,JSON.stringify(body),'.json');
 function respond(res,status,body,extension){
  res.writeHead(status,{'Content-Type':TYPES[extension]||'application/octet-stream',
   'Cache-Control':'no-store','X-Content-Type-Options':'nosniff',
-  'Content-Security-Policy':"default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; script-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://cdn.jsdelivr.net; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"});
+  'Content-Security-Policy':"default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; script-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://cdn.jsdelivr.net; media-src 'self' https://*.vercel.run; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"});
  res.end(body);
 }
 async function limitedJson(req){
@@ -63,8 +63,10 @@ async function runOne(job,blenderBin){
   });
   const raw=JSON.parse(await readFile(join(job.output,'report.json'),'utf8'));
   if(raw.schema!=='blank.anatomy-rebuild-report.v1'||raw.controls_applied!==Object.keys(job.spec.controls).length
-       ||!Array.isArray(raw.renders)||raw.renders.length!==6)throw Error('Blender evidence contract failed');
-  for(const name of ['front.png','three_quarter.png','profile.png','face_macro.png','hand_macro.png','feet_macro.png','anatomical_character.blend']){
+       ||!Array.isArray(raw.renders)||raw.renders.length!==6
+       ||raw.animation?.bones!==22||raw.animation?.clips?.length!==2
+       ||raw.animation?.previews?.length!==2)throw Error('Rigged Blender evidence contract failed');
+  for(const name of ['front.png','three_quarter.png','profile.png','face_macro.png','hand_macro.png','feet_macro.png','anatomical_character.blend','animated_character.glb','idle_preview.mp4','walk_preview.mp4']){
    if((await stat(join(job.output,name))).size<7000)throw Error('Missing output '+name);
   }
   job.report=raw;job.status='complete';job.completedAt=new Date().toISOString();
@@ -99,7 +101,7 @@ export function createBuilderServer({blenderBin=process.env.BLENDER_BIN||'blende
       completedAt:j.completedAt,error:j.error,log:j.log.slice(-1700),
       report:j.status==='complete'?j.report:null});
    }
-   const fileMatch=url.pathname.match(/^\/outputs\/([0-9a-f-]{36})\/([a-z_.]+)$/);
+   const fileMatch=url.pathname.match(/^\/outputs\/([0-9a-f-]{36})\/([a-z0-9_.]+)$/);
    if(req.method==='GET'&&fileMatch){
     const [,id,name]=fileMatch;const job=JOBS.get(id);
     if(!job||job.status!=='complete'||!RENDER_FILES.has(name))return json(res,404,{error:'Output not available'});

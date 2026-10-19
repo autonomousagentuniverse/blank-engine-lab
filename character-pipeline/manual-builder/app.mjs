@@ -156,6 +156,12 @@ function showResults(job){
  const id=encodeURIComponent(job.workerJobId||job.id);
  const filesBase=job.outputBaseUrl||'';
  $('#images').hidden=false;
+ $('#animations').hidden=false;
+ for(const [clip,idVideo] of [['idle_preview','idleVideo'],['walk_preview','walkVideo']]){
+  const video=$('#'+idVideo);
+  video.src=filesBase+'/outputs/'+id+'/'+clip+'.mp4';
+  video.load();
+ }
  for(const name of ['front','three_quarter','profile','face_macro','hand_macro','feet_macro']){
   $('#'+name).src=filesBase+'/outputs/'+id+'/'+name+'.png';
  }
@@ -170,11 +176,13 @@ function showResults(job){
   'Browser/Blender vertex deviation: '+g.max_blender_vertex_deviation_m.toFixed(8)+' m',
   'Degenerate faces: '+g.degenerate_triangles,
   'Hair instances: '+job.report.hair_instances,
+  'Animation: '+job.report.animation.bones+' bones · '+job.report.animation.clips.join(' / '),
+  'Motion quality: FIRST PASS · walk is in place',
   'Human realism is NOT visually approved',
   'Sandbox downloads expire after approximately 30 minutes; save your .blend immediately'
  ].join('\n');
  const links=$('#artifactLinks');links.replaceChildren();
- for(const [label,name] of [['Editable Blender','anatomical_character.blend'],['JSON evidence','report.json']]){
+ for(const [label,name] of [['Animated GLB (22 bones)','animated_character.glb'],['Editable Blender','anatomical_character.blend'],['Walk MP4','walk_preview.mp4'],['Idle MP4','idle_preview.mp4'],['JSON evidence','report.json']]){
   const a=document.createElement('a');a.href=filesBase+'/outputs/'+id+'/'+name;a.textContent=label;a.download=name;links.append(a);
  }
 }
