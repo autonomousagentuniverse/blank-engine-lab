@@ -2,6 +2,12 @@
 
 This is a fresh procedural Blender-model pipeline, not another shape-key or width-warp pass over the rejected October 18 character. Preview-branch Vercel now serves a live WebGL clay viewport, distinct from the actual Blender executor. Production Vercel remains unchanged.
 
+## Figure seed preset (2026-10-18)
+
+The 91-field starting preset now approximates the previously agreed full-body woman: around 28 years old, Black, medium natural build, dark brown skin and natural Afro. Baseline: 172 cm height; 40 cm shoulder width; 31 cm ribcage; 27.5 cm waist; 34 cm hip width; reduced thigh bulk (16.6 cm diameter) and glute projection (1 cm) to prevent the exaggerated hips of the rejected Blender experiment; head width 15.4 cm, depth 18.4 cm, height 22.8 cm, cheeks 0.61; Afro 11 cm, volume 1.14, curl 0.84; skin #482a20, roughness 0.56. Clay override defaults to false so the complexion is visible immediately. These are an editable reconstruction, **not measured exact dimensions from the accepted prior head or a reused mesh**.
+
+The page now identifies the preset, loads it for new visitors and uses a versioned localStorage key (v2) to prevent earlier experiment settings from overwriting the fresh preset; Restore figure resets it. Prior v1 saved browser values are not deleted.
+
 ## Live browser preview (2026-10-18)
 - Open /character-pipeline/manual-builder/index.html on the Vercel branch preview, or click the Human Anatomy Builder sidebar entry from the main Blank Engine lab.
 - The figure is present on page load. Editing anatomy, color, hair, feet and fingers reconstructs visible Three.js geometry without a server or Submit click; drag to orbit, wheel to zoom. Every control remains in the validated JSON schema. Blender-only render sample count/resolution and subsurface strength are not directly represented in WebGL.

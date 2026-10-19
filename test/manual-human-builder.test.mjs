@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import {dirname,join} from 'node:path';
-import {CONTROLS,DEFAULTS,SCHEMA,defaultRequest,validateRequest} from '../character-pipeline/manual-builder/controls.mjs';
+import {CONTROLS,DEFAULTS,SCHEMA,PRESET_ID,PRESET_NAME,PRESET_DESCRIPTION,defaultRequest,validateRequest} from '../character-pipeline/manual-builder/controls.mjs';
 import {createBuilderServer} from '../character-pipeline/manual-builder/server.mjs';
 const base=dirname(fileURLToPath(import.meta.url));
 
@@ -103,4 +103,33 @@ test('live preview is a browser geometry renderer, not a fake Blender success', 
  assert.match(html,/id="clayViewport"/);
  assert.doesNotMatch(html,/id="empty"/);
  assert.match(game,/Human Anatomy Builder/);
+});
+
+
+test('Original target human preset loads as actual validated 91-control defaults',async()=>{
+ assert.equal(CONTROLS.length,91);
+ assert.match(PRESET_ID,/original-figure/);
+ assert.match(PRESET_NAME,/Afro/);
+ assert.match(PRESET_DESCRIPTION,/head mesh is not loaded/);
+ const c=validateRequest(defaultRequest()).controls;
+ assert.equal(c['body.height'],172);
+ assert.equal(c['body.shoulders'],40);
+ assert.equal(c['body.waist'],27.5);
+ assert.equal(c['body.hips'],34);
+ assert.equal(c['legs.thigh'],16.6);
+ assert.ok(c['body.hips']<c['body.shoulders']);
+ assert.ok(c['body.hips']/c['body.waist']<1.3);
+ assert.equal(c['hair.style'],'afro');
+ assert.equal(c['hair.curl'],0.84);
+ assert.equal(c['skin.color'],'#482a20');
+ assert.equal(c['render.clay'],'false');
+ assert.equal(c['face.cheeks'],.61);
+ const source=await readFile(join(base,'../character-pipeline/manual-builder/app.mjs'),'utf8');
+ const html=await readFile(join(base,'../character-pipeline/manual-builder/index.html'),'utf8');
+ assert.match(source,/blank-human-builder:v2:/);
+ assert.match(source,/PRESET_ID/);
+ assert.match(source,/values=\{\.\.\.DEFAULTS\};sync\(\)/);
+ assert.match(html,/id="presetName"/);
+ assert.match(html,/id="presetDescription"/);
+ assert.match(html,/Restore figure/);
 });

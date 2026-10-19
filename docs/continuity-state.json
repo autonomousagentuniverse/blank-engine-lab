@@ -651,6 +651,36 @@
       "hosted_submit": "export validated JSON",
       "production_deployed": false,
       "photorealism_approved": false
+    },
+    "original_figure_preset": {
+      "date": "2026-10-18",
+      "id": "original-figure-dark-afro-medium-v1",
+      "description": "~28-year-old Black woman, natural medium build, natural Afro, dark skin",
+      "height_cm": 172,
+      "shoulder_cm": 40,
+      "waist_cm": 27.5,
+      "hip_cm": 34,
+      "hip_depth_cm": 23,
+      "thigh_diameter_cm": 16.6,
+      "glute_projection_cm": 1,
+      "face_head_width_cm": 15.4,
+      "face_head_length_cm": 22.8,
+      "face_cheeks": 0.61,
+      "hair_style": "afro",
+      "hair_length_cm": 11,
+      "hair_volume": 1.14,
+      "hair_curl": 0.84,
+      "skin": "#482a20",
+      "clay_default": false,
+      "default_values_changed": 57,
+      "total_controls": 91,
+      "previous_head_reused": false,
+      "original_head_exact_proportions_recovered": false,
+      "unit_test": "ADDED NOT RUN",
+      "js_syntax_preflight": "PASS",
+      "blender_render": "NOT RUN",
+      "production_deployed": false,
+      "preview_deployment": "PENDING"
     }
   }
 }

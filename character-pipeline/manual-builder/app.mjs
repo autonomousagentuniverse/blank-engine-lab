@@ -1,6 +1,8 @@
-import {CONTROLS,SCHEMA,DEFAULTS,validateRequest} from './controls.mjs';
+import {CONTROLS,SCHEMA,DEFAULTS,PRESET_ID,PRESET_NAME,PRESET_DESCRIPTION,validateRequest} from './controls.mjs';
 const $=s=>document.querySelector(s);
-const SAVED='blank-human-builder:v1:manual-values';
+// Use a new storage key so old trial values cannot silently override the newly agreed character.
+// Older values remain intact in the v1 key; they can still be imported from a JSON backup.
+const SAVED='blank-human-builder:v2:'+PRESET_ID+':manual-values';
 const groups=new Map();
 for(const c of CONTROLS){
  if(!groups.has(c.section))groups.set(c.section,[]);
@@ -11,6 +13,8 @@ try{
  const previous=JSON.parse(localStorage.getItem(SAVED)||'null');
  if(previous?.schema===SCHEMA)values=validateRequest(previous).controls;
 }catch{}
+$('#presetName').textContent=PRESET_NAME;
+$('#presetDescription').textContent=PRESET_DESCRIPTION;
 let dirty=0,activeJob=null,poll=null;
 let previewUpdater=()=>{}, previewPending=false;
 function queuePreview(){
@@ -28,7 +32,7 @@ import('./preview.mjs').then(({mountClayPreview})=>{
 });
 const numberText=(c,value)=>c.unit==='ratio'&&c.step<.01?Number(value).toFixed(3):String(value);
 function note(){
- $('#dirty').textContent=dirty?dirty+' parameter change'+(dirty===1?'':'s')+' since last rebuild':'Ready to submit current anatomy';
+ $('#dirty').textContent=dirty?dirty+' parameter change'+(dirty===1?'':'s')+' since last rebuild':'Starting figure: '+PRESET_NAME;
  $('#count').textContent=CONTROLS.length+' fully bound adjustable variables';
  localStorage.setItem(SAVED,JSON.stringify({schema:SCHEMA,controls:values}));
  queuePreview();
@@ -101,7 +105,7 @@ $('#search').addEventListener('input',event=>{
   if(text&&visible)group.open=true;
  }
 });
-$('#reset').addEventListener('click',()=>{if(confirm('Reset all anatomy variables to defaults?')){values={...DEFAULTS};sync()}});
+$('#reset').addEventListener('click',()=>{if(confirm('Restore the original target figure? This will replace your current manual changes.')){values={...DEFAULTS};sync();$('#buildStatus').textContent='ORIGINAL FIGURE RESTORED'}});
 $('#save').addEventListener('click',()=>{
  const blob=new Blob([JSON.stringify({schema:SCHEMA,controls:values},null,2)+'\n'],{type:'application/json'});
  const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='human-anatomy-controls.json';a.click();
