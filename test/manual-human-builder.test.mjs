@@ -218,10 +218,16 @@ test('Hosted build cannot falsely export JSON and worker requires token before c
   assert.equal(authorized.status,202);
  }finally{await new Promise(ok=>server.close(ok))}
  const endpoint=await readFile(join(base,'../api/anatomy.js'),'utf8');
- assert.match(endpoint,/BLENDER_WORKER_TOKEN/);
- assert.match(endpoint,/outputBaseUrl=worker/);
+ assert.match(endpoint,/Sandbox\.fork\(/);
+ assert.match(endpoint,/Sandbox\.get\(/);
+ assert.match(endpoint,/blank-anatomy-blender-base/);
+ assert.match(endpoint,/randomBytes\(32\)/);
+ assert.match(endpoint,/tokenFromSandbox/);
+ assert.match(endpoint,/outputBaseUrl:domain/);
  assert.match(endpoint,/maxDuration:60/);
- const docker=await readFile(join(base,'../Dockerfile.anatomy'),'utf8');
- assert.match(docker,/apt-get install.*blender/);
- assert.match(docker,/WORKER_MODE=1/);
+ assert.doesNotMatch(endpoint,/BLENDER_WORKER_URL|ANATOMY_JOB_SECRET/);
+ const manifest=JSON.parse(await readFile(join(base,'../package.json'),'utf8'));
+ assert.ok(manifest.dependencies['@vercel/sandbox']);
+ const app=await readFile(join(base,'../character-pipeline/manual-builder/app.mjs'),'utf8');
+ assert.match(app,/job\.workerJobId\|\|job\.id/);
 });

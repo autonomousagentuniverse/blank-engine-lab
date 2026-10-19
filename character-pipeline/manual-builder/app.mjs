@@ -149,11 +149,11 @@ const API_REBUILD=HOSTED?'/api/anatomy':'/api/rebuild';
 const API_STATUS=id=>HOSTED?('/api/anatomy?job='+encodeURIComponent(id)):('/api/jobs/'+encodeURIComponent(id));
 if(HOSTED){
  build.textContent='Generate actual Blender build';
- $('#report').textContent='Submit sends the current connected anatomy to the secured Blender worker, generates six Cycles renders and an editable .blend. Rendering may take a few minutes.';
+ $('#report').textContent='Submit runs real Blender in an isolated Vercel Sandbox. Six Cycles views and an editable .blend are available for approximately 30 minutes.';
 }
 function status(value){$('#buildStatus').textContent=value}
 function showResults(job){
- const id=encodeURIComponent(job.id);
+ const id=encodeURIComponent(job.workerJobId||job.id);
  const filesBase=job.outputBaseUrl||'';
  $('#images').hidden=false;
  for(const name of ['front','three_quarter','profile','face_macro','hand_macro','feet_macro']){
@@ -170,7 +170,8 @@ function showResults(job){
   'Browser/Blender vertex deviation: '+g.max_blender_vertex_deviation_m.toFixed(8)+' m',
   'Degenerate faces: '+g.degenerate_triangles,
   'Hair instances: '+job.report.hair_instances,
-  'Human realism is NOT visually approved'
+  'Human realism is NOT visually approved',
+  'Sandbox downloads expire after approximately 30 minutes; save your .blend immediately'
  ].join('\\n');
  const links=$('#artifactLinks');links.replaceChildren();
  for(const [label,name] of [['Editable Blender','anatomical_character.blend'],['JSON evidence','report.json']]){

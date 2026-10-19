@@ -112,3 +112,7 @@ The MakeHuman face, iris/lid contact, fingers, toe detail, hair realism, materia
 body intersections and likeness of the previously accepted head still need
 visual review and corrective modeling. One-shot means rebuild a new scene from
 the captured current mesh, not patch or reuse the rejected old character.
+
+## Current hosted Vercel Sandbox executor (2026-10-19)
+
+Experimental preview runs real Blender in a per-job Vercel Sandbox, exposing six Cycles PNGs and an editable `.blend`. Download URLs are temporary (approximately 30 minutes); persistent Blob storage is not configured. Earlier descriptions of hosted JSON-only export are historical. See `docs/hosted-blender-worker.md`.

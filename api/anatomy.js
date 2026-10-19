@@ -1,42 +1,127 @@
-// Server-side auth proxy. Never expose BLENDER_WORKER_TOKEN to the browser.
-// The Blender output URLs use 128-bit unguessable job IDs and expire after 1h.
+// Vercel-only anatomical reconstruction.
+// The browser submits the exact MakeHuman snapshot to this function, which forks
+// a prepared Vercel Sandbox containing Blender and runs an isolated worker.
+// Job status is retrieved by (sandbox UUID, worker UUID); no Redis/Render needed.
+// Output links are unguessable, public, TEMPORARY sandbox URLs (not durable Blob).
+import {Sandbox} from '@vercel/sandbox';
+import {randomBytes,randomUUID} from 'node:crypto';
+import {validateRequest} from '../character-pipeline/manual-builder/controls.mjs';
+import {validateSnapshot} from '../character-pipeline/manual-builder/snapshot-validation.mjs';
+
 export const config={maxDuration:60};
-const ID=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
+
+const UUID='[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
+const JOB_RE=new RegExp('^('+UUID+')\\.('+UUID+')$');
+const BASE='blank-anatomy-blender-base';
+const JOB_TIMEOUT=30*60*1000;
+const PORT=10000;
+const SOURCE='/vercel/blank-engine-lab';
+function sandboxName(id){return 'blank-anatomy-'+id;}
+const TOKEN_PATH='/vercel/blank-engine-lab/.anatomy-worker-token';
+async function tokenFromSandbox(sandbox){
+ const bytes=await sandbox.readFileToBuffer({path:TOKEN_PATH});
+ if(!bytes)throw Error('Sandbox token expired');
+ const token=bytes.toString('utf8').trim();
+ if(!/^[0-9a-f]{64}$/.test(token))throw Error('Invalid sandbox token');
+ return token;
+}
+async function requestJSON(url,options){
+ const r=await fetch(url,options);
+ const text=await r.text();
+ if(text.length>100000)throw Error('Sandbox worker returned an oversized status');
+ let data;
+ try{data=JSON.parse(text)}catch{throw Error('Sandbox worker returned invalid JSON')}
+ return {status:r.status,data};
+}
+async function readyAt(base){
+ for(let attempt=0;attempt<30;attempt++){
+  try{
+   const r=await fetch(base+'/healthz',{signal:AbortSignal.timeout(1500)});
+   if(r.ok)return;
+  }catch{}
+  await new Promise(resolve=>setTimeout(resolve,450));
+ }
+ throw Error('Sandbox Blender server did not become healthy');
+}
 export default async function handler(req,res){
- res.setHeader('Cache-Control','no-store');
+ res.setHeader('Cache-Control','no-store, max-age=0');
  res.setHeader('X-Content-Type-Options','nosniff');
- const worker=(process.env.BLENDER_WORKER_URL||'').replace(/\/+$/,'');
- const token=process.env.BLENDER_WORKER_TOKEN;
- if(!worker||!/^https:\/\/[a-z0-9.-]+(?::443)?$/i.test(worker)||!token||token.length<32)
-  return res.status(503).json({error:'Blender worker is not configured. Rendering is unavailable; no synthetic success is reported.'});
  if(req.method!=='POST'&&req.method!=='GET')return res.status(405).json({error:'Method not allowed'});
  if(req.method==='POST'){
-  const origin=req.headers.origin||'';
-  const ownHost=req.headers['x-forwarded-host']||req.headers.host||'';
-  if(origin&&new URL(origin).host!==ownHost)return res.status(403).json({error:'Cross-origin build request refused'});
-  const bytes=Buffer.byteLength(JSON.stringify(req.body||{}),'utf8');
-  if(bytes>4_400_000)return res.status(413).json({error:'Snapshot too large'});
- }
- if(req.method==='GET'&&(!ID.test(req.query.job||'')))return res.status(400).json({error:'Invalid job ID'});
- const route=req.method==='POST'?'/api/rebuild':'/api/jobs/'+req.query.job;
- try{
-  const ctl=new AbortController();
-  const timeout=setTimeout(()=>ctl.abort(),52_000);
-  let up;
+  let payload;
   try{
-   up=await fetch(worker+route,{
-    method:req.method,
-    headers:{Authorization:'Bearer '+token,...(req.method==='POST'?{'Content-Type':'application/json'}:{})},
-    ...(req.method==='POST'?{body:JSON.stringify(req.body)}:{}),
-    signal:ctl.signal
+   const origin=req.headers.origin||'';
+   const host=req.headers['x-forwarded-host']||req.headers.host||'';
+   if(origin&&new URL(origin).host!==host)return res.status(403).json({error:'Cross-origin submission refused'});
+   if(Buffer.byteLength(JSON.stringify(req.body||{}),'utf8')>4400000)
+    return res.status(413).json({error:'Anatomy snapshot exceeds maximum payload size'});
+   const submitted=typeof req.body==='string'?JSON.parse(req.body):req.body;
+   payload={...validateRequest(submitted),snapshot:validateSnapshot(submitted.snapshot)};
+  }catch(error){return res.status(400).json({error:'Invalid anatomy specification: '+error.message.slice(0,180)})}
+  const id=randomUUID(),name=sandboxName(id),token=randomBytes(32).toString('hex');
+  let sandbox;
+  try{
+   sandbox=await Sandbox.fork({
+    sourceSandbox:BASE,
+    name,
+    resources:{vcpus:2},
+    timeout:JOB_TIMEOUT,
+    ports:[PORT],
+    persistent:false
    });
-  }finally{clearTimeout(timeout)}
-  const text=await up.text();
-  if(text.length>200_000)return res.status(502).json({error:'Invalid oversized worker response'});
-  let body;try{body=JSON.parse(text)}catch{return res.status(502).json({error:'Blender worker returned invalid JSON'})}
-  if(up.ok&&req.method==='GET'&&body.status==='complete')body.outputBaseUrl=worker;
-  return res.status(up.status).json(body);
- }catch(e){
-  return res.status(502).json({error:'Blender worker unreachable or still waking; retry in a moment'});
+   const domain=sandbox.domain(PORT);
+   await sandbox.writeFiles([{path:TOKEN_PATH,content:Buffer.from(token,'utf8')}]);
+   await sandbox.runCommand({
+    cmd:'node',
+    args:['character-pipeline/manual-builder/server.mjs'],
+    cwd:SOURCE,
+    env:{
+     WORKER_MODE:'1', PORT:String(PORT), BLENDER_WORKER_TOKEN:token,
+     BLENDER_BIN:'/usr/bin/blender',
+     ARTIFACT_DIR:SOURCE+'/artifacts/manual-human-builder'
+    },
+    detached:true
+   });
+   await readyAt(domain);
+   const posted=await requestJSON(domain+'/api/rebuild',{
+    method:'POST',
+    headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
+    body:JSON.stringify(payload),
+    signal:AbortSignal.timeout(18000)
+   });
+   if(posted.status!==202||!new RegExp('^'+UUID+'$').test(posted.data.jobId||'')){
+    throw Error(posted.data.error||'Blender worker refused the build');
+   }
+   return res.status(202).json({
+    jobId:id+'.'+posted.data.jobId,status:'queued',
+    expiresInMinutes:30
+   });
+  }catch(error){
+   console.error('Sandbox Blender start failed:',error);
+   if(sandbox)try{await sandbox.stop()}catch{}
+   return res.status(502).json({error:'Could not launch the Blender Sandbox: '+String(error.message||error).slice(0,150)});
+  }
+ }
+ const match=JOB_RE.exec(String(req.query?.job||''));
+ if(!match)return res.status(400).json({error:'Invalid anatomy job identifier'});
+ const [,outer,inner]=match;
+ try{
+  const sandbox=await Sandbox.get({name:sandboxName(outer)});
+  const domain=sandbox.domain(PORT);
+  const result=await requestJSON(domain+'/api/jobs/'+inner,{
+   headers:{Authorization:'Bearer '+await tokenFromSandbox(sandbox)},
+   signal:AbortSignal.timeout(12000)
+  });
+  if(result.status!==200)return res.status(result.status).json({error:result.data.error||'Job not found'});
+  return res.status(200).json({
+   ...result.data,
+   id:outer+'.'+inner,
+   workerJobId:inner,
+   outputBaseUrl:domain,
+   expiresInMinutes:30
+  });
+ }catch(error){
+  console.error('Sandbox anatomy polling failed:',error);
+  return res.status(410).json({error:'The Blender Sandbox is unavailable or the 30-minute download window expired. Submit again to rebuild.'});
  }
 }

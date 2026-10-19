@@ -9,3 +9,5 @@ dist/
 
 # Character Builder reference GLB is downloaded into a local CI-only asset cache.
 character-lab/assets/*.glb
+
+.anatomy-worker-token

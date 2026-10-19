@@ -916,3 +916,31 @@ VISUAL INSPECTION OF ACTUAL RENDERS: existing 3D subject wears **blue shirt, jea
   + actual browser cloud test succeed.
 - Implementation docs: docs/hosted-blender-worker.md. Visual human-quality
   gate remains HOLD notwithstanding successful technical execution.
+
+
+### Phase 34 — 2026-10-19 — Vercel-only Sandbox one-shot service [EXPERIMENTAL]
+
+- Built per-job Vercel Sandbox executor, replacing the unused Render worker in
+  `api/anatomy.js`. Each POST validates all 93 controls and exact indexed
+  MakeHuman topology, forks the prepared `blank-anatomy-blender-base`
+  snapshot (Blender 5.0.1 preinstalled), starts authenticated Blender Node
+  server on an isolated port, and submits one real Blender job.
+- Job identity is two cryptographic UUIDs; GET reconnects through
+  `Sandbox.get`, loads the per-sandbox random token from an isolated file,
+  and returns live status and six Cycles PNG + .blend URLs.
+- Sandbox has 2 vCPUs / 4 GB, 30m job runtime. Direct download links expire
+  with sandbox. Vercel Blob creation was attempted but denied 403 by the
+  connected account; persistent storage is explicitly NOT claimed.
+- The exact Vercel Sandbox base image was prepared and snapshotted as
+  `snap_zH7gPBhU1fckypLCMNJdseChBfMZ` for fast cold starts.
+- True public HTTPS Sandbox worker integration smoke generated six actual
+  Cycles images, editably saved .blend (746,938 bytes on a minimal fixture),
+  26,756 body faces and maximum coordinate discrepancy 5.96e-8m.
+- Validation first caught mismatched eye helper diameter and refused to
+  certify output; fixture correction to true 24mm sclera passed.
+- Browser button now uses `/api/anatomy`, with composite status token and
+  temporary direct Sandbox output files. Production not changed.
+- Security: no shared plaintext worker token in Vercel variables; each sandbox
+  gets a fresh random token stored in its own sandbox file and only used
+  server-to-worker. UI job ID not used as authorization for worker API.
+- Docs: `docs/hosted-blender-worker.md`. Anatomical visual realism remains HOLD.
