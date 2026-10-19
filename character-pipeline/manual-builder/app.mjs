@@ -2,7 +2,10 @@ import {CONTROLS,SCHEMA,DEFAULTS,PRESET_ID,PRESET_NAME,PRESET_DESCRIPTION,valida
 const $=s=>document.querySelector(s);
 // Use a new storage key so old trial values cannot silently override the newly agreed character.
 // Older values remain intact in the v1 key; they can still be imported from a JSON backup.
-const SAVED='blank-human-builder:v2:'+PRESET_ID+':manual-values';
+const SAVED='blank-human-builder:v3:'+PRESET_ID+':manual-values';
+const PREVIOUS_SAVED='blank-human-builder:v2:original-figure-dark-afro-medium-v1:manual-values';
+const ANCESTRY_SWATCH={african:'#482a20','east-asian':'#c89872',european:'#dfb9a3',mixed:'#977055'};
+const ANCESTRY_HAIR={african:'afro','east-asian':'straight',european:'straight',mixed:'short-curls'};
 const groups=new Map();
 for(const c of CONTROLS){
  if(!groups.has(c.section))groups.set(c.section,[]);
@@ -10,11 +13,11 @@ for(const c of CONTROLS){
 }
 let values={...DEFAULTS};
 try{
- const previous=JSON.parse(localStorage.getItem(SAVED)||'null');
- if(previous?.schema===SCHEMA)values=validateRequest(previous).controls;
+ const previous=JSON.parse(localStorage.getItem(SAVED)||localStorage.getItem(PREVIOUS_SAVED)||'null');
+ if(previous?.controls)values=validateRequest({schema:SCHEMA,controls:{...DEFAULTS,...previous.controls}}).controls;
 }catch{}
 $('#presetName').textContent=PRESET_NAME;
-$('#presetDescription').textContent=PRESET_DESCRIPTION;
+$('#presetDescription').textContent=PRESET_DESCRIPTION+' · Body morphology and ancestry-inspired references can be changed independently of skin tone.';
 let dirty=0,activeJob=null,poll=null;
 let previewUpdater=()=>{}, previewPending=false;
 function queuePreview(){
@@ -27,8 +30,9 @@ import('./preview.mjs').then(async ({mountClayPreview})=>{
  const viewport=await mountClayPreview($('#clayViewport'),values);
  previewUpdater=next=>viewport.update(next);
  viewport.update(values); // Apply edits made while the source mesh was downloading.
- $('#previewState').textContent='LIVE · CC0 MakeHuman · '+viewport.source.vertices.toLocaleString()+' vertices';
- $('#report').textContent='Connected CC0 MakeHuman hm08 basemesh: '+viewport.source.vertices.toLocaleString()+' vertices and '+viewport.source.faces.toLocaleString()+' body triangles. Browser parameters deform this mesh approximately. This is NOT Blender, not the previously preferred head mesh, and not photorealistic.';
+ $('#previewState').textContent='LIVE · MakeHuman · '+viewport.source.vertices.toLocaleString()+' vertices · '+viewport.source.macros+' real morphs';
+ if(new URLSearchParams(location.search).has('qa'))window.__blankQA={inspect:()=>viewport.inspect(),values:()=>({...values}),update:(id,value)=>{if(!(id in values))throw Error('Unknown '+id);values[id]=value;viewport.update(values);return viewport.inspect()}};
+ $('#report').textContent='CC0 MakeHuman: '+viewport.source.vertices.toLocaleString()+' mesh vertices, '+viewport.source.faces.toLocaleString()+' triangles, '+viewport.source.macros+' authentic adult macro morphs. Preview settings now affect the browser model except Blender Cycles samples; body shapes/appearance are approximations, not identity or photorealism.';
 }).catch(err=>{
  $('#previewState').textContent='3D renderer unavailable: '+err.message;
  $('#report').textContent='WebGL preview could not initialize; your controls and exported JSON still work.';
@@ -36,14 +40,14 @@ import('./preview.mjs').then(async ({mountClayPreview})=>{
 const numberText=(c,value)=>c.unit==='ratio'&&c.step<.01?Number(value).toFixed(3):String(value);
 function note(){
  $('#dirty').textContent=dirty?dirty+' parameter change'+(dirty===1?'':'s')+' since last rebuild':'Starting figure: '+PRESET_NAME;
- $('#count').textContent=CONTROLS.length+' saved controls · browser morph subset';
+ $('#count').textContent=CONTROLS.length+' controls · all adjustable; Cycles samples export only';
  localStorage.setItem(SAVED,JSON.stringify({schema:SCHEMA,controls:values}));
  queuePreview();
 }
 function makeInput(c){
  const wrap=document.createElement('div');wrap.className='control';wrap.dataset.search=(c.label+' '+c.id).toLowerCase();
  const head=document.createElement('div');head.className='line';
- const label=document.createElement('label');label.textContent=c.label;head.append(label);
+ const label=document.createElement('label');label.textContent=c.label+(c.id==='render.samples'?' (Blender only)':'');head.append(label);
  const out=document.createElement('output');out.textContent=c.type==='n'?numberText(c,values[c.id])+' '+c.unit:values[c.id];head.append(out);wrap.append(head);
  let inp,other=null;
  if(c.type==='n'){
@@ -71,6 +75,19 @@ function makeInput(c){
   inp.value=String(next);
   if(other)other.value=String(next);
   out.textContent=c.type==='n'?numberText(c,next)+' '+c.unit:String(next);
+  if(c.id==='appearance.population'){
+   values['skin.color']=ANCESTRY_SWATCH[next];
+   values['hair.style']=ANCESTRY_HAIR[next];
+   $('#presetName').textContent='Custom appearance · '+next.replace('-',' ');
+   $('#presetDescription').textContent='MakeHuman anatomical reference '+next+'; this provides a starting complexion and hairstyle, both independently editable.';
+  }
+  if(c.id==='body.gender'){
+   const shape=next==='masculine'?[.25,44,32]:next==='androgynous'?[1.3,42,33]:[2.6,40,34];
+   values['body.bust']=shape[0];values['body.shoulders']=shape[1];values['body.hips']=shape[2];
+   $('#presetName').textContent='Custom morphology · '+next;
+   $('#presetDescription').textContent='Full-body MakeHuman '+next+' macro target; individual body settings remain editable.';
+  }
+  if(c.id==='appearance.population'||c.id==='body.gender')for(const w of widgets)w.sync();
   dirty++;note();
  }
  inp.addEventListener('input',()=>change(inp.value));

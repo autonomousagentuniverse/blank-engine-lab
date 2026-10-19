@@ -687,6 +687,27 @@
       "blender_render": "NOT RUN",
       "production_deployed": false,
       "preview_deployment": "PENDING"
+    },
+    "v4": {
+      "date": "2026-10-19",
+      "schema": "blank.manual-human-builder.v2",
+      "total_controls": 93,
+      "morph_targets": 6,
+      "source_commit": "3af0cd5a2ffba072e93a34e5f6f494fdc4813ddf",
+      "source_license": "CC0",
+      "controls_added": [
+        "body.gender",
+        "appearance.population"
+      ],
+      "previously_unreferenced": 43,
+      "preview_mode": "live deformable CC0 MakeHuman basemesh",
+      "render_samples": "Blender-only",
+      "cloud_blender_worker": false,
+      "local_blender_nondefault_morphs": "EXPLICITLY REJECTED",
+      "browser_tests": "PENDING",
+      "visual_approval": "PENDING",
+      "vercel_preview": "PENDING",
+      "production_deployed": false
     }
   }
 }

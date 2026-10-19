@@ -13,7 +13,7 @@ import hashlib
 from pathlib import Path
 from mathutils import Vector
 
-SCHEMA = "blank.manual-human-builder.v1"
+SCHEMA = "blank.manual-human-builder.v2"
 V = {}
 USED = set()
 SKIN_PARTS = []
@@ -109,6 +109,12 @@ def hash_file(path):
     return digest.hexdigest()
 def build():
     global SKIN_PARTS
+    # This legacy procedural Blender generator has not yet adopted the CC0 macro-target
+    # topology used by the browser. Reject unsupported presets rather than silently
+    # rebuilding a different character and claiming the new sex/appearance controls worked.
+    gender=p("body.gender");population=p("appearance.population")
+    if gender != "feminine" or population != "african":
+        raise RuntimeError("Blender worker is not yet compatible with alternate MakeHuman morphology or ancestry references. Browser 3D preview supports these. No Blender render was generated.")
     H=cm(p("body.height"))
     sh=cm(p("body.shoulders")); rib=cm(p("body.chest")); chestd=cm(p("body.chest_depth"))
     bust=cm(p("body.bust")); bustsep=cm(p("body.bust_spacing"))

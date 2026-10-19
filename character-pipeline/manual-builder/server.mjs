@@ -84,7 +84,7 @@ export function createBuilderServer({blenderBin=process.env.BLENDER_BIN||'blende
     const bytes=await readFile(join(job.output,name));return respond(res,200,bytes,extname(name));
    }
    const asset={'/':'index.html','/index.html':'index.html','/app.mjs':'app.mjs',
-                '/controls.mjs':'controls.mjs','/style.css':'style.css','/basemesh.json':'basemesh.json'}[url.pathname];
+                '/controls.mjs':'controls.mjs','/style.css':'style.css','/basemesh.json':'basemesh.json','/morph-engine.mjs':'morph-engine.mjs'}[url.pathname];
    if(req.method==='GET'&&asset)return respond(res,200,await readFile(join(BASE,asset)),extname(asset));
    return json(res,404,{error:'Not found'});
   }catch(err){return json(res,400,{error:err.message})}

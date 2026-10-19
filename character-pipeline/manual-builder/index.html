@@ -4,12 +4,12 @@
 <link rel="stylesheet" href="./style.css"></head>
 <body>
 <header class="top"><div><div class="eyebrow">BLANK ENGINE / CHARACTER LAB / EXPERIMENTAL</div>
-<h1>Human Anatomy Builder <span>01</span></h1><p>Edit an anatomically connected CC0 MakeHuman body mesh. Blender/Cycles remains a separate build.</p></div>
-<div class="topside"><div class="state"><i></i> LIVE CONTROLS · VERCEL PREVIEW</div><div id="count" class="subtext">91 adjustable variables</div></div></header>
+<h1>Human Anatomy Builder <span>01</span></h1><p>Switch feminine/masculine anatomy or ancestry-inspired starting shapes, independently customize complexion, face and body. All shape controls update live; cloud Blender remains separate.</p></div>
+<div class="topside"><div class="state"><i></i> LIVE CONTROLS · VERCEL PREVIEW</div><div id="count" class="subtext">93 adjustable variables</div></div></header>
 <main class="layout">
-<aside class="controls"><div class="toolbar"><div><strong>Manual measurements</strong><small>Every change becomes part of the next Blender build.</small></div><div class="seed-preset"><span class="eyebrow">LOADED CHARACTER PRESET</span><strong id="presetName">Original figure · Dark skin / natural Afro</strong><small id="presetDescription">Full-body woman, medium build, dark skin, natural Afro · parameter approximation of our previous target, not the preserved Blender head geometry.</small></div>
+<aside class="controls"><div class="toolbar"><div><strong>Manual measurements</strong><small>Preview updates instantly; Blender/Cycles samples are export-only.</small></div><div class="seed-preset"><span class="eyebrow">LOADED CHARACTER PRESET</span><strong id="presetName">Original figure · Dark skin / natural Afro</strong><small id="presetDescription">Full-body woman, medium build, dark skin, natural Afro · parameter approximation of our previous target, not the preserved Blender head geometry.</small></div>
 <input id="search" aria-label="Search controls" placeholder="Search anatomy, hair, toe…" autocomplete="off"></div>
-<div id="sections" class="sections"></div>
+<p style="margin:8px 14px 13px;color:#b9bebf;font-size:11px;line-height:1.55">Anatomy references are broad presets, not biological definitions of race or identity. You can independently edit complexion, hair and every feature. <b>Cycles samples</b> are Blender-only.</p><div id="sections" class="sections"></div>
 <div class="actions"><div id="dirty" class="muted">Default specification</div>
 <button id="submit" class="primary">Rebuild full character in Blender <span aria-hidden="true">↗</span></button>
 <div class="minor"><button id="save">Export JSON</button><label class="import">Import JSON<input id="import" type="file" accept=".json,application/json" hidden></label><button id="reset" title="Restore the previous character proportions">Restore figure</button></div></div>

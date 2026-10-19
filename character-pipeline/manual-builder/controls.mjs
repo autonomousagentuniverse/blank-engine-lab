@@ -1,11 +1,13 @@
 // Shared, auditable control registry. Defaults approximate the user's original human target.
 // Prior accepted head geometry is not available to this procedural builder; no claim of exact identity.
 // Every parameter is included in the submitted JSON.
-export const SCHEMA = 'blank.manual-human-builder.v1';
-export const PRESET_ID = 'original-figure-dark-afro-medium-v1';
+export const SCHEMA = 'blank.manual-human-builder.v2';
+export const PRESET_ID = 'original-figure-dark-afro-medium-v2';
 export const PRESET_NAME = 'Original figure · Dark skin / natural Afro';
 export const PRESET_DESCRIPTION = 'Full-body Black woman, approximately 28, medium natural proportions, dark skin, natural afro. Reconstructed parameter seed only: the previously preferred Blender head mesh is not loaded.';
 const rows = String.raw`
+Appearance & morphology|body.gender|Body morphology|s|feminine|feminine,androgynous,masculine
+Appearance & morphology|appearance.population|Ancestry-inspired anatomy reference|s|african|african,east-asian,european,mixed
 Body|body.height|Height|n|172|145|205|1|cm
 Body|body.shoulders|Shoulder width|n|40|30|52|0.5|cm
 Body|body.chest|Ribcage width|n|31|23|42|0.5|cm

@@ -1,6 +1,7 @@
 // Live deformation of MakeHuman's CC0 hm08 human basemesh, pinned to MPFB2 commit 3af0cd5.
 // IMPORTANT: This is a body-mesh browser preview, not a Blender/Cycles render or a rigged export.
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js';
+import {loadMacroTargets,targetAt,secondaryVertex} from './morph-engine.mjs';
 
 const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
 const gauss=(d,s)=>Math.exp(-((d/s)**2)*2);
@@ -19,6 +20,7 @@ export async function mountClayPreview(host,initial){
      asset.position_xyz?.length<35000||asset.body_indices?.length<70000)throw Error('Invalid verified MakeHuman anatomy asset');
   const original=new Float32Array(asset.position_xyz);
   const count=original.length/3;
+  const macroTargets=await loadMacroTargets(count);
   const group=new THREE.Group(),scene=new THREE.Scene();scene.add(group);
   const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
   renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.6));
@@ -89,7 +91,9 @@ export async function mountClayPreview(host,initial){
     const bodyPitch=Math.tan(NUM(v,'body.posture')*Math.PI/180)*.016;
     const core=(x)=>1-smooth(1.35,2.85,Math.abs(x));
     for(let i=0;i<count;i++){
-      const k=i*3,ox=original[k],oy=original[k+1],oz=original[k+2];
+      const k=i*3;
+      const [mx,my,mz]=targetAt(macroTargets,i,v);
+      const ox=original[k]+mx,oy=original[k+1]+my,oz=original[k+2]+mz;
       const y=(oy-sourceBaseY)*scale,py=(oy-sourceBaseY)/sourceHeight;
       const front=smooth(.40,1.4,oz),coreW=core(ox);
       const gh=gauss(py-.55,.13)*coreW,gw=gauss(py-.66,.09)*coreW,gc=gauss(py-.78,.1)*coreW;
@@ -138,12 +142,13 @@ export async function mountClayPreview(host,initial){
       const postureZ=bodyPitch*gauss(py-.69,.16);
       x+=Math.sign(x)*(fat-.42)*.005*coreW*gauss(py-.56,.22);
       z+=(muscle-.27)*.004*(1-coreW)*gauss(py-.6,.22);
-      deformed[k]=x;deformed[k+1]=scaledY+((legLength-.475)*.14*gauss(py-.48,.16));deformed[k+2]=z+postureZ;
+      const result=secondaryVertex(v,{ox,oy,oz,x,y:scaledY+((legLength-.475)*.14*gauss(py-.48,.16)),z:z+postureZ,py,front,coreW,scale});
+      deformed[k]=result[0];deformed[k+1]=result[1];deformed[k+2]=result[2];
     }
     position.set(deformed);attribute.needsUpdate=true;
     geometry.computeVertexNormals();
     for(const e of eyes)e.geometry.computeVertexNormals();
-    const eyeSize=CM(v,'face.eye_size')/.0245,spacing=CM(v,'face.eye_spacing')/.063;
+    const eyeSize=CM(v,'face.eye_size')/.0245,spacing=CM(v,'face.eye_spacing')/.063,irisSize=CM(v,'face.iris')/.0115;
     const scleraColor=new THREE.Color(v['eye.sclera_tint']);sclera.color.copy(scleraColor);
     iris.color.set(v['eye.iris_color']);
     for(let k=0;k<2;k++){
@@ -153,14 +158,15 @@ export async function mountClayPreview(host,initial){
       for(const ix of indices){sx+=deformed[ix*3];sy+=deformed[ix*3+1];zmax=Math.max(zmax,deformed[ix*3+2]);n++}
       const cx=sx/n,cy=sy/n,z=zmax+.0002;
       irises[k].position.set(cx+(spacing-1)*Math.sign(cx)*.008,cy,z);
-      irises[k].scale.set(.006*eyeSize,.0057*eyeSize,.0013);
+      irises[k].scale.set(.006*eyeSize*irisSize,.0057*eyeSize*irisSize,.0013);
       pupils[k].position.set(irises[k].position.x,cy,z+.0011);
       pupils[k].scale.set(.0029*eyeSize,.0031*eyeSize,.0011);
     }
     // The sculpts' skin is not bleached by a clay-only override: pigmentation remains visible.
     const tone=new THREE.Color(v['skin.color']);
     if(v['render.clay']==='true')tone.lerp(new THREE.Color('#b0a8a3'),.45);
-    skin.color.copy(tone);skin.roughness=clamp(NUM(v,'skin.roughness')-.05*NUM(v,'skin.specular'),.25,.96);
+    tone.lerp(new THREE.Color('#bc9173'),NUM(v,'skin.variation')*.12);
+    skin.color.copy(tone);skin.roughness=clamp(NUM(v,'skin.roughness')-.05*NUM(v,'skin.specular')-.07*NUM(v,'skin.subsurface'),.25,.96);
     hair.color.set(v['hair.color']);
     lights[1].intensity=3.8*NUM(v,'render.light');
     floor.material.color.set(v['render.background']).multiplyScalar(1.12);
@@ -180,7 +186,8 @@ export async function mountClayPreview(host,initial){
       const x=deformed[q],y=deformed[q+1],z=deformed[q+2];
       const jitter=Math.sin(i*2.183)*.27+Math.sin(i*3.513)*.14;
       const size=clamp(spread*(.58+.17*jitter),.004,.02);
-      tmp.position.set(x+(Math.sin(i*7.3)*spread*.13),y+spread*.34+Math.cos(i*8.5)*spread*.18,z+Math.cos(i*5.9)*spread*.20);
+      const hairline=CM(v,'hair.hairline'),asym=NUM(v,'hair.asymmetry');
+      tmp.position.set(x+(Math.sin(i*7.3)*spread*.13)+asym*.013,y+spread*.34+Math.cos(i*8.5)*spread*.18-hairline*.17,z+Math.cos(i*5.9)*spread*.20);
       if(style==='short-curls')tmp.scale.set(size*.7,size*.62,size*.72);
       else if(style==='locs'||style==='straight')tmp.scale.set(size*.3,size*(1.2+curlFactor*.7),size*.34);
       else tmp.scale.set(size,size*(.88+.17*curlFactor),size*.98);
@@ -194,10 +201,13 @@ export async function mountClayPreview(host,initial){
     camera.lookAt(0,height*.54,0);renderer.render(scene,camera);
   }
   function resize(){
+    renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.6)*clamp(NUM(lastValues,'render.resolution')/960,.6,1.6));
     const w=Math.max(240,host.clientWidth),h=Math.max(340,host.clientHeight);
     renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();draw();
   }
-  function update(values){morph(values);resize()}
+  let lastValues=initial;
+  function update(values){lastValues=values;morph(values);resize()}
+  function inspect(){let h=2166136261;for(let i=0;i<position.length;i+=3){h=Math.imul(h^Math.round(position[i]*1e6),16777619)>>>0;h=Math.imul(h^Math.round(position[i+1]*1e6),16777619)>>>0;h=Math.imul(h^Math.round(position[i+2]*1e6),16777619)>>>0;}return {shape:h.toString(16),skin:skin.color.getHexString(),roughness:skin.roughness,hair:hair.color.getHexString(),hairCount:curls.count,iris:iris.color.getHexString(),irisSize:irises[0].scale.x,instancesHash:Math.round(curls.instanceMatrix.array[12]*1e6),renderWidth:renderer.domElement.width,renderHeight:renderer.domElement.height,sex:lastValues['body.gender'],population:lastValues['appearance.population']}}
   let last=[0,0],drag=false,az=.12,el=.035,distance=3.45;
   canvas.addEventListener('pointerdown',e=>{drag=true;last=[e.clientX,e.clientY];canvas.setPointerCapture(e.pointerId)});
   canvas.addEventListener('pointerup',()=>drag=false);
@@ -206,5 +216,5 @@ export async function mountClayPreview(host,initial){
   canvas.addEventListener('wheel',e=>{e.preventDefault();distance=clamp(distance*Math.exp(e.deltaY*.001),2.4,7);draw()},{passive:false});
   const ro=new ResizeObserver(resize);ro.observe(host);
   update(initial);
-  return {update,source:{name:'CC0 MakeHuman hm08',vertices:count,faces:asset.body_indices.length/3},dispose(){ro.disconnect();geometry.dispose();for(const e of eyes)e.geometry.dispose();irisSphere.dispose();curlGeometry.dispose();curls.dispose();skin.dispose();sclera.dispose();iris.dispose();pupil.dispose();hair.dispose();floor.geometry.dispose();floor.material.dispose();renderer.dispose()}};
+  return {update,inspect,source:{name:'CC0 MakeHuman hm08 + six target morphs',vertices:count,faces:asset.body_indices.length/3,macros:macroTargets.length},dispose(){ro.disconnect();geometry.dispose();for(const e of eyes)e.geometry.dispose();irisSphere.dispose();curlGeometry.dispose();curls.dispose();skin.dispose();sclera.dispose();iris.dispose();pupil.dispose();hair.dispose();floor.geometry.dispose();floor.material.dispose();renderer.dispose()}};
 }

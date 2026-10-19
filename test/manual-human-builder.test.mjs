@@ -109,11 +109,13 @@ test('live preview reads connected CC0 anatomy rather than a synthetic procedura
 
 
 test('Original target human preset loads as actual validated 91-control defaults',async()=>{
- assert.equal(CONTROLS.length,91);
+ assert.equal(CONTROLS.length,93);
  assert.match(PRESET_ID,/original-figure/);
  assert.match(PRESET_NAME,/Afro/);
  assert.match(PRESET_DESCRIPTION,/head mesh is not loaded/);
  const c=validateRequest(defaultRequest()).controls;
+ assert.equal(c['body.gender'],'feminine');
+ assert.equal(c['appearance.population'],'african');
  assert.equal(c['body.height'],172);
  assert.equal(c['body.shoulders'],40);
  assert.equal(c['body.waist'],27.5);
@@ -128,7 +130,7 @@ test('Original target human preset loads as actual validated 91-control defaults
  assert.equal(c['face.cheeks'],.61);
  const source=await readFile(join(base,'../character-pipeline/manual-builder/app.mjs'),'utf8');
  const html=await readFile(join(base,'../character-pipeline/manual-builder/index.html'),'utf8');
- assert.match(source,/blank-human-builder:v2:/);
+ assert.match(source,/blank-human-builder:v3:/);
  assert.match(source,/PRESET_ID/);
  assert.match(source,/values=\{\.\.\.DEFAULTS\};sync\(\)/);
  assert.match(html,/id="presetName"/);
