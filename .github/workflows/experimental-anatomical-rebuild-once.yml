@@ -1,9 +1,6 @@
 name: EXPERIMENTAL Real Blender Anatomical Body Reconstruction Once
-# This one-time branch-only push trigger is temporary and must be restored to manual.
+# Post-experiment: restored to permanent workflow_dispatch manual trigger.
 on:
-  push:
-    branches:
-      - experiment/anatomical-rebuild-not-width-warp-20261018
   workflow_dispatch:
 permissions:
   contents: read

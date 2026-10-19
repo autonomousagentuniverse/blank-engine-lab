@@ -618,5 +618,27 @@
     "photorealism_approved": false,
     "production_deployed": false,
     "workflow_manual_only": true
+  },
+  "anatomical_rebuild_rig_region_20261018": {
+    "date": "2026-10-18",
+    "source_sha256": "a1c38165ae2d8d100e04919e4e57b35623ac9fabc1b0d2cb44bdfb7829fef570",
+    "branch": "experiment/anatomical-rebuild-not-width-warp-20261018",
+    "run_id": 39189231279,
+    "artifact_id": 12159148396,
+    "render_png_count": 6,
+    "packed_blend_count": 2,
+    "blender_version": "4.5.3",
+    "run_conclusion": "success",
+    "algorithm": "weighted_rig_region_anatomy_landmark_spline_v2",
+    "old_three_width_sliders_used": false,
+    "source_topology_inherited": true,
+    "independent_new_anatomical_basemesh": false,
+    "vertex_coordinates_changed": 1819,
+    "maximum_vertex_displacement_m": 0.018850301159505138,
+    "head_geometry_preserved": true,
+    "visual_approval": false,
+    "photorealism_approved": false,
+    "production_deployed": false,
+    "workflow_manual_only": true
   }
 }
