@@ -1091,3 +1091,118 @@ VISUAL INSPECTION OF ACTUAL RENDERS: existing 3D subject wears **blue shirt, jea
 - Real nine-animation 153-frame one-shot completed, 22-bone editable Blender scene, animated GLB and videos generated; original browser/Blender topology parity retained. 20/20 Node tests pass.
 - Site shows first-preview-in-progress quality status correctly and exposes the final skin-strain audit metrics rather than hiding deformation flaws.
 - **Not anatomically/motion-capture approved.** Run has two remaining sampled overstretched edges; fingers/face are under-detailed; animation clips are still in-place prototypes. No production merge. See docs/anatomy-joint-weight-recovery-20261019.md.
+
+
+### Phase 41 — 2026-10-19 — Locomotion is the blocking foundation for Blank Engine [ARCHITECTURAL DECISION]
+
+**User conclusion / project direction.** We should not proceed as though a complete,
+convincing character-driven 3D game can be delivered simply by adding scenes,
+multiple characters, interactions, and gameplay on top of the existing human
+pipeline. One prototype character still cannot walk naturally. Locomotion must
+be a release-blocking foundation. Pause **integration/release of character-dependent
+gameplay, new showcase characters and full-game scene expansion** until one
+controllable digital human passes the locomotion quality gate. Continue only
+work that directly resolves that gate and necessary infrastructure/tests;
+unrelated content is not evidence of progress on it.
+
+**What actually works at this checkpoint.**
+
+- A user-facing 93-control anatomy builder and a WebGL/MakeHuman-source body
+  with Blender one-shot reconstruction; selected variables produce a body,
+  hair, skin/eyes, static camera renders, an editable Blender scene, and GLB.
+- A prototype 22-bone armature and nine animation clips (Idle, Walk, Jog,
+  Run, Fight and four facial expressions), H.264 render previews, WebGL
+  interface, job-progress tracking and download workflow.
+- Recent deformation regression repairs improved arm/hand ribbons and hip
+  seams. In sampled Blender skin-edge audits, maximum stretch was Walk
+  3.751×, Jog 3.8745×, Run 4.1707× (two edges exceeded 4×), and
+  Fight 3.1633×. The 20 Node tests and one-shot Blender technical build
+  succeeded. These **technical passes are not quality approval**.
+
+**What is NOT solved.**
+
+- The walk remains an authored/procedural approximation, not validated
+  human locomotion. Gait phase/tempo alone and 2-bone knee IK do not model
+  heel strike, loading response, planted foot, midstance, heel rise,
+  toe-off, swing clearance, center-of-mass and pelvic weight transfer.
+- Root motion and in-place cycles are not integrated into realistic
+  character displacement and acceleration/deceleration. Turning, stops,
+  speed transitions, slope/terrain adaptation, foot contact lock and
+  balance are not implemented to an acceptable game standard.
+- Arms, hands, pelvis and feet are still subject to imperfect skin weights,
+  joint pivots and missing corrective deformation; visual artifacts
+  remain possible. The face, fingers and toe geometry are not final.
+- There is no demonstrated, visually approved playable Blank Engine
+  character with keyboard/touch locomotion in a real scene. Multiple
+  characters of differing anatomy have not passed the same gait test.
+
+**Reason for prior repeated failures.** Iteratively tuning a procedural
+sine-wave/IK gait and merely removing gross mesh tears did not address
+the primary problem: authentic human motion and a retargetable rig.
+Rendering all frames, exporting a valid GLB or passing numeric audits
+can coexist with visibly abnormal walking. We must stop treating
+technical completion as proof of human realism.
+
+**Architecture decision — replace, do not keep tuning, the old gait generator.**
+
+1. **Reference locomotion:** source real human walk, jog and run
+   motion-capture clips or carefully authored validated gait references.
+   Record licensing, provenance, coordinate system, scale, frame rate,
+   root translation, contact labels and retargeting rights.
+   Do not fabricate a reference or silently use unlicensed material.
+2. **Reusable anatomical rig:** choose a standardized humanoid skeleton
+   and rest pose; define explicit retarget maps, joint axes and limits,
+   pelvis and root bones, hands/toes, skinning and corrective shapes.
+   Preserve existing adjustable body morphology and verify every mesh
+   variant against the same skeleton interface.
+3. **Contact-aware locomotion:** retarget human motion to our characters,
+   enforce stance-phase foot locking with IK and ground detection, solve
+   stride/root travel from actual motion, add weight transfer and natural
+   upper-body counter-rotation, and blend Walk↔Jog↔Run↔Stop↔Turn.
+   Avoid limb translations inconsistent with the planted support foot.
+4. **Playable engine test:** create ONE minimal Blank Engine scene with
+   ground plane, third-person camera, keyboard + mobile touch movement,
+   speed changes, start/stop/turn and visual diagnostics. Feed the SAME
+   rigged Blender/GLB character through game runtime, not a separate
+   offline-only animation.
+5. **Generalization:** introduce a second human with materially different
+   stature and body proportions. Retarget the same locomotion clips with
+   no character-specific manual fixes, then compare both against the
+   reference and check deformation, foot contact and controls.
+
+**Release/continuation acceptance gate (all must pass).**
+
+- One character walks forward, turns, jogs, runs and stops under real
+  user controls in a minimal playable 3D scene, on desktop and mobile.
+- Stance feet stay visibly planted with no sliding or floating; heel-to-toe
+  contact and left/right weight transfer remain coherent across the cycle.
+  No unnatural knee hyperextension, twisting or drifting pelvis/root,
+  phase discontinuities, popping when changing speed, or obvious
+  balance failure. Speed and distance match the locomotion clip.
+- Anatomical skinning stays intact in motion: no torn arms, disconnected
+  joints, excessive hip seams, stretched fingers, collapsed knees/ankles
+  or abrupt self-intersection. Enforce automated pose/skin/contact
+  regressions and inspect actual rendered videos from several angles.
+- A second character with different proportions repeats the same tasks
+  with the SAME movement system, without per-character animation patches.
+- Quality is evaluated visually against authentic reference footage,
+  including specific human review of start/stop, midstance, toe-off,
+  turning and transitions. Numeric tests alone never satisfy the gate.
+- Preserve reproducibility: source motion provenance, Blender/GLB
+  artifacts, retarget map, frame-based diagnostics, play-test evidence,
+  commit IDs and limitations are recorded in CONTINUITY.md.
+
+**Implementation sequence / next milestone.** First validate an authentic,
+licensed walk cycle on one standard rig in Blender. Next transfer and
+retarget it to the existing generated human. Next implement planted-foot,
+root-motion and weight-transfer corrections. Next integrate movement and
+camera controls into one minimal playable Blank Engine scene. Finally
+demonstrate the same system on two proportionally different characters.
+Do not broaden into full gameplay/scenes until this gate passes.
+
+**Explicit status as of this record:** LOCOMOTION QUALITY GATE = **BLOCKED /
+NOT ACCEPTED**. Working geometry and animation exports remain valuable
+technical building blocks, but the procedural locomotion system is not an
+approved foundation for a complete game. This entry is a documentation/
+architecture checkpoint only; it does not implement locomotion, merge to
+main, or deploy to production.
