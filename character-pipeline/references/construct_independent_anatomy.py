@@ -35,7 +35,7 @@ def body_from_rig(*,old_body,rig,scene):
     face.hide_render=False
     face.hide_set(False)
     keeper=face.vertex_groups.new(name="SOURCE_HEAD_NECK_KEEP")
-    cutoff=clav-.075
+    cutoff=clav-.060
     frozen=[]
     for v in face.data.vertices:
         p=face.matrix_world@v.co
@@ -99,10 +99,10 @@ def body_from_rig(*,old_body,rig,scene):
       (h+.155,mid_x,mid_y,.154,.110,"spine_01"),
       (h+.236,mid_x,mid_y,.147,.108,"spine_02"),
       (h+.327,mid_x,mid_y,.175,.135,"spine_03"),
-      (clav-.094,mid_x,mid_y,.188,.142,"spine_03"),
-      (clav-.012,mid_x,mid_y,.188,.117,"spine_03"),
-      (clav+.025,mid_x,mid_y,.089,.079,"neck_01"),
-      (clav+.082,mid_x,mid_y,.066,.066,"neck_01")]
+      (clav-.136,mid_x,mid_y,.188,.142,"spine_03"),
+      (clav-.092,mid_x,mid_y,.194,.140,"spine_03"),
+      (clav-.055,mid_x,mid_y,.103,.083,"neck_01"),
+      (clav-.013,mid_x,mid_y,.066,.066,"neck_01")]
     if any(torso[j][0]>=torso[j+1][0] for j in range(len(torso)-1)):
         raise RuntimeError("INDEPENDENT_TORSO_RINGS_NONMONOTONIC")
     built=[join_loft("new_torso",torso,64,True)]
@@ -129,12 +129,15 @@ def body_from_rig(*,old_body,rig,scene):
         shoulder_x=mid_x+side*.199
         # Rest arms naturally beside torso; source arm A-pose is not reused.
         arm=[
-          (h+.005,mid_x+side*.319,mid_y-.014,.037,.034,"hand_"+arm_name),
-          (h+.067,mid_x+side*.315,mid_y,.043,.039,"hand_"+arm_name),
-          (h+.135,mid_x+side*.319,mid_y,.037,.034,"lowerarm_"+arm_name),
-          (h+.215,mid_x+side*.309,mid_y,.048,.049,"lowerarm_"+arm_name),
-          (h+.320,mid_x+side*.279,mid_y,.055,.057,"upperarm_"+arm_name),
-          (clav-.012,shoulder_x,mid_y,.073,.070,"upperarm_"+arm_name)]
+          (h-.215,mid_x+side*.299,mid_y-.022,.030,.024,"hand_"+arm_name),
+          (h-.155,mid_x+side*.307,mid_y-.014,.043,.032,"hand_"+arm_name),
+          (h-.098,mid_x+side*.312,mid_y-.012,.034,.032,"hand_"+arm_name),
+          (h-.045,mid_x+side*.319,mid_y-.008,.036,.035,"lowerarm_"+arm_name),
+          (h+.065,mid_x+side*.315,mid_y,.043,.039,"lowerarm_"+arm_name),
+          (h+.140,mid_x+side*.319,mid_y,.041,.040,"lowerarm_"+arm_name),
+          (h+.225,mid_x+side*.309,mid_y,.049,.050,"upperarm_"+arm_name),
+          (h+.326,mid_x+side*.271,mid_y,.064,.063,"upperarm_"+arm_name),
+          (clav-.049,shoulder_x,mid_y,.073,.070,"upperarm_"+arm_name)]
         if not all(arm[i][0]<arm[i+1][0] for i in range(len(arm)-1)):
             raise RuntimeError("INDEPENDENT_ARM_RINGS_INVALID")
         built.append(join_loft("new_arm_"+arm_name,arm,40))
@@ -144,17 +147,41 @@ def body_from_rig(*,old_body,rig,scene):
     mesh.from_pydata(verts,[],faces);mesh.update(calc_edges=True)
     ob=bpy.data.objects.new("GENERATED_INDEPENDENT_FEMALE_ANATOMY",mesh)
     scene.collection.objects.link(ob)
+    # Physical union by voxel remesh of the NEW independent parts, not the face.
+    from mathutils.kdtree import KDTree
+    kd=KDTree(len(verts))
+    for i,v in enumerate(verts):kd.insert(Vector(v),i)
+    kd.balance()
+    bpy.ops.object.select_all(action="DESELECT")
+    ob.select_set(True)
+    bpy.context.view_layer.objects.active=ob
+    ob.data.remesh_voxel_size=.013
+    bpy.ops.object.voxel_remesh()
+    mesh=ob.data
+    if len(mesh.vertices)<1700 or len(mesh.polygons)<1600:
+        raise RuntimeError("INDEPENDENT_VOXEL_UNION_FAILED:"+str((len(mesh.vertices),len(mesh.polygons))))
     for poly in mesh.polygons:poly.use_smooth=True
-    skin=old_body.data.materials[0] if len(old_body.data.materials) else None
-    if skin is None:raise RuntimeError("INDEPENDENT_BODY_NEEDS_SOURCE_SKIN_MATERIAL")
-    mesh.materials.append(skin)
-    gnames=sorted(set(groups))
-    for name in gnames:
+    # New true body skin, not the black clothing slot of the old hidden body.
+    skin=bpy.data.materials.new("BLANK_INDEPENDENT_DARK_BROWN_SKIN")
+    skin.use_nodes=True
+    bsdf=next(n for n in skin.node_tree.nodes if n.type=="BSDF_PRINCIPLED")
+    bsdf.inputs["Base Color"].default_value=(.105,.042,.026,1)
+    bsdf.inputs["Roughness"].default_value=.57
+    bsdf.inputs["Subsurface Weight"].default_value=.08
+    mesh.materials.clear();mesh.materials.append(skin)
+    bins={}
+    for v in mesh.vertices:
+        _,nearest,_=kd.find(v.co)
+        bins.setdefault(groups[nearest],[]).append(v.index)
+    gnames=sorted(bins)
+    for name,indices in bins.items():
         if rig.data.bones.get(name) is None:
             raise RuntimeError("INDEPENDENT_BODY_UNKNOWN_SKIN_BONE:"+name)
         vg=ob.vertex_groups.new(name=name)
-        indices=[i for i,v in enumerate(groups) if v==name]
         vg.add(indices,1.0,'REPLACE')
+    smoothing=ob.modifiers.new("SMOOTH_UNIONED_ORGANIC_BODY","SMOOTH")
+    smoothing.factor=.55
+    smoothing.iterations=5
     modifier=ob.modifiers.new("NEW_ANATOMICAL_BODY_53_BONE_SKINNING","ARMATURE")
     modifier.object=rig
     modifier.use_deform_preserve_volume=True
@@ -168,7 +195,9 @@ def body_from_rig(*,old_body,rig,scene):
         "source_head_reused":True,"source_face_topology_preserved":True,
         "source_original_body_hidden":old_body.hide_render,
         "source_existing_clothes_hidden":True,
-        "new_body_verts":len(verts),"new_body_polygons":len(faces),
+        "new_body_verts":len(mesh.vertices),"new_body_polygons":len(mesh.polygons),
+        "authoring_cage_vertices":len(verts),"authoring_cage_polygons":len(faces),
+        "body_parts_voxel_unioned":True,"voxel_m":.013,
         "independent_components":built,"new_skinning_bone_groups":gnames,
         "head_source_kept_vertex_count":len(frozen),
         "head_keep_cutoff_m":cutoff,"head_source_data_sha_original_unchanged":True,
