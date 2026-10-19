@@ -94,7 +94,7 @@ test('live preview reads connected CC0 anatomy rather than a synthetic procedura
  const game=readFileSync(new URL('../index.html',import.meta.url),'utf8');
  const asset=JSON.parse(readFileSync(new URL('basemesh.json',here),'utf8'));
  assert.match(source,/export async function mountClayPreview/);
- assert.match(source,/fetch\('\.\/basemesh\.json'\)/);
+ assert.match(source,/fetch\(new URL\('\.\/basemesh\.json',import\.meta\.url\)\)/);
  assert.match(source,/geometry\.computeVertexNormals/);
  assert.doesNotMatch(source,/function torso\(|function surfaceHorizontal\(/);
  assert.equal(asset.source_license,'CC0');
