@@ -85,18 +85,20 @@ test('Local-only HTTP app accepts a complete rebuild spec and fails visibly if B
 });
 
 
-test('live preview is a browser geometry renderer, not a fake Blender success', async()=>{
+test('live preview reads connected CC0 anatomy rather than a synthetic procedural mannequin', async()=>{
  const {readFileSync}=await import('node:fs');
- const {join}=await import('node:path');
  const here=new URL('../character-pipeline/manual-builder/',import.meta.url);
  const source=readFileSync(new URL('preview.mjs',here),'utf8');
  const app=readFileSync(new URL('app.mjs',here),'utf8');
  const html=readFileSync(new URL('index.html',here),'utf8');
  const game=readFileSync(new URL('../index.html',import.meta.url),'utf8');
- assert.match(source,/export function mountClayPreview/);
- assert.match(source,/function torso\(/);
- assert.match(source,/for\(let j=0;j<5;j\+\+\)/);
- assert.match(source,/for\(let k=0;k<density;k\+\+\)/);
+ const asset=JSON.parse(readFileSync(new URL('basemesh.json',here),'utf8'));
+ assert.match(source,/export async function mountClayPreview/);
+ assert.match(source,/fetch\('\.\/basemesh\.json'\)/);
+ assert.match(source,/geometry\.computeVertexNormals/);
+ assert.doesNotMatch(source,/function torso\(|function surfaceHorizontal\(/);
+ assert.equal(asset.source_license,'CC0');
+ assert.equal(asset.body_indices.length/3,26756);
  assert.match(app,/queuePreview\(\)/);
  assert.match(app,/previewUpdater\(values\)/);
  assert.match(app,/exportSpecification\(payload,'blank-human-anatomy-rebuild-request\.json'\)/);
