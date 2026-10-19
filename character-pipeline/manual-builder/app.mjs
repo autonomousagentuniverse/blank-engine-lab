@@ -153,7 +153,7 @@ function status(value){$('#buildStatus').textContent=value}
 function showResults(job){
  const id=encodeURIComponent(job.id);
  $('#images').hidden=false;
- for(const name of ['front','three_quarter','profile']){
+ for(const name of ['front','three_quarter','profile','face_macro','hand_macro','feet_macro']){
   $('#'+name).src='/outputs/'+id+'/'+name+'.png';
  }
  const g=job.report.mesh;

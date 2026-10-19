@@ -45,6 +45,33 @@ def axis(v): return (v[0],-v[2],v[1]) # WebGL Y-up -> Blender Z-up, no reflectio
 def indexed_mesh(name,position,indices,mat):
     faces=[tuple(indices[i:i+3]) for i in range(0,len(indices),3)]
     return mesh_obj(name,position,faces,mat)
+def mesh_topology_metrics(triangles):
+    # Every edge of a watertight, orientable body surface must be shared by
+    # exactly two faces.  A missing digit or torn shoulder fails this gate.
+    from collections import Counter
+    edges=Counter()
+    for i in range(0,len(triangles),3):
+        a,b,c=triangles[i:i+3]
+        for u,v in ((a,b),(b,c),(c,a)):
+            if u==v: fail('Degenerate source topology: repeated vertex')
+            edges[(min(u,v),max(u,v))]+=1
+    dangling=sum(1 for count in edges.values() if count==1)
+    overused=sum(1 for count in edges.values() if count>2)
+    if dangling or overused:
+        fail('Body mesh is not manifold: open edges='+str(dangling)+' overused='+str(overused))
+    return {'unique_edges':len(edges),'open_edges':dangling,'nonmanifold_edges':overused}
+
+def eye_diameter_metrics(vertices,snapshot,controls):
+    diameters=[]
+    for group in ('eye_left_indices','eye_right_indices'):
+        indices=set(snapshot[group])
+        xs=[vertices[i][0] for i in indices]
+        diameters.append(max(xs)-min(xs))
+    target=float(controls['face.eye_size'])/100
+    if any(abs(value-target)>.00005 for value in diameters):
+        fail('Actual sclera diameters differ from eyeball control')
+    return {'target_m':target,'measured_m':diameters,'max_deviation_m':max(abs(v-target) for v in diameters)}
+
 def source_triangle_check(position,triangles):
     # Exact coordinate parity is checked before modifying the mesh.
     # Degenerate triangles are reported rather than falsely certifying anatomy.
@@ -55,12 +82,14 @@ def source_triangle_check(position,triangles):
     return bad
 def make_hair(snapshot,hair_material):
     if not snapshot['hair_count']: return None
-    bm=bmesh.new()
-    bmesh.ops.create_icosphere(bm,subdivisions=1,radius=1.0)
-    vs=list(bm.verts); lookup={v:i for i,v in enumerate(vs)}
-    template=[v.co.copy() for v in vs]
-    faces=[[lookup[v] for v in face.verts] for face in bm.faces]
-    bm.free()
+    # Hair is reconstructed from the SAME curved strand template that the
+    # browser actually draws, not a separate Blender clump approximation.
+    t=snapshot.get('hair_template')
+    if not isinstance(t,dict) or not t.get('position_xyz') or not t.get('indices'):
+        fail('Shared six-strand hair template missing from canonical snapshot')
+    coords=t['position_xyz'];triangles=t['indices']
+    template=[Vector(coords[i:i+3]) for i in range(0,len(coords),3)]
+    faces=[tuple(triangles[i:i+3]) for i in range(0,len(triangles),3)]
     # Three.js Matrix4.elements is column-major.
     # Convert instance world-space coordinates into Blender Z-up.
     C=Matrix(((1,0,0,0),(0,0,-1,0),(0,1,0,0),(0,0,0,1)))
@@ -78,27 +107,29 @@ def make_hair(snapshot,hair_material):
         tris.extend(tuple(offset+i for i in f) for f in faces)
     return mesh_obj('Scalp-Curls-Source-Instances',verts,tris,hair_material)
 def make_eyes(pos,snap,controls):
-    # Shared actual left/right MakeHuman eye surface vertices.
+    # Reproduce exact measured sclera mesh and exact client eye ornaments.
+    # No re-derivation, axis guessing or double-applied spacing correction.
     white=material('Sclera',snap['resolved_materials']['sclera_color'],.46)
     iris=material('Iris',snap['resolved_materials']['iris_color'],.38)
     pupil=material('Pupil','#0d0c0c',.4)
-    for side,indices in [('Left',snap['eye_left_indices']),('Right',snap['eye_right_indices'])]:
-        indexed_mesh(side+'-Sclera',pos,indices,white)
-        # Duplicate indexed vertices give the same source geometry as WebGL.
-        cx=sum(pos[i][0] for i in indices)/len(indices)
-        cx+=(float(controls['face.eye_spacing'])/.063-1)*math.copysign(.008,cx)
-        cy=sum(pos[i][1] for i in indices)/len(indices)
-        cz=max(pos[i][2] for i in indices)
-        # Blender axes: front of face points in -Y.
-        scale=float(controls['face.eye_size'])/2.45
-        iris_factor=float(controls['face.iris'])/1.15
-        for name,radius,depth,front,mat in [
-            ('Iris',.006*scale*iris_factor,.0013,-.0002,iris),
-            ('Pupil',.0029*scale,.0011,-.0013,pupil)]:
-            bpy.ops.mesh.primitive_uv_sphere_add(segments=16,ring_count=12,location=(cx,cy+front,cz))
-            eye=bpy.context.object;eye.name=side+'-'+name
-            eye.scale=(radius,depth,radius*.95)
-            eye.data.materials.append(mat)
+    for name,indices in [('Left',snap['eye_left_indices']),('Right',snap['eye_right_indices'])]:
+        indexed_mesh(name+'-Sclera',pos,indices,white)
+    ornaments=snap.get('eye_ornaments',{})
+    for group,mat in [('irises',iris),('pupils',pupil)]:
+        candidates=ornaments.get(group)
+        if not isinstance(candidates,list) or len(candidates)!=2:
+            fail('Canonical eye ornament transforms required')
+        for i,eye in enumerate(candidates):
+            center=axis(eye['position_xyz'])
+            scales=eye['scale_xyz']
+            if len(scales)!=3 or any(not math.isfinite(v) or v<=0 for v in scales):
+                fail('Invalid eye ornament scale')
+            bpy.ops.mesh.primitive_uv_sphere_add(segments=16,ring_count=12,location=center)
+            obj=bpy.context.object
+            obj.name=('Right' if i==0 else 'Left')+'-'+('Iris' if group=='irises' else 'Pupil')
+            # Three.js uses x/y-plane discs with small z depth; Z-up conversion:
+            obj.scale=(scales[0],scales[2],scales[1])
+            obj.data.materials.append(mat)
 def setup_world(controls,height,resolved):
     world=bpy.data.worlds.new('Studio-World') if not bpy.data.worlds else bpy.data.worlds[0]
     bpy.context.scene.world=world; world.use_nodes=True
@@ -116,13 +147,13 @@ def setup_world(controls,height,resolved):
 def point(ob,location):
     direction=Vector(location)-ob.location
     ob.rotation_euler=direction.to_track_quat('-Z','Y').to_euler()
-def camera(name,loc,height):
+def camera(name,loc,height,target=None):
     bpy.ops.object.camera_add(location=loc)
     cam=bpy.context.object;cam.name=name;cam.data.type='ORTHO'
     cam.data.ortho_scale=height*1.32
-    point(cam,(0,0,height*.52))
+    point(cam,target if target is not None else (0,0,height*.52))
     return cam
-def render_3(out,controls,height):
+def render_views(out,controls,height):
     scene=bpy.context.scene
     scene.render.engine='CYCLES'
     scene.cycles.samples=int(controls['render.samples'])
@@ -137,6 +168,16 @@ def render_3(out,controls,height):
         ('three_quarter',camera('Camera-Three-Quarter',(2.3,-2.6,height*.58),height)),
         ('profile',camera('Camera-Profile',(3.5,0,height*.54),height))
     ]
+    # Inspection views are first-class evidence, not artist recollections:
+    # close crops reveal eye/lid placement, digit structure, toes and seams.
+    # These camera-only views do not alter the body geometry.
+    cams.extend([
+        ('face_macro',camera('Camera-Face-Macro',(0,-.84,height*.905),height,(0,0,height*.91))),
+        ('hand_macro',camera('Camera-Hand-Macro',(.49,-.76,height*.60),height,(.45,0,height*.60))),
+        ('feet_macro',camera('Camera-Feet-Macro',(.33,-.66,.37),height,(0,0,.085)))
+    ])
+    for name,cam in cams[3:]:
+        cam.data.ortho_scale={'face_macro':.38,'hand_macro':.34,'feet_macro':.45}[name]
     files=[]
     for name,cam in cams:
         scene.camera=cam
@@ -183,7 +224,9 @@ def main():
     scene['anatomy_source']=SOURCE
     blend_file=out/'anatomical_character.blend'
     bpy.ops.wm.save_as_mainfile(filepath=str(blend_file))
-    rendered=render_3(out,controls,height)
+    body_metrics=mesh_topology_metrics(indices)
+    eye_metrics=eye_diameter_metrics(verts,snap,controls)
+    rendered=render_views(out,controls,height)
     # Report reproducible exact vertex parity, without claiming human realism.
     max_error=max(abs(human.data.vertices[i].co[j]-verts[i][j])
                   for i in range(len(verts)) for j in range(3))
@@ -196,12 +239,13 @@ def main():
                 'max_blender_vertex_deviation_m':max_error,
                 'height_m':bbox_height,
                 'degenerate_triangles':source_triangle_check(verts,indices),
-                'native_source':SOURCE},
+                'native_source':SOURCE,'topology':body_metrics,'eyes':eye_metrics},
         'morphology':controls['body.gender'],
         'population_reference':controls['appearance.population'],
         'hair_instances':snap['hair_count'],
         'renders':rendered,
         'visual_anatomy_approval':False,
+        'visual_inspection_required':['face_macro','hand_macro','feet_macro'],
         'limitations':['Face and hands are original MakeHuman low-detail baseline with local morphs',
                        'Vertex parity is not evidence of realistic skin/hair/eyes',
                        'Photographic identity and previous approved head not restored']}

@@ -9,7 +9,7 @@ import {validateSnapshot} from './snapshot-validation.mjs';
 
 const BASE=dirname(fileURLToPath(import.meta.url));
 const ARTIFACTS=resolve(BASE,'../../artifacts/manual-human-builder');
-const RENDER_FILES=new Set(['front.png','three_quarter.png','profile.png','report.json','anatomical_character.blend']);
+const RENDER_FILES=new Set(['front.png','three_quarter.png','profile.png','face_macro.png','hand_macro.png','feet_macro.png','report.json','anatomical_character.blend']);
 const TYPES={'.html':'text/html; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.png':'image/png','.json':'application/json','.blend':'application/octet-stream'};
 const JOBS=new Map();
 let busy=false;
@@ -49,8 +49,8 @@ async function runOne(job,blenderBin){
   });
   const raw=JSON.parse(await readFile(join(job.output,'report.json'),'utf8'));
   if(raw.schema!=='blank.anatomy-rebuild-report.v1'||raw.controls_applied!==Object.keys(job.spec.controls).length
-       ||!Array.isArray(raw.renders)||raw.renders.length!==3)throw Error('Blender evidence contract failed');
-  for(const name of ['front.png','three_quarter.png','profile.png','anatomical_character.blend']){
+       ||!Array.isArray(raw.renders)||raw.renders.length!==6)throw Error('Blender evidence contract failed');
+  for(const name of ['front.png','three_quarter.png','profile.png','face_macro.png','hand_macro.png','feet_macro.png','anatomical_character.blend']){
    if((await stat(join(job.output,name))).size<7000)throw Error('Missing output '+name);
   }
   job.report=raw;job.status='complete';job.completedAt=new Date().toISOString();

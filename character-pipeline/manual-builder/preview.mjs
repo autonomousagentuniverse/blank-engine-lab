@@ -48,6 +48,10 @@ export async function mountClayPreview(host,initial){
   const attribute=new THREE.BufferAttribute(position,3);attribute.setUsage(THREE.DynamicDrawUsage);
   geometry.setAttribute('position',attribute);geometry.setIndex(asset.body_indices);
   const body=new THREE.Mesh(geometry,skin);group.add(body);
+  // The helper eyeballs are topologically independent of the skin; preserve
+  // their pinned indexed vertices and deform measured sclera diameter directly.
+  const eyeVertexGroups=[...new Set(asset.eye_right_indices),...new Set(asset.eye_left_indices)];
+  const eyeIndexSets=[Array.from(new Set(asset.eye_right_indices)),Array.from(new Set(asset.eye_left_indices))];
   const eyes=[];
   for(const indices of [asset.eye_left_indices,asset.eye_right_indices]){
     const g=new THREE.BufferGeometry();g.setAttribute('position',attribute);g.setIndex(indices);
@@ -59,9 +63,40 @@ export async function mountClayPreview(host,initial){
     const e=new THREE.Mesh(irisSphere,iris),p=new THREE.Mesh(irisSphere,pupil);
     group.add(e,p);irises.push(e);pupils.push(p);
   }
-  const curlGeometry=new THREE.IcosahedronGeometry(1,1);
+  // Actual continuous curved follicles replace the rejected popcorn-like
+  // icospheres. A template contains six distinct tapered tubular strands;
+  // instances share scalp-rooted transforms, sent unchanged to Blender.
+  function hairTemplate(turns){
+    const positions=[],indices=[],sides=6,rings=13,strands=6;
+    for(let strand=0;strand<strands;strand++){
+      const phase=strand*2.3999632,offX=Math.cos(phase)*.40,offZ=Math.sin(phase)*.40;
+      const origin=positions.length/3;
+      for(let j=0;j<rings;j++){
+        const t=j/(rings-1),ang=2*Math.PI*turns*t+phase;
+        const x=offX+Math.sin(ang)*.24*t,z=offZ+Math.cos(ang)*.24*t;
+        const radius=.067*(1-.67*t)*(strand%2===0?1:.85);
+        for(let side=0;side<sides;side++){
+          const a=2*Math.PI*side/sides;
+          positions.push(x+radius*Math.cos(a),t,z+radius*Math.sin(a));
+        }
+      }
+      for(let j=0;j<rings-1;j++)for(let k=0;k<sides;k++){
+        const a=origin+j*sides+k,b=origin+j*sides+(k+1)%sides;
+        const c=a+sides,d=b+sides;
+        indices.push(a,c,b,b,c,d);
+      }
+    }
+    const g=new THREE.BufferGeometry();
+    g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+    g.setIndex(indices);g.computeVertexNormals();
+    return g;
+  }
+  const hairTemplates={
+    afro:hairTemplate(3.25),'short-curls':hairTemplate(2.0),
+    locs:hairTemplate(.3),straight:hairTemplate(0)
+  };
   const maxCurls=420;
-  const curls=new THREE.InstancedMesh(curlGeometry,hair,maxCurls);
+  const curls=new THREE.InstancedMesh(hairTemplates.afro,hair,maxCurls);
   curls.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
   curls.frustumCulled=false;group.add(curls);
   const tmp=new THREE.Object3D();
@@ -154,6 +189,28 @@ export async function mountClayPreview(host,initial){
     if(!Number.isFinite(actualHeight)||actualHeight<1)throw Error('Anatomical stature collapse');
     const statureCorrection=height/actualHeight;
     for(let i=1;i<deformed.length;i+=3)deformed[i]=(deformed[i]-sole)*statureCorrection;
+    // True eyeball diameter: scale the original CC0 eye geometry in situ.
+    // Previously the slider moved only the separately drawn iris and pupil.
+    const requestedEyeDiameter=CM(v,'face.eye_size');
+    for(const ids of eyeIndexSets){
+      let minx=Infinity,maxx=-Infinity,miny=Infinity,maxy=-Infinity,minz=Infinity,maxz=-Infinity;
+      for(const ix of ids){
+        const j=ix*3;
+        minx=Math.min(minx,deformed[j]);maxx=Math.max(maxx,deformed[j]);
+        miny=Math.min(miny,deformed[j+1]);maxy=Math.max(maxy,deformed[j+1]);
+        minz=Math.min(minz,deformed[j+2]);maxz=Math.max(maxz,deformed[j+2]);
+      }
+      const measuredDiameter=maxx-minx;
+      if(!Number.isFinite(measuredDiameter)||measuredDiameter<.01)throw Error('Invalid MakeHuman eyeball mesh diameter');
+      const eyeScale=requestedEyeDiameter/measuredDiameter;
+      const cx=(minx+maxx)*.5,cy=(miny+maxy)*.5,cz=(minz+maxz)*.5;
+      for(const ix of ids){
+        const j=ix*3;
+        deformed[j]=cx+(deformed[j]-cx)*eyeScale;
+        deformed[j+1]=cy+(deformed[j+1]-cy)*eyeScale;
+        deformed[j+2]=cz+(deformed[j+2]-cz)*eyeScale;
+      }
+    }
     position.set(deformed);attribute.needsUpdate=true;
     geometry.computeVertexNormals();
     for(const e of eyes)e.geometry.computeVertexNormals();
@@ -186,21 +243,29 @@ export async function mountClayPreview(host,initial){
     const style=v['hair.style'];
     if(style==='bald'){curls.count=0;return;}
     const density=clamp(Math.floor(NUM(v,'hair.density')*1.3),60,maxCurls);
-    const spread=clamp(CM(v,'hair.length')*.2*NUM(v,'hair.volume'),.008,.039);
     const curlFactor=NUM(v,'hair.curl');
+    const strandLength=clamp(CM(v,'hair.length')*(1-.68*curlFactor),.003,.38);
+    const strandWidth=.018*NUM(v,'hair.volume');
+    const scalpNormals=geometry.getAttribute('normal');
+    const up=new THREE.Vector3(0,1,0),direction=new THREE.Vector3();
+    curls.geometry=hairTemplates[style]||hairTemplates.afro;
     curls.count=density;
     for(let i=0;i<density;i++){
       // Deterministic, nonuniform follicles sampled from native scalp topology.
       const q=seedHeads[(i*223+Math.floor(i*i*.12))%seedHeads.length]*3;
       const x=deformed[q],y=deformed[q+1],z=deformed[q+2];
-      const jitter=Math.sin(i*2.183)*.27+Math.sin(i*3.513)*.14;
-      const size=clamp(spread*(.58+.17*jitter),.004,.02);
       const hairline=CM(v,'hair.hairline'),asym=NUM(v,'hair.asymmetry');
-      tmp.position.set(x+(Math.sin(i*7.3)*spread*.13)+asym*.013,y+spread*.34+Math.cos(i*8.5)*spread*.18-hairline*.17,z+Math.cos(i*5.9)*spread*.20);
-      if(style==='short-curls')tmp.scale.set(size*.7,size*.62,size*.72);
-      else if(style==='locs'||style==='straight')tmp.scale.set(size*.3,size*(1.2+curlFactor*.7),size*.34);
-      else tmp.scale.set(size,size*(.88+.17*curlFactor),size*.98);
-      tmp.rotation.set(i*.31,i*.77,i*.28);
+      const qid=q/3;
+      direction.set(scalpNormals.getX(qid),scalpNormals.getY(qid),scalpNormals.getZ(qid));
+      if(style==='straight'||style==='locs'){
+        direction.multiplyScalar(.36).add(new THREE.Vector3(0,-.9,0));
+      } else {direction.x*=.55;direction.z*=.55;direction.y=Math.max(.35,direction.y);}
+      direction.normalize();
+      const length=style==='short-curls'?strandLength*.66:strandLength;
+      const wobble=1+.13*Math.sin(i*2.183);
+      tmp.position.set(x+asym*.007,y-hairline*.08,z);
+      tmp.scale.set(strandWidth*wobble,length*wobble,strandWidth*wobble);
+      tmp.quaternion.setFromUnitVectors(up,direction);
       tmp.updateMatrix();curls.setMatrixAt(i,tmp.matrix);
     }
     curls.instanceMatrix.needsUpdate=true;
@@ -228,6 +293,16 @@ export async function mountClayPreview(host,initial){
       eye_left_indices:asset.eye_left_indices,
       eye_right_indices:asset.eye_right_indices,
       position_xyz:Array.from(deformed,round),
+      // Complete eye-ornament transforms (in metres). The Blender renderer
+      // MUST consume these instead of recomputing approximate positions.
+      eye_ornaments:{
+        irises:irises.map(o=>({position_xyz:o.position.toArray().map(round),scale_xyz:o.scale.toArray().map(round)})),
+        pupils:pupils.map(o=>({position_xyz:o.position.toArray().map(round),scale_xyz:o.scale.toArray().map(round)}))
+      },
+      hair_template:{
+        position_xyz:Array.from(curls.geometry.getAttribute('position').array,round),
+        indices:Array.from(curls.geometry.index.array)
+      },
       hair_count:curls.count,
       hair_matrices:Array.from(curls.instanceMatrix.array.slice(0,curls.count*16),round),
       height_m:height,
@@ -252,5 +327,5 @@ export async function mountClayPreview(host,initial){
   canvas.addEventListener('wheel',e=>{e.preventDefault();distance=clamp(distance*Math.exp(e.deltaY*.001),2.4,7);draw()},{passive:false});
   const ro=new ResizeObserver(resize);ro.observe(host);
   update(initial);
-  return {update,inspect,snapshot,source:{name:'CC0 MakeHuman hm08 + six target morphs',vertices:count,faces:asset.body_indices.length/3,macros:macroTargets.length},dispose(){ro.disconnect();geometry.dispose();for(const e of eyes)e.geometry.dispose();irisSphere.dispose();curlGeometry.dispose();curls.dispose();skin.dispose();sclera.dispose();iris.dispose();pupil.dispose();hair.dispose();floor.geometry.dispose();floor.material.dispose();renderer.dispose()}};
+  return {update,inspect,snapshot,source:{name:'CC0 MakeHuman hm08 + six target morphs',vertices:count,faces:asset.body_indices.length/3,macros:macroTargets.length},dispose(){ro.disconnect();geometry.dispose();for(const e of eyes)e.geometry.dispose();irisSphere.dispose();Object.values(hairTemplates).forEach(g=>g.dispose());curls.dispose();skin.dispose();sclera.dispose();iris.dispose();pupil.dispose();hair.dispose();floor.geometry.dispose();floor.material.dispose();renderer.dispose()}};
 }

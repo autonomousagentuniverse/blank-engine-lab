@@ -869,3 +869,25 @@ VISUAL INSPECTION OF ACTUAL RENDERS: existing 3D subject wears **blue shirt, jea
   Photorealism, hair/skin/eyes, body collisions and restoring the previously
   approved Blender head remain OPEN. Cloud Blender worker is still absent.
   Experimental GitHub work only; no Vercel deployment/production promotion.
+
+
+### Phase 32 — 2026-10-19 — True eye diameter, shared curved hair and macro visual gate [EXPERIMENTAL]
+
+- Source evidence: docs/anatomy-one-shot-visual-gate-20261019.md and three
+  explicitly unapproved candidate macro JPEGs in docs/assets/.
+- Real Chromium: MakeHuman index-defined eyeball diameter (not merely iris)
+  measured 24mm for each eye, then 30mm at a changed control value of 3cm.
+  Blender now copies exported eye-ornament transform matrices exactly.
+- Replaced icosphere popcorn hair with shared six-strand curved follicle
+  topology and scalp-root transforms. Browser and Blender consume the same
+  strand template. Shrinkage and normal growth direction tuned after reviewing
+  renders, though the Afro remains too bristly for approval.
+- Added six real Cycles inspection views: front, 3/4, profile, face macro,
+  hand macro, and elevated foot macro. Corrected a discovered bug that aimed
+  the first macro cameras toward the pelvis.
+- Blender enforces closed, manifold body topology and eye-size measurements.
+  Local HTTP-to-Blender genuine European masculine, 30mm-eye submission
+  returned all six views with zero open body edges. Maximum body-vertex
+  source discrepancy stayed 5.96e-8 metres. 13/13 Node tests passed.
+- Human realism, eyelid contact, detailed hair, hand and foot anatomy remain
+  VISUALLY UNAPPROVED. No Vercel deployment. Experiments stay on GitHub.

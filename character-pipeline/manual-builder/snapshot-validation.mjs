@@ -30,6 +30,24 @@ export function validateSnapshot(snapshot){
     .every(k=>/^#[a-f0-9]{6}$/i.test(material[k]||''))||
     !Number.isFinite(material.skin_roughness)||material.skin_roughness<.1||material.skin_roughness>1)
   throw Error('Missing browser-resolved material snapshot');
+ const ornaments=snapshot.eye_ornaments;
+ if(!ornaments||!['irises','pupils'].every(k=>Array.isArray(ornaments[k])&&ornaments[k].length===2))
+   throw Error('Missing exact eye-ornament positions for Blender');
+ for(const eye of [...ornaments.irises,...ornaments.pupils]){
+   if(!Array.isArray(eye.position_xyz)||eye.position_xyz.length!==3||
+      !Array.isArray(eye.scale_xyz)||eye.scale_xyz.length!==3||
+      !eye.position_xyz.every(n=>Number.isFinite(n)&&Math.abs(n)<=2.2)||
+      !eye.scale_xyz.every(n=>Number.isFinite(n)&&n>0&&n<.03))
+     throw Error('Invalid eye ornament transform');
+ }
+ const template=snapshot.hair_template;
+ if(!template||!Array.isArray(template.position_xyz)||!Array.isArray(template.indices)||
+    template.position_xyz.length<500||template.position_xyz.length>5000||
+    template.position_xyz.length%3!==0||template.indices.length<300||
+    template.indices.length%3!==0||
+    !template.position_xyz.every(n=>Number.isFinite(n)&&Math.abs(n)<2)||
+    !template.indices.every(i=>Number.isInteger(i)&&i>=0&&i<template.position_xyz.length/3))
+   throw Error('Invalid shared curved-hair topology');
  const count=snapshot.hair_count;
  if(!Number.isInteger(count)||count<0||count>420||
     !Array.isArray(snapshot.hair_matrices)||snapshot.hair_matrices.length!==16*count||

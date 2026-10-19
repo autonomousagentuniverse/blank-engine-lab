@@ -18,6 +18,11 @@ function canonicalFixture(){
   body_indices:baseMesh.body_indices,eye_left_indices:baseMesh.eye_left_indices,
   eye_right_indices:baseMesh.eye_right_indices,
   hair_count:0,hair_matrices:[],
+  hair_template:{position_xyz:Array(540).fill(0),indices:Array.from({length:306},(_,i)=>i%180)},
+  eye_ornaments:{
+    irises:[{position_xyz:[-.03,1.5,.14],scale_xyz:[.006,.006,.0013]},{position_xyz:[.03,1.5,.14],scale_xyz:[.006,.006,.0013]}],
+    pupils:[{position_xyz:[-.03,1.5,.141],scale_xyz:[.003,.003,.0011]},{position_xyz:[.03,1.5,.141],scale_xyz:[.003,.003,.0011]}]
+  },
   resolved_materials:{skin_color:'#482a20',skin_roughness:.56,
    sclera_color:'#dfd7cb',iris_color:'#281910',
    hair_color:'#171210',world_color:'#474951'}
@@ -170,4 +175,26 @@ test('Replica requires authentic immutable topology and has complete gender-inde
  const server=await readFile(join(base,'../character-pipeline/manual-builder/server.mjs'),'utf8');
  assert.match(server,/validateSnapshot\(submitted.snapshot\)/);
  assert.match(server,/build_replica.py/);
+});
+
+
+test('Measured eye geometry, six view renderer and shared curved follicle template remain connected',async()=>{
+ const preview=await readFile(join(base,'../character-pipeline/manual-builder/preview.mjs'),'utf8');
+ const blender=await readFile(join(base,'../character-pipeline/manual-builder/build_replica.py'),'utf8');
+ const server=await readFile(join(base,'../character-pipeline/manual-builder/server.mjs'),'utf8');
+ const html=await readFile(join(base,'../character-pipeline/manual-builder/index.html'),'utf8');
+ assert.match(preview,/requestedEyeDiameter=CM/);
+ assert.match(preview,/eye_ornaments:/);
+ assert.match(preview,/hair_template:/);
+ assert.match(preview,/hairTemplate\(3\.25\)/);
+ assert.match(blender,/snapshot\.get\('hair_template'\)/);
+ assert.match(blender,/snap\.get\('eye_ornaments'/);
+ assert.match(blender,/mesh_topology_metrics/);
+ assert.match(blender,/eye_diameter_metrics/);
+ for(const view of ['face_macro','hand_macro','feet_macro']){
+   assert.match(blender,new RegExp(view));
+   assert.match(html,new RegExp('id="'+view+'"'));
+   assert.match(server,new RegExp(view+'.png'));
+ }
+ assert.match(server,/raw\.renders\.length!==6/);
 });
