@@ -1,8 +1,5 @@
 name: EXPERIMENTAL True New Body Mesh One Shot Blender Cycles
 on:
-  push:
-    branches:
-      - experiment/independent-female-body-mesh-v1-20261018
   workflow_dispatch:
 permissions:
   contents: read

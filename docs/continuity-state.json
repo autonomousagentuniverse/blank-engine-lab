@@ -640,5 +640,37 @@
     "photorealism_approved": false,
     "production_deployed": false,
     "workflow_manual_only": true
+  },
+  "independent_topology_body_one_shot_20261018": {
+    "date": "2026-10-18",
+    "run_id": 39190389653,
+    "branch": "experiment/independent-female-body-mesh-v1-20261018",
+    "source_sha256": "a1c38165ae2d8d100e04919e4e57b35623ac9fabc1b0d2cb44bdfb7829fef570",
+    "artifact_id": 12159568290,
+    "artifact_url": "https://github.com/autonomousagentuniverse/blank-engine-lab/actions/runs/39190389653/artifacts/12159568290",
+    "blender_version": "4.5.3",
+    "render_engine": "CYCLES",
+    "new_authoring_cage_vertices": 2368,
+    "new_remeshed_body_vertices": 15512,
+    "new_remeshed_polygons": 15510,
+    "source_head_preserved_vertices": 4320,
+    "rig_bones": 53,
+    "body_topology_independent": true,
+    "face_topology_inherited": true,
+    "old_three_control_width_warp_used": false,
+    "render_png_count": 6,
+    "editable_blend_count": 2,
+    "technical_status": "PASS",
+    "visual_status": "FAIL",
+    "photorealism_approved": false,
+    "production_deployed": false,
+    "workflow_manual_only": true,
+    "known_defects": [
+      "floating source head neck seam",
+      "square shoulder volume",
+      "angular pelvic shelf",
+      "hands and toes lack detailed anatomy",
+      "face-body material mismatch"
+    ]
   }
 }
