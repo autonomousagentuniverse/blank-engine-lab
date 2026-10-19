@@ -65,20 +65,31 @@ def make_armature(height):
     return rig
 
 def assign_weights(body,rig,height):
+    """Joint-space limb weights for the MakeHuman A-pose.
+
+    A human's hand is not a horizontal Z slice. Earlier height-gated weights
+    often assigned fingers to Forearm or body, and abrupt shoulder/hip weights
+    tore the skin when walking. Use projected *arm-axis distance* instead,
+    with overlapping, smooth transitions to trunk and pelvis.
+    """
     h=height
     groups={name:body.vertex_groups.new(name=name) for name in BONES}
     stats=Counter()
-    # The native anatomy is an A-pose. Assign arms when clearly outside
-    # torso silhouette and legs beneath hip center; soften transitions
-    # at shoulders, hip and major bending joints.
+    shoulder=(.175,.79)
+    wrist=(.293,.584)
+    arm_dx=wrist[0]-shoulder[0]
+    arm_dz=wrist[1]-shoulder[1]
+    arm_sq=arm_dx*arm_dx+arm_dz*arm_dz
     for v in body.data.vertices:
         x,y,z=v.co
-        xabs=abs(x); side='R' if x>=0 else 'L'
+        xn=abs(x)/h
+        zn=z/h
+        side='R' if x>=0 else 'L'
         weights={}
         def add(name,w):
-            if w>1e-6:weights[name]=weights.get(name,0)+w
-        zn=z/h
-        # trunk layers: head/neck strongly localized, preserve face shape.
+            if w>1e-7:weights[name]=weights.get(name,0.0)+w
+
+        # Core layers are blended continuously at neck/chest/pelvis joints.
         if zn>.855:
             t=mix(.845,.885,zn)
             add('Neck',1-t);add('Head',t)
@@ -94,43 +105,41 @@ def assign_weights(body,rig,height):
         else:
             add('Pelvis',1)
 
-        if .535<zn<.835:
-            # Arm A-pose emerges laterally at shoulder, descends to wrist.
-            # Allow broad bands at shoulder/upper arm without deforming chest.
-            threshold=(.135 if zn>.745 else .158 if zn>.665 else .175)*h
-            arm_factor=mix(threshold,threshold+.039*h,xabs)
-            arm_factor*=mix(.535,.578,zn)*(1-mix(.800,.843,zn))
-            if arm_factor>.001:
-                if zn>=.72:
-                    p=mix(.765,.795,zn)
-                    limb={'UpperArm.'+side:1-p,'Clavicle.'+side:p}
-                elif zn>=.675:
-                    p=mix(.677,.718,zn)
-                    limb={'Forearm.'+side:1-p,'UpperArm.'+side:p}
-                else:
-                    p=mix(.567,.602,zn)
-                    limb={'Hand.'+side:1-p,'Forearm.'+side:p}
-                for name in weights:weights[name]*=(1-arm_factor)
-                for name,weight in limb.items():add(name,arm_factor*weight)
+        # Arm membership is spatially gated, not cut off at the hand's Z.
+        arm_factor=mix(.115,.193,xn)*mix(.47,.53,zn)*(1-mix(.790,.854,zn))
+        if arm_factor>1e-6:
+            t=((xn-shoulder[0])*arm_dx+(zn-shoulder[1])*arm_dz)/arm_sq
+            collar=1-mix(-.06,.16,t)
+            elbow=mix(.41,.59,t)
+            fingers=mix(.855,1.075,t)
+            limb={
+                'Clavicle.'+side:(1-fingers)*(1-elbow)*collar,
+                'UpperArm.'+side:(1-fingers)*(1-elbow)*(1-collar),
+                'Forearm.'+side:(1-fingers)*elbow,
+                'Hand.'+side:fingers
+            }
+            for name in weights:weights[name]*=(1-arm_factor)
+            for name,weight in limb.items():add(name,arm_factor*weight)
 
-        if zn<.535:
-            leg_factor=mix(.035,.08,xabs/h)*(1-mix(.492,.53,zn))
-            # Entire leg below mid-thigh belongs to one side, even at toes.
-            if zn<.40:leg_factor=1.0
-            if leg_factor>.001:
-                if zn>=.32:
-                    p=mix(.32,.375,zn)
-                    leg={'Shin.'+side:1-p,'Thigh.'+side:p}
-                elif zn>=.08:
-                    p=mix(.078,.123,zn)
-                    leg={'Shin.'+side:p,'Foot.'+side:1-p}
-                elif zn>=.029:
-                    p=mix(.028,.078,zn)
-                    leg={'Toes.'+side:1-p,'Foot.'+side:p}
-                else:
-                    leg={'Toes.'+side:1}
-                for name in weights:weights[name]*=(1-leg_factor)
-                for name,weight in leg.items():add(name,leg_factor*weight)
+        # Broad, soft pelvis/thigh blending prevents a crease at the groin.
+        # At low Z the two legs are physically separated, including toes.
+        leg_factor=(1-mix(.405,.585,zn))
+        if zn>.40:leg_factor*=mix(.005,.070,xn)
+        if leg_factor>1e-6:
+            if zn>=.275:
+                p=mix(.275,.345,zn)
+                leg={'Shin.'+side:1-p,'Thigh.'+side:p}
+            elif zn>=.075:
+                p=mix(.065,.125,zn)
+                leg={'Shin.'+side:p,'Foot.'+side:1-p}
+            elif zn>=.027:
+                p=mix(.025,.069,zn)
+                leg={'Toes.'+side:1-p,'Foot.'+side:p}
+            else:
+                leg={'Toes.'+side:1}
+            for name in weights:weights[name]*=(1-leg_factor)
+            for name,weight in leg.items():add(name,leg_factor*weight)
+
         total=sum(weights.values())
         if total<1e-9:raise RuntimeError('Rig missing weights for vertex '+str(v.index))
         for name,weight in weights.items():
@@ -419,6 +428,55 @@ def audit_deformation(rig,body,clip_names):
     bpy.context.scene.frame_set(1)
     return tests
 
+
+
+def audit_skin_strain(rig,body,limit=4.35):
+    """Reject spiking/skinning tears using evaluated edge-length preservation.
+
+    Motion audits only counting moving vertices previously let grotesquely
+    extended elbows, wrists and hip seams pass. Evaluate the real skinned
+    surface over locomotion and fight, not the unposed basemesh.
+    """
+    rest=[v.co.copy() for v in body.data.vertices]
+    edges=[(edge.vertices[0],edge.vertices[1]) for edge in body.data.edges]
+    eligible=[(a,b,(rest[a]-rest[b]).length) for a,b in edges
+              if (rest[a]-rest[b]).length>=.0001]
+    tracks=list(rig.animation_data.nla_tracks)
+    face_tracks=list(body.data.shape_keys.animation_data.nla_tracks)
+    deps=bpy.context.evaluated_depsgraph_get()
+    results={}
+    try:
+        for clip in ('Walk_InPlace','Jog_InPlace','Run_InPlace','Fight_Combo'):
+            for tr in tracks:tr.mute=tr.name!=clip
+            for tr in face_tracks:tr.mute=True
+            worst=0.0;worst_frame=0;over_four=0
+            for frame in (7,13,19,25,31,37,43):
+                bpy.context.scene.frame_set(frame)
+                evaluated=body.evaluated_get(deps)
+                mesh=evaluated.to_mesh()
+                try:
+                    if len(mesh.vertices)!=len(rest):
+                        raise RuntimeError('Skinned mesh changed topology')
+                    moved=[v.co.copy() for v in mesh.vertices]
+                    count=0
+                    for a,b,original in eligible:
+                        current=(moved[a]-moved[b]).length
+                        stretch=max(current/original, original/max(current,.000001))
+                        if stretch>worst:worst=stretch;worst_frame=frame
+                        if stretch>4:count+=1
+                    over_four=max(over_four,count)
+                finally:
+                    evaluated.to_mesh_clear()
+            results[clip]={'max_edge_length_ratio':round(worst,4),
+                           'worst_frame':worst_frame,
+                           'max_edges_over_4x':over_four,
+                           'sampled_frames':7}
+            if worst>limit:
+                raise RuntimeError(f'{clip} skin strain {worst:.2f}x exceeds {limit}x; reject torn anatomy')
+    finally:
+        for tr in tracks+face_tracks:tr.mute=True
+        bpy.context.scene.frame_set(1)
+    return results
 
 def audit_biomechanics(rig,height):
     """Measure actual posed ankle geometry, reject floating stance / root drift."""

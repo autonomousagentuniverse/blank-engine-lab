@@ -1082,3 +1082,12 @@ VISUAL INSPECTION OF ACTUAL RENDERS: existing 3D subject wears **blue shirt, jea
 - Project remains preview-only; no production merge or release. Sandbox
   still expires in ~30 minutes and output storage remains ephemeral.
 - Investigation and verification in docs/anatomy-job-recovery-20261019.md.
+
+### Phase 40 — 2026-10-19 — Fix animated arm ribbons and hip-skin tearing [EXPERIMENTAL]
+
+- New user Walk screenshot had severely distorted forearms/hands, visible hip strain and grainy/low-detail rendering. A Blender job finishing is not a visual realism pass.
+- Diagnosed height-only A-pose weight classification on actual Blender mesh. Baseline Walk at frame 13: maximum edge length distortion 9.94× with 39 edges >4×. Assigned arms by projected shoulder-to-wrist joint axis with smooth clavicle/upper-arm/forearm/hand transitions; broadened pelvis-to-thigh blend.
+- Full Blender audit after fix: Walk 3.751×/0 >4×; Jog 3.8745×/0; Run 4.1707×/2; Fight 3.1633×/0. Introduced hard evaluated mesh strain gate at 4.35× over seven frames of four clips and stored the evidence in report.json.
+- Real nine-animation 153-frame one-shot completed, 22-bone editable Blender scene, animated GLB and videos generated; original browser/Blender topology parity retained. 20/20 Node tests pass.
+- Site shows first-preview-in-progress quality status correctly and exposes the final skin-strain audit metrics rather than hiding deformation flaws.
+- **Not anatomically/motion-capture approved.** Run has two remaining sampled overstretched edges; fingers/face are under-detailed; animation clips are still in-place prototypes. No production merge. See docs/anatomy-joint-weight-recovery-20261019.md.

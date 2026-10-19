@@ -342,3 +342,19 @@ test('Nine-clip worker reports real progress and browser can reconnect after int
  assert.match(rig,/pair\[0\]==selected/);
  assert.match(rig,/encoding.replace\(dest\)/);
 });
+
+
+test('Skin rig assigns hands by shoulder-to-wrist joint axis and rejects excessive edge stretch',async()=>{
+ const rig=await readFile(join(base,'../character-pipeline/manual-builder/animation_rig.py'),'utf8');
+ const blender=await readFile(join(base,'../character-pipeline/manual-builder/build_replica.py'),'utf8');
+ const app=await readFile(join(base,'../character-pipeline/manual-builder/app.mjs'),'utf8');
+ assert.match(rig,/arm_sq=arm_dx\*arm_dx\+arm_dz\*arm_dz/);
+ assert.match(rig,/arm_factor=mix/);
+ assert.match(rig,/fingers=mix\(\.855,1\.075,t\)/);
+ assert.match(rig,/def audit_skin_strain\(/);
+ assert.match(rig,/skin strain .* exceeds/);
+ assert.match(blender,/skin_strain=audit_skin_strain\(rig,human\)/);
+ assert.match(blender,/'skin_strain':skin_strain/);
+ assert.match(app,/final biomechanics\/quality evidence pending/);
+ assert.match(app,/Skin deformation QA:/);
+});

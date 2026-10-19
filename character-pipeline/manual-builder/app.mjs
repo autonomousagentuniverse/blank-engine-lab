@@ -245,6 +245,9 @@ function showResults(job){
   'Animation: '+job.report.animation.bones+' bones · '+job.report.animation.clips.join(' / '),
   'Animation choices: '+job.report.animation.clips.length+' · 4 facial shape-key expressions',
   'Motion quality: FIRST PASS · in-place motion and approximate expressions',
+  'Skin deformation QA: '+Object.entries(job.report.animation.skin_strain||{})
+    .map(([action,metric])=>action.replace('_InPlace','')+' '+metric.max_edge_length_ratio.toFixed(2)+'× worst edge stretch')
+    .join(' · '),
   'Human realism is NOT visually approved',
   'Sandbox downloads expire after approximately 30 minutes; save your .blend immediately'
  ].join('\n');
@@ -270,6 +273,12 @@ function updateBuildProgress(job){
    renderedJob={...job,report:{animation:{previews:[],biomechanics:{}}}};
   }
   if(video.src!==new URL(src,location.href).href){video.src=src;video.load();}
+  if(job.status==='running'){
+   $('#animationQualityStatus').textContent='Playable '+ANIMATION_LABELS[activeAnimation]+
+     ' preview ready · '+p.renderedFrames+'/'+p.totalFrames+
+     ' Cycles frames rendered · final biomechanics/quality evidence pending';
+   $('#activeClipDescription').textContent='Early Blender preview. Remaining animations and final quality checks are still processing.';
+  }
  }
 }
 async function check(id){

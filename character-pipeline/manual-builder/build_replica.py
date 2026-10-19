@@ -12,7 +12,7 @@ import bpy, bmesh, json, math, os, sys, hashlib
 from pathlib import Path
 from mathutils import Matrix, Vector
 sys.path.insert(0,str(Path(__file__).resolve().parent))
-from animation_rig import make_armature, assign_weights, attach_to_head, create_animations, export_glb, audit_deformation, render_animation_previews, make_face_shape_keys, CLIPS, audit_biomechanics
+from animation_rig import make_armature, assign_weights, attach_to_head, create_animations, export_glb, audit_deformation, render_animation_previews, make_face_shape_keys, CLIPS, audit_biomechanics, audit_skin_strain
 
 SOURCE='makehumancommunity/mpfb2:3af0cd5a2ffba072e93a34e5f6f494fdc4813ddf'
 def fail(message):
@@ -252,6 +252,7 @@ def main():
     glb_path=export_glb(rig,human,attachments,out)
     motion=audit_deformation(rig,human,[a.name for a in animations])
     gait_mechanics=audit_biomechanics(rig,height)
+    skin_strain=audit_skin_strain(rig,human)
     # Preserve the original static character as a neutral inspection pose.
     for track in list(rig.animation_data.nla_tracks)+list(human.data.shape_keys.animation_data.nla_tracks):track.mute=True
     bpy.context.scene.frame_set(1)
@@ -300,6 +301,7 @@ def main():
           'glb_bytes':os.stat(glb_path).st_size,
           'vertex_motion_audit':motion,
           'biomechanics':gait_mechanics,
+          'skin_strain':skin_strain,
           'previews':animation_videos,
           'facial_shape_keys':face_counts,
           'skinning_bone_coverage':bone_counts,
