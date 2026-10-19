@@ -705,7 +705,7 @@
       "cloud_blender_worker": false,
       "local_blender_nondefault_morphs": "EXPLICITLY REJECTED",
       "browser_tests": "PENDING",
-      "visual_approval": "PENDING",
+      "visual_approval": "technical pass; photorealism not approved",
       "vercel_preview": "PENDING",
       "production_deployed": false,
       "real_chromium_loaded": true,
@@ -720,7 +720,25 @@
         "render.samples"
       ],
       "next_sweep": "PENDING",
-      "preview_deployed": false
+      "preview_deployed": false,
+      "repeat_sweep": {
+        "total": 93,
+        "observable": 92,
+        "blender_only": [
+          "render.samples"
+        ]
+      },
+      "node_tests": {
+        "passed": 11,
+        "failed": 0
+      },
+      "real_browser_errors": [],
+      "real_screenshots": [
+        "feminine-african",
+        "masculine-african",
+        "masculine-east-asian"
+      ],
+      "mobile_selector_visibility": "FIXED default open, pending retest"
     }
   }
 }

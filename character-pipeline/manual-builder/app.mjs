@@ -99,7 +99,7 @@ function makeInput(c){
 const widgets=[];
 for(const [name,entries] of groups){
  const details=document.createElement('details');details.className='group';
- details.open=['Body','Hair','Skin & appearance','Feet & toes'].includes(name);
+ details.open=['Appearance & morphology','Body','Hair','Skin & appearance','Feet & toes'].includes(name);
  const summary=document.createElement('summary');
  const count=document.createElement('small');count.textContent=entries.length+' controls';
  summary.append(document.createTextNode(name),count);details.append(summary);
