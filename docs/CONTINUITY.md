@@ -1032,34 +1032,27 @@ VISUAL INSPECTION OF ACTUAL RENDERS: existing 3D subject wears **blue shirt, jea
 - Current motion/expression quality VISUAL HOLD: gestures stylized,
   facial morph approximation, no foot IK or contact-aware locomotion.
 
+### Phase 38 — 2026-10-19 — Corrected gait biomechanics and non-grainy video [EXPERIMENTAL]
 
-### Phase 38 — 2026-10-19 — Screenshot biomechanics & video fidelity corrections [EXPERIMENTAL]
-
-- Real mobile Jog screenshot revealed stiff / floating gait and grainy output.
-  Actual Blender motion probe uncovered a root-space bug: applying the desired
-  world Z height to a bone-local Z channel translated the pelvis along scene
-  Y instead of up/down. Converted root motion through the inverse rest-space
-  matrix to fix unintended horizontal hip drift.
-- Gait now solves a height-scaled two-segment sagittal knee IK for each leg
-  using ankle trajectory goals, alternating near-ground stance vs lifted
-  swing, coordinated pelvis loading, torso counter-rotation, shoulder
-  adduction and opposing arm swing. Foot and toe pitch follow gait phase.
-  No claim of collision-aware inverse dynamics or motion-capture realism.
-- Actual Blender rig-pose QA at 17 frames measures left/right ankle stance,
-  swing height and sagittal range for walk/jog/run; fails when ankle stance
-  floats >2.5cm from target or hip slides horizontally.
-- Probe at 172cm: walk swing clearance 6.66cm, jog 12.24cm and run 17.42cm,
-  and both ankles approach the target grounded height around 0.12 metres.
-- The screenshot's noisy video came from Cycles 2 spp at max 360px and
-  only 13 frames / 8fps. Updated animation renderer to max 640px with
-  12-24 spp, scene and per-view-layer denoising and 17 frames / 12fps.
-  True Blender completed a 640px/12sample job generating all nine H264
-  clips, plus editable .blend and GLB; 17-frame 460x640 jog video confirmed.
-- UI now reports each generated preview's resolution/samples/denoising and
-  walk/jog/run stance/swing metric next to playable animation, rather
-  than just a generic quality disclaimer.
-- 18/18 Node regression PASS, dedicated Blender bone-pose gate PASS.
-  Quality is technically improved and less noisy, but anatomical/motion
-  realism remains on VISUAL HOLD.
-- Provenance: docs/anatomy-biomechanics-preview-quality-20261019.md and
-  test/animation-biomechanics.probe.py.
+- Phone screenshot found Jog in place looked physically ungrounded and image
+  heavily grainy. Forensics isolated world/local root axis mismatch and
+  video quality capped at 360px, 2 Cycles samples.
+- Root vertical height now transformed to armature-bone coordinates before
+  keyframing. Walking, jogging and running use two-bone sagittal knee IK,
+  grounded ankle stance versus lifted swing targets, pelvis load/bob,
+  opposing arm swing, shoulders drawn toward body and ankle/toe pitch.
+- Real Blender frame-pose probe verifies left/right stance and clearance
+  for each movement. Walk/Jog/Run swing lift 6.66/12.24/17.42cm at 172cm.
+- Nine actual animation videos now render at up to 640px, 12–24 samples,
+  Cycles denoising and 17 frames at 12fps. Build report includes preview
+  image quality and gait diagnostics and page displays these measurements.
+- Full Blender 640px 12 spp nine-clip render passed; real local HTTP build
+  generated all clips and served MP4, GLB and .blend with correct metadata;
+  18 Node tests and direct Blender biomechanics test pass.
+- Biomechanics is a first-pass geometric kinematics approach, not realistic
+  contact forces, gait capture, foot-sole IK or muscle simulation.
+- Docs: docs/anatomy-biomechanics-preview-quality-20261019.md.
+- Incident: initial experimental commit 8850643 mistakenly contained
+  truncated files from a connector binary transfer. That commit is invalid.
+  Reconstructed complete sources have been independently checked by Git
+  blob hash and their tests rerun; no production changes.

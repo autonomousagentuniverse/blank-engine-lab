@@ -9,4 +9,60 @@
 <main class="layout">
 <aside class="controls"><div class="toolbar"><div><strong>Manual measurements</strong><small>Preview updates instantly; Blender/Cycles samples are export-only.</small></div><div class="seed-preset"><span class="eyebrow">LOADED CHARACTER PRESET</span><strong id="presetName">Original figure · Dark skin / natural Afro</strong><small id="presetDescription">Full-body woman, medium build, dark skin, natural Afro · parameter approximation of our previous target, not the preserved Blender head geometry.</small></div>
 <input id="search" aria-label="Search controls" placeholder="Search anatomy, hair, toe…" autocomplete="off"></div>
-<p style="margin:8px���q�^
+<p style="margin:8px 14px 13px;color:#b9bebf;font-size:11px;line-height:1.55">Anatomy references are broad presets, not biological definitions of race or identity. You can independently edit complexion, hair and every feature. <b>Cycles samples</b> are Blender-only.</p><section id="animationStudio" class="studio-controls" aria-label="Animation Studio">
+ <div class="eyebrow">ANIMATION STUDIO / SELECT AND PLAY</div>
+ <h3>Character animation</h3>
+ <p>Choose any animation. Submit once to create all nine real Blender clips; then tap any action to play it without another rebuild.</p>
+ <div class="studio-subtitle">Body movement</div>
+ <div class="studio-buttons" role="group" aria-label="Body animation choices">
+  <button type="button" class="studio-action" data-action="idle">Idle</button>
+  <button type="button" class="studio-action" data-action="walk" aria-pressed="true">Walk</button>
+  <button type="button" class="studio-action" data-action="jog">Jog</button>
+  <button type="button" class="studio-action" data-action="run">Run</button>
+  <button type="button" class="studio-action" data-action="fight">Fight</button>
+ </div>
+ <div class="studio-subtitle">Facial expressions</div>
+ <div class="studio-buttons" role="group" aria-label="Facial expression choices">
+  <button type="button" class="studio-action" data-action="happy">Happy face</button>
+  <button type="button" class="studio-action" data-action="sad">Sad face</button>
+  <button type="button" class="studio-action" data-action="angry">Angry face</button>
+  <button type="button" class="studio-action" data-action="laugh">Laugh</button>
+ </div>
+ <p id="animationChoiceStatus" role="status" aria-live="polite">Walk selected. Generate a Blender build to play it.</p>
+</section>
+<div id="sections" class="sections"></div>
+
+<div class="actions"><div id="dirty" class="muted">Default specification</div>
+<button id="submit" class="primary">Rebuild full character in Blender <span aria-hidden="true">↗</span></button>
+<div class="minor"><button id="save">Export JSON</button><label class="import">Import JSON<input id="import" type="file" accept=".json,application/json" hidden></label><button id="reset" title="Restore the previous character proportions">Restore figure</button></div></div>
+</aside>
+<section class="workspace"><div class="workspace-head"><div><span class="eyebrow">ANATOMY / INTERACTIVE GEOMETRY</span><h2>Human basemesh preview</h2></div><div id="buildStatus" class="indicator">Original figure preset</div></div>
+<div class="hero">
+<div id="livePreview" class="live-preview" aria-label="Interactive anatomy preview">
+ <div id="clayViewport" class="clay-viewport"></div>
+ <div class="live-tag"><span class="live-dot"></span> CONNECTED HUMAN MESH · LIVE</div>
+ <div class="preview-hint">DRAG TO ORBIT · SCROLL TO ZOOM · CHANGE ANY ANATOMY CONTROL</div>
+ <div id="previewState" class="preview-state" role="status">Loading CC0 anatomy mesh…</div>
+</div>
+<div id="images" class="images" hidden>
+<figure><img id="front" alt="Actual Blender front view, head to toes"><figcaption>01 · FRONT</figcaption></figure>
+<figure><img id="three_quarter" alt="Actual Blender three-quarter view, head to toes"><figcaption>02 · THREE-QUARTER</figcaption></figure>
+<figure><img id="profile" alt="Actual Blender side profile, head to toes"><figcaption>03 · PROFILE</figcaption></figure>
+<figure><img id="face_macro" alt="Blender face detail inspection including eyes and lips"><figcaption>04 · FACE DETAIL</figcaption></figure>
+<figure><img id="hand_macro" alt="Blender hand and fingers detail"><figcaption>05 · HAND DETAIL</figcaption></figure>
+<figure><img id="feet_macro" alt="Blender feet and toes detail"><figcaption>06 · FOOT DETAIL</figcaption></figure></div>
+</div>
+<section id="animations" class="animation-section" hidden aria-label="Playable Blender animation">
+ <div class="eyebrow">REAL BLENDER ANIMATION</div>
+ <h3 id="activeClipTitle">Walk in place</h3>
+ <p id="activeClipDescription">Select any action in Animation Studio to play its corresponding Blender-rendered clip. The GLB contains all nine animation clips.</p>
+ <video id="activeAnimationVideo" controls muted loop playsinline preload="metadata" aria-label="Selected animation playback"></video>
+ <p id="animationQualityStatus" role="status" aria-live="polite">Video quality and biomechanical measurements appear after generation.</p>
+ <p>Facial expressions use actual mesh shape keys. Motions and expressions are prototype animations, not motion-capture-quality performances.</p>
+</section>
+<div class="bottom-grid"><article class="info"><div class="eyebrow">BUILD EVIDENCE</div><div id="report">This preview deforms a connected MakeHuman CC0 anatomical basemesh instead of synthetic cylinders. Blender/Cycles output still requires a real worker.</div><div id="artifactLinks" class="links"></div></article>
+<article class="info"><div class="eyebrow">PIPELINE STATUS</div><div class="pipeline"><span>01 · Adjust controls</span><span>02 · Submit JSON</span><span>03 · Reconstruct topology</span><span>04 · Blender Cycles render</span><span>05 · Rig 22 joints</span><span>06 · Animate + export GLB</span></div><pre id="log"></pre></article></div>
+<div class="footnote">This is a live browser-authored anatomical clay preview, NOT a Blender Cycles render or photoreal human. Use skin color mode (disable Clay mode) to preview selected pigment. Full Blender rebuild remains a separate worker operation.</div>
+</section>
+</main><script type="module" src="./app.mjs"></script>
+</body></html>
