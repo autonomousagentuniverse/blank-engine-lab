@@ -22,10 +22,13 @@ function queuePreview(){
  previewPending=true;
  requestAnimationFrame(()=>{previewPending=false;previewUpdater(values)});
 }
-import('./preview.mjs').then(({mountClayPreview})=>{
- const viewport=mountClayPreview($('#clayViewport'),values);
+import('./preview.mjs').then(async ({mountClayPreview})=>{
+ $('#previewState').textContent='Loading connected CC0 human topology…';
+ const viewport=await mountClayPreview($('#clayViewport'),values);
  previewUpdater=next=>viewport.update(next);
- $('#previewState').textContent='LIVE · Full body, turntable view';
+ viewport.update(values); // Apply edits made while the source mesh was downloading.
+ $('#previewState').textContent='LIVE · CC0 MakeHuman · '+viewport.source.vertices.toLocaleString()+' vertices';
+ $('#report').textContent='Connected CC0 MakeHuman hm08 basemesh: '+viewport.source.vertices.toLocaleString()+' vertices and '+viewport.source.faces.toLocaleString()+' body triangles. Browser parameters deform this mesh approximately. This is NOT Blender, not the previously preferred head mesh, and not photorealistic.';
 }).catch(err=>{
  $('#previewState').textContent='3D renderer unavailable: '+err.message;
  $('#report').textContent='WebGL preview could not initialize; your controls and exported JSON still work.';
@@ -33,7 +36,7 @@ import('./preview.mjs').then(({mountClayPreview})=>{
 const numberText=(c,value)=>c.unit==='ratio'&&c.step<.01?Number(value).toFixed(3):String(value);
 function note(){
  $('#dirty').textContent=dirty?dirty+' parameter change'+(dirty===1?'':'s')+' since last rebuild':'Starting figure: '+PRESET_NAME;
- $('#count').textContent=CONTROLS.length+' fully bound adjustable variables';
+ $('#count').textContent=CONTROLS.length+' saved controls · browser morph subset';
  localStorage.setItem(SAVED,JSON.stringify({schema:SCHEMA,controls:values}));
  queuePreview();
 }
@@ -126,7 +129,7 @@ function exportSpecification(data,name){
 }
 if(HOSTED){
  build.innerHTML='Export Blender rebuild request <span aria-hidden="true">↗</span>';
- $('#report').textContent='Live geometry preview ready. This hosted preview has no cloud Blender executor. Export the exact controls for a real Blender build.';
+ $('#report').textContent='Loading licensed human basemesh. Hosted preview has no cloud Blender executor; Submit exports the 91-control rebuild request.';
 }
 function status(value){$('#buildStatus').textContent=value}
 function showResults(job){

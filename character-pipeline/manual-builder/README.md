@@ -52,3 +52,11 @@ This is an **anatomical clay/proportion prototype**, not a photorealistic human.
 ## Deployment gate
 
 Do not deploy Vercel or promote experimental output into production without an explicit owner instruction. Manually inspect hip/thigh silhouette, stance, hands/fingers, toes, head proportions, hairline, face and skin from matched views first.
+
+## Anatomical basemesh replacement, 2026-10-19
+
+The user rejected the synthetic geometry screenshot for v2 (tubular neck and torso, impossible facial anatomy, joint seams and unrealistic hair). V3 now begins with the genuine CC0 MakeHuman hm08 basemesh. Source: `makehumancommunity/mpfb2`, pinned commit `3af0cd5a2ffba072e93a34e5f6f494fdc4813ddf`, file `src/mpfb/data/3dobjs/base.obj`, SHA `d26635e9326e3cca30778fd7b9c00062b03cce09`. The original OBJ explicitly declares CC0 (2020 Data Collection AB, Joel Palmius, Jonas Hauquier).
+
+A deterministic converter keeps the original `body` group (13,380 body vertices, 26,756 triangles) plus L/R eye helpers while excluding all rigging and clothing helper faces. 710 KB JSON stores native-space indexed coordinates; browser uses the original contiguous body surface and morphs its vertices via smooth local masks. No manually assembled body primitives. Small iris/pupil spheres and instanced afro clusters remain separate. The user-approved head has NOT been imported; facial realism needs independent review.
+
+The 91-field schema persists. Browser deformation implements only a subset (including height, body proportions, some limb and facial adjustments, hair, skin and light); remaining Blender-only controls are saved/exported and are not falsely claimed to affect WebGL. Hosted Submit exports JSON; it does NOT launch Blender. Mocked Three.js lifecycle test checks repeated finite-coordinate updates, not actual pixels. Original source provenance is preserved; production deployment remains unchanged.
