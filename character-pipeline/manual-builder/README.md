@@ -72,3 +72,43 @@ Two new controls bring the declared schema to **93** (`blank.manual-human-builde
 **Provenance:** MakeHuman macro assets are independently licensed CC0; they are broad interpolated adult shape references, not exact ethnicities, race identities, gender identities, or the previous approved proprietary head. Genuine appearance variation is individual and user-editable.
 
 **Verified baseline QA:** Headless Chromium/SwiftShader loaded six real pinned morph assets and confirmed all 93 controls can be changed: 92 produce a measurable preview change; Cycles samples is the sole Blender-only option. 11/11 Node tests pass. Mobile Appearance & morphology panel is expanded by default; actual mobile selector/persistence testing still required before release.
+
+
+## V5: exact live-browser to one-shot Blender reconstruction — 2026-10-19
+
+The old local Blender builder generated a different procedural humanoid and rejected
+masculine and non-African morphology. **Do not use that generator for replicas.**
+
+The new canonical path is the browser's actual deformed MakeHuman CC0 skin and eyes
+plus every control, pigment/material state and scalp hair instance. Submit from
+the local builder invokes \`build_replica.py\`, never the old \`build_human.py\`.
+The hosted Vercel preview exports \`blank-human-one-shot-replica.json\` because
+no cloud Blender worker is connected. Run an exported snapshot with:
+
+\`\`\`sh
+blender -b --factory-startup \
+  --python character-pipeline/manual-builder/build_replica.py \
+  -- blank-human-one-shot-replica.json ./artifacts/one-shot
+\`\`\`
+
+The worker constructs a clean Blender scene with identical indexed body vertices,
+source-native eye surfaces, exported hair matrices and resolved appearance,
+saves \`anatomical_character.blend\`, renders front/three-quarter/profile PNGs,
+and writes a reproducibility report. A strict validator rejects missing/changed
+CC0 topology, non-finite coordinates, incorrect measured stature, malformed hair
+transforms or unsupported snapshots. Geometry normalization guarantees the selected
+body height is actually measured in the finished browser mesh.
+
+**Verified in a real Vercel Sandbox with Blender 5.0.1 and headless Chromium:**
+two live browser presets (African feminine and European masculine), six Blender
+renders, two .blend files, both 13,524 vertices/26,756 triangles, no degenerate
+triangles, 172 cm measured height, maximum vertex divergence 5.96e-8 metres.
+A real HTTP JSON POST of the browser-exported masculine model completed a Blender
+job and returned the front PNG. The 12 Node regression tests passed. No Vercel
+deployment was performed.
+
+This establishes exact reconstructed topology, **not anatomical visual approval**.
+The MakeHuman face, iris/lid contact, fingers, toe detail, hair realism, materials,
+body intersections and likeness of the previously accepted head still need
+visual review and corrective modeling. One-shot means rebuild a new scene from
+the captured current mesh, not patch or reuse the rejected old character.

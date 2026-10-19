@@ -838,3 +838,34 @@ VISUAL INSPECTION OF ACTUAL RENDERS: existing 3D subject wears **blue shirt, jea
 - Appearance preset seeded independent skin #dfb9a3 and straight hair; then manually changed skin to #186239. After real browser reload the skin override #186239 and masculine morphology persisted in localStorage. Zero browser/page errors.
 - Functional controls: 92/93 live settings changed diagnostic geometry/material/hair/lighting/canvas pixels; `render.samples` intentionally Blender/Cycles only and labelled. 11/11 Node tests pass. Visually confirmed separate feminine African, masculine African and masculine East Asian renders. These are still anatomical previews, not photoreal quality; older approved Blender head not restored.
 - Next action: deploy tested branch to Vercel experimental preview (not production), verify READY and exact commit. Cloud Blender worker absent. Do not claim supported cloud Blender generation.
+
+
+### Phase 31 — 2026-10-19 — Exact anatomy one-shot reconstruction [EXPERIMENTAL, TECHNICAL PASS]
+
+- Corrected the mismatch between the WebGL MakeHuman deformations and legacy
+  Blender procedural body. A canonical \`blank.anatomy.snapshot.v1\` now contains
+  the actual 13,524 WebGL vertices, unchanged MakeHuman body/eye triangle
+  indices, 93 control values, resolved material colors and scalp hair matrices.
+  Blender \`build_replica.py\` reconstructs THIS body in a fresh scene.
+- The local Node server now validates the immutable CC0 topology, numeric
+  metric bounds, 1-micron precision and follicle data; \`POST /api/rebuild\`
+  invokes the actual replica instead of old \`build_human.py\`. The hosted
+  Vercel action exports the same canonical JSON and does not invent a render.
+- Found and fixed a concrete measurement error: full-body macro morphs
+  changed the silhouette height despite a fixed Height control. Stature is
+  normalized on the FINISHED WebGL vertex set and measured crown-to-sole
+  before Blender export.
+- Real browser Chromium test: African feminine -> European masculine changed
+  shape hash \`a59d224a\` -> \`ce76a398\`, no browser errors; snapshots
+  verified to contain 13,524 vertices and original body topology.
+- Blender 5.0.1 Cycles generated front, three-quarter and profile PNG plus
+  an editable .blend for EACH browser-exported feminine and masculine human:
+  both 26,756 body triangles, 0 degenerate triangles, 1.72m measured stature,
+  max Blender coordinate discrepancy 5.96e-8m. Real local HTTP POST of the
+  browser-generated masculine/european specification finished a Blender job,
+  supplied a report and served the output PNG. 12/12 Node tests passed.
+- **Do not imply visual anatomy certification:** Many local sliders are still
+  approximate deformations and may distort face, wrist, fingers and toes.
+  Photorealism, hair/skin/eyes, body collisions and restoring the previously
+  approved Blender head remain OPEN. Cloud Blender worker is still absent.
+  Experimental GitHub work only; no Vercel deployment/production promotion.

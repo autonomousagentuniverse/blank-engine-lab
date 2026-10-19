@@ -19,7 +19,7 @@ try{
 $('#presetName').textContent=PRESET_NAME;
 $('#presetDescription').textContent=PRESET_DESCRIPTION+' · Body morphology and ancestry-inspired references can be changed independently of skin tone.';
 let dirty=0,activeJob=null,poll=null;
-let previewUpdater=()=>{}, previewPending=false;
+let previewUpdater=()=>{}, previewSnapshot=null, previewPending=false;
 function queuePreview(){
  if(previewPending)return;
  previewPending=true;
@@ -29,9 +29,10 @@ import('./preview.mjs').then(async ({mountClayPreview})=>{
  $('#previewState').textContent='Loading connected CC0 human topology…';
  const viewport=await mountClayPreview($('#clayViewport'),values);
  previewUpdater=next=>viewport.update(next);
+ previewSnapshot=()=>viewport.snapshot();
  viewport.update(values); // Apply edits made while the source mesh was downloading.
  $('#previewState').textContent='LIVE · MakeHuman · '+viewport.source.vertices.toLocaleString()+' vertices · '+viewport.source.macros+' real morphs';
- if(new URLSearchParams(location.search).has('qa'))window.__blankQA={inspect:()=>viewport.inspect(),values:()=>({...values}),update:(id,value)=>{if(!(id in values))throw Error('Unknown '+id);values[id]=value;viewport.update(values);return viewport.inspect()}};
+ if(new URLSearchParams(location.search).has('qa'))window.__blankQA={inspect:()=>viewport.inspect(),snapshot:()=>viewport.snapshot(),values:()=>({...values}),update:(id,value)=>{if(!(id in values))throw Error('Unknown '+id);values[id]=value;viewport.update(values);return viewport.inspect()}};
  $('#report').textContent='CC0 MakeHuman: '+viewport.source.vertices.toLocaleString()+' mesh vertices, '+viewport.source.faces.toLocaleString()+' triangles, '+viewport.source.macros+' authentic adult macro morphs. Preview settings now affect the browser model except Blender Cycles samples; body shapes/appearance are approximations, not identity or photorealism.';
 }).catch(err=>{
  $('#previewState').textContent='3D renderer unavailable: '+err.message;
@@ -155,16 +156,19 @@ function showResults(job){
  for(const name of ['front','three_quarter','profile']){
   $('#'+name).src='/outputs/'+id+'/'+name+'.png';
  }
- const g=job.report.geometry;
+ const g=job.report.mesh;
  $('#report').textContent=[
-  'Generation: '+job.report.generator,
-  'Applied controls: '+job.report.controls_applied,
-  'Height: '+(g.height_m*100).toFixed(1)+' cm · pelvis target: '+(g.total_hip_width_target_m*100).toFixed(1)+' cm',
-  'Skin mesh: '+g.skin_union_vertices.toLocaleString()+' vertices / '+g.skin_union_faces.toLocaleString()+' faces',
-  'Hands / feet: '+g.hands+' / '+g.feet+' · five individually modeled digits each',
-  'Hair: '+g.hair_style+' · '+g.hair_strand_groups+' authored strand groups',
-  'Quality: anatomical clay prototype — human visual review pending'
- ].join('\n');
+  'Generator: '+job.report.generator,
+  'Controls: '+job.report.controls_applied+' / 93',
+  'Morphology: '+job.report.morphology+' · reference: '+job.report.population_reference,
+  'Source: '+g.native_source,
+  'CC0 body: '+g.vertices.toLocaleString()+' vertices / '+g.triangles.toLocaleString()+' faces',
+  'Stature: '+(g.height_m*100).toFixed(1)+' cm',
+  'Browser/Blender vertex deviation: '+g.max_blender_vertex_deviation_m.toFixed(8)+' m',
+  'Degenerate faces: '+g.degenerate_triangles,
+  'Hair instances: '+job.report.hair_instances,
+  'Human realism is NOT visually approved'
+ ].join('\\n');
  const links=$('#artifactLinks');links.replaceChildren();
  for(const [label,name] of [['Editable Blender','anatomical_character.blend'],['JSON evidence','report.json']]){
   const a=document.createElement('a');a.href='/outputs/'+id+'/'+name;a.textContent=label;a.download=name;links.append(a);
@@ -186,11 +190,14 @@ async function check(id){
 build.addEventListener('click',async()=>{
  if(activeJob)return;
  try{
-  const payload=validateRequest({schema:SCHEMA,controls:values});
+  // Snapshot matches the last displayed shape and is the only mesh Blender may use.
+  if(!previewSnapshot)throw Error('MakeHuman geometry still loading; replica export refused');
+  previewUpdater(values);
+  const payload={...validateRequest({schema:SCHEMA,controls:values}),snapshot:previewSnapshot()};
   if(HOSTED){
-   exportSpecification(payload,'blank-human-anatomy-rebuild-request.json');
+   exportSpecification(payload,'blank-human-one-shot-replica.json');
    status('REBUILD SETTINGS EXPORTED');
-   $('#report').textContent='The JSON of the current anatomy has been exported. Live WebGL geometry reacts immediately. A Blender/Cycles render is NOT generated on Vercel until a cloud worker is connected.';
+   $('#report').textContent='Canonical MakeHuman mesh and every control exported for a Blender one-shot rebuild. Geometry is identical at the vertex level; hosted Vercel cannot execute Blender until a worker is connected.';
    return;
   }
   build.disabled=true;status('SUBMITTING…');$('#log').textContent='';

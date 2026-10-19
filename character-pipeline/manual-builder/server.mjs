@@ -5,6 +5,7 @@ import {randomUUID} from 'node:crypto';
 import {dirname, resolve, join, extname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {defaultRequest,validateRequest} from './controls.mjs';
+import {validateSnapshot} from './snapshot-validation.mjs';
 
 const BASE=dirname(fileURLToPath(import.meta.url));
 const ARTIFACTS=resolve(BASE,'../../artifacts/manual-human-builder');
@@ -17,13 +18,13 @@ const json=(res,status,body)=>respond(res,status,JSON.stringify(body),'.json');
 function respond(res,status,body,extension){
  res.writeHead(status,{'Content-Type':TYPES[extension]||'application/octet-stream',
   'Cache-Control':'no-store','X-Content-Type-Options':'nosniff',
-  'Content-Security-Policy':"default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; script-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://cdn.jsdelivr.net; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"});
+  'Content-Security-Policy':"default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; script-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://cdn.jsdelivr.net; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"});
  res.end(body);
 }
 async function limitedJson(req){
  let data='';for await(const part of req){
   data+=part.toString('utf8');
-  if(data.length>36000)throw Error('Request too large');
+  if(data.length>4500000)throw Error('Request too large');
  }
  try{return JSON.parse(data)}catch{throw Error('Invalid JSON')}
 }
@@ -33,7 +34,7 @@ async function runOne(job,blenderBin){
   await mkdir(job.output,{recursive:true});
   const settings=join(job.output,'settings.json');
   await writeFile(settings,JSON.stringify(job.spec,null,2)+'\n',{flag:'wx'});
-  const args=['--background','--factory-startup','--python',join(BASE,'build_human.py'),'--',settings,job.output];
+  const args=['--background','--factory-startup','--python',join(BASE,'build_replica.py'),'--',settings,job.output];
   await new Promise((ok,fail)=>{
    const child=spawn(blenderBin,args,{cwd:BASE,stdio:['ignore','pipe','pipe'],env:{...process.env,PYTHONUNBUFFERED:'1'}});
    let done=false;
@@ -62,7 +63,8 @@ export function createBuilderServer({blenderBin=process.env.BLENDER_BIN||'blende
    const url=new URL(req.url||'/', 'http://localhost');
    if(req.method==='GET' && url.pathname==='/api/defaults')return json(res,200,defaultRequest());
    if(req.method==='POST'&&url.pathname==='/api/rebuild'){
-    const spec=validateRequest(await limitedJson(req));
+    const submitted=await limitedJson(req);
+    const spec={...validateRequest(submitted),snapshot:validateSnapshot(submitted.snapshot)};
     if(queue.length>=3)return json(res,429,{error:'Rebuild queue is full'});
     const id=randomUUID();const job={id,status:'queued',submittedAt:new Date().toISOString(),spec,
       output:join(ARTIFACTS,id),log:'',report:null,error:null};
@@ -84,7 +86,7 @@ export function createBuilderServer({blenderBin=process.env.BLENDER_BIN||'blende
     const bytes=await readFile(join(job.output,name));return respond(res,200,bytes,extname(name));
    }
    const asset={'/':'index.html','/index.html':'index.html','/app.mjs':'app.mjs',
-                '/controls.mjs':'controls.mjs','/style.css':'style.css','/basemesh.json':'basemesh.json','/morph-engine.mjs':'morph-engine.mjs'}[url.pathname];
+                '/controls.mjs':'controls.mjs','/preview.mjs':'preview.mjs','/style.css':'style.css','/basemesh.json':'basemesh.json','/morph-engine.mjs':'morph-engine.mjs'}[url.pathname];
    if(req.method==='GET'&&asset)return respond(res,200,await readFile(join(BASE,asset)),extname(asset));
    return json(res,404,{error:'Not found'});
   }catch(err){return json(res,400,{error:err.message})}

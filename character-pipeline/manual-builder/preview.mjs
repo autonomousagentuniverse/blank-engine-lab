@@ -145,6 +145,15 @@ export async function mountClayPreview(host,initial){
       const result=secondaryVertex(v,{ox,oy,oz,x,y:scaledY+((legLength-.475)*.14*gauss(py-.48,.16)),z:z+postureZ,py,front,coreW,scale});
       deformed[k]=result[0];deformed[k+1]=result[1];deformed[k+2]=result[2];
     }
+    // Adult macro morph targets shift scalp/sole vertices in native space.
+    // Normalize the FINISHED connected mesh so the height slider is a real
+    // measurable stature, rather than an approximate base-mesh scale.
+    let sole=Infinity,crown=-Infinity;
+    for(let i=1;i<deformed.length;i+=3){sole=Math.min(sole,deformed[i]);crown=Math.max(crown,deformed[i]);}
+    const actualHeight=crown-sole;
+    if(!Number.isFinite(actualHeight)||actualHeight<1)throw Error('Anatomical stature collapse');
+    const statureCorrection=height/actualHeight;
+    for(let i=1;i<deformed.length;i+=3)deformed[i]=(deformed[i]-sole)*statureCorrection;
     position.set(deformed);attribute.needsUpdate=true;
     geometry.computeVertexNormals();
     for(const e of eyes)e.geometry.computeVertexNormals();
@@ -207,6 +216,33 @@ export async function mountClayPreview(host,initial){
   }
   let lastValues=initial;
   function update(values){lastValues=values;morph(values);resize()}
+  // Single authoritative geometry snapshot: Blender builds these exact vertices,
+  // not a second independent or previously rejected procedural humanoid.
+  function snapshot(){
+    const round=(n)=>Math.round(n*1e6)/1e6;
+    return {
+      schema:'blank.anatomy.snapshot.v1',
+      source:'makehumancommunity/mpfb2:3af0cd5a2ffba072e93a34e5f6f494fdc4813ddf',
+      vertex_count:count,
+      body_indices:asset.body_indices,
+      eye_left_indices:asset.eye_left_indices,
+      eye_right_indices:asset.eye_right_indices,
+      position_xyz:Array.from(deformed,round),
+      hair_count:curls.count,
+      hair_matrices:Array.from(curls.instanceMatrix.array.slice(0,curls.count*16),round),
+      height_m:height,
+      resolved_materials:{
+        skin_color:'#'+skin.color.getHexString(),
+        skin_roughness:skin.roughness,
+        sclera_color:'#'+sclera.color.getHexString(),
+        iris_color:'#'+iris.color.getHexString(),
+        hair_color:'#'+hair.color.getHexString(),
+        world_color:'#'+scene.background.getHexString()
+      },
+      geometry_space:'Y_UP_METERS',
+      precision_m:0.000001
+    };
+  }
   function inspect(){let h=2166136261;for(let i=0;i<position.length;i+=3){h=Math.imul(h^Math.round(position[i]*1e6),16777619)>>>0;h=Math.imul(h^Math.round(position[i+1]*1e6),16777619)>>>0;h=Math.imul(h^Math.round(position[i+2]*1e6),16777619)>>>0;}return {shape:h.toString(16),skin:skin.color.getHexString(),roughness:skin.roughness,hair:hair.color.getHexString(),hairCount:curls.count,iris:iris.color.getHexString(),irisSize:irises[0].scale.x,instancesHash:[...curls.instanceMatrix.array.slice(0,Math.min(16,curls.instanceMatrix.array.length))].map(x=>Math.round(x*1e7)).join(','),sclera:sclera.color.getHexString(),irisX:irises[0].position.x,light:lights[1].intensity,background:scene.background.getHexString(),renderWidth:renderer.domElement.width,renderHeight:renderer.domElement.height,sex:lastValues['body.gender'],population:lastValues['appearance.population']}}
   let last=[0,0],drag=false,az=.12,el=.035,distance=3.45;
   canvas.addEventListener('pointerdown',e=>{drag=true;last=[e.clientX,e.clientY];canvas.setPointerCapture(e.pointerId)});
@@ -216,5 +252,5 @@ export async function mountClayPreview(host,initial){
   canvas.addEventListener('wheel',e=>{e.preventDefault();distance=clamp(distance*Math.exp(e.deltaY*.001),2.4,7);draw()},{passive:false});
   const ro=new ResizeObserver(resize);ro.observe(host);
   update(initial);
-  return {update,inspect,source:{name:'CC0 MakeHuman hm08 + six target morphs',vertices:count,faces:asset.body_indices.length/3,macros:macroTargets.length},dispose(){ro.disconnect();geometry.dispose();for(const e of eyes)e.geometry.dispose();irisSphere.dispose();curlGeometry.dispose();curls.dispose();skin.dispose();sclera.dispose();iris.dispose();pupil.dispose();hair.dispose();floor.geometry.dispose();floor.material.dispose();renderer.dispose()}};
+  return {update,inspect,snapshot,source:{name:'CC0 MakeHuman hm08 + six target morphs',vertices:count,faces:asset.body_indices.length/3,macros:macroTargets.length},dispose(){ro.disconnect();geometry.dispose();for(const e of eyes)e.geometry.dispose();irisSphere.dispose();curlGeometry.dispose();curls.dispose();skin.dispose();sclera.dispose();iris.dispose();pupil.dispose();hair.dispose();floor.geometry.dispose();floor.material.dispose();renderer.dispose()}};
 }

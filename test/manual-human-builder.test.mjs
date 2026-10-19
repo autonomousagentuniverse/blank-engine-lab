@@ -1,11 +1,29 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
+import {readFileSync} from 'node:fs';
+import {validateSnapshot} from '../character-pipeline/manual-builder/snapshot-validation.mjs';
 import {fileURLToPath} from 'node:url';
 import {dirname,join} from 'node:path';
 import {CONTROLS,DEFAULTS,SCHEMA,PRESET_ID,PRESET_NAME,PRESET_DESCRIPTION,defaultRequest,validateRequest} from '../character-pipeline/manual-builder/controls.mjs';
 import {createBuilderServer} from '../character-pipeline/manual-builder/server.mjs';
 const base=dirname(fileURLToPath(import.meta.url));
+const SOURCE='makehumancommunity/mpfb2:3af0cd5a2ffba072e93a34e5f6f494fdc4813ddf';
+const baseMesh=JSON.parse(readFileSync(join(base,'../character-pipeline/manual-builder/basemesh.json'),'utf8'));
+function canonicalFixture(){
+ const height=1.72;
+ return {schema:'blank.anatomy.snapshot.v1',source:SOURCE,geometry_space:'Y_UP_METERS',
+  precision_m:.000001,vertex_count:13524,height_m:height,
+  position_xyz:baseMesh.position_xyz.map((n,i)=>+(i%3===1?(n+8.1676)*height/16.6589:n*height/16.6589).toFixed(6)),
+  body_indices:baseMesh.body_indices,eye_left_indices:baseMesh.eye_left_indices,
+  eye_right_indices:baseMesh.eye_right_indices,
+  hair_count:0,hair_matrices:[],
+  resolved_materials:{skin_color:'#482a20',skin_roughness:.56,
+   sclera_color:'#dfd7cb',iris_color:'#281910',
+   hair_color:'#171210',world_color:'#474951'}
+ }
+}
+
 
 test('Every head-to-toe control is unique, bounded and given a valid starting value',()=>{
  assert.ok(CONTROLS.length>=80);
@@ -66,7 +84,7 @@ test('Local-only HTTP app accepts a complete rebuild spec and fails visibly if B
    headers:{'Content-Type':'application/json'},body:JSON.stringify({schema:SCHEMA,controls:{'body.hips':40}})});
   assert.equal(wrong.status,400);
   const start=await fetch(url+'/api/rebuild',{method:'POST',
-   headers:{'Content-Type':'application/json'},body:JSON.stringify(defaults)});
+   headers:{'Content-Type':'application/json'},body:JSON.stringify({...defaults,snapshot:canonicalFixture()})});
   assert.equal(start.status,202);
   const job=await start.json();assert.match(job.jobId,/^[0-9a-f-]{36}$/);
   let result;
@@ -101,7 +119,7 @@ test('live preview reads connected CC0 anatomy rather than a synthetic procedura
  assert.equal(asset.body_indices.length/3,26756);
  assert.match(app,/queuePreview\(\)/);
  assert.match(app,/previewUpdater\(values\)/);
- assert.match(app,/exportSpecification\(payload,'blank-human-anatomy-rebuild-request\.json'\)/);
+ assert.match(app,/exportSpecification\(payload,'blank-human-one-shot-replica\.json'\)/);
  assert.match(html,/id="clayViewport"/);
  assert.doesNotMatch(html,/id="empty"/);
  assert.match(game,/Human Anatomy Builder/);
@@ -136,4 +154,20 @@ test('Original target human preset loads as actual validated 93-control defaults
  assert.match(html,/id="presetName"/);
  assert.match(html,/id="presetDescription"/);
  assert.match(html,/Restore figure/);
+});
+
+test('Replica requires authentic immutable topology and has complete gender-independent Blender pipeline',async()=>{
+ const snapshot=canonicalFixture();
+ assert.equal(validateSnapshot(snapshot).vertex_count,13524);
+ assert.throws(()=>validateSnapshot({...snapshot,body_indices:[...snapshot.body_indices].reverse()}),/topology/);
+ assert.throws(()=>validateSnapshot({...snapshot,height_m:1.99}),/stature/);
+ assert.throws(()=>validateSnapshot({...snapshot,position_xyz:[Infinity,...snapshot.position_xyz.slice(1)]}),/Non-finite/);
+ const script=await readFile(join(base,'../character-pipeline/manual-builder/build_replica.py'),'utf8');
+ assert.match(script,/CANONICAL-CC0-MakeHuman-Body/);
+ assert.match(script,/max_blender_vertex_deviation_m/);
+ assert.match(script,/scene\['control_specification'\]/);
+ assert.doesNotMatch(script,/gender != \"feminine\"|population != \"african\"/);
+ const server=await readFile(join(base,'../character-pipeline/manual-builder/server.mjs'),'utf8');
+ assert.match(server,/validateSnapshot\(submitted.snapshot\)/);
+ assert.match(server,/build_replica.py/);
 });
