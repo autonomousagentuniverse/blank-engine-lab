@@ -33,6 +33,7 @@ const skinKey='blankbox-player-skin-v1';
 let selectedSkin=SKIN_NAMES.includes(localStorage.getItem(skinKey))?localStorage.getItem(skinKey):SKIN_NAMES[0];
 let avatarBytes=null,avatarMotionBytes=null,avatarGeneration=0,poseController=null,poseReach=0,poseReachTarget=null,poseReachRadius=0;
 let blenderAnatomyPlaytest=false;
+let lastAnatomyTelemetryAt=-1;
 let autoDemoRequested=false;
 function material(color, extra={}) { const m=new THREE.MeshStandardMaterial({color,roughness:.62,metalness:.26,...extra}); materials.push(m); return m; }
 function addMesh(geo,mat,parent=scene){ const mesh=new THREE.Mesh(geo,mat); parent.add(mesh); return mesh; }
@@ -226,6 +227,24 @@ function update(dt){
     poseController.update({actor,dt,groundProbe:(x,z,fromY)=>physicsWorld?.probeGround(x,z,fromY)??{y:0,normal:{x:0,y:1,z:0}},handTarget:poseReachTarget,handRadius:poseReachRadius,reach:poseReach});
     poseReach=Math.max(0,poseReach-dt*2.4);
   }
+  if(blenderAnatomyPlaytest&&t-lastAnatomyTelemetryAt>.18){
+    lastAnatomyTelemetryAt=t;
+    const el=$('anatomyMotionStatus');
+    const feet=poseController?.footState;
+    const speed=Math.hypot(actor.vx||0,actor.vz||0);
+    el.hidden=false;
+    el.dataset.motion=actor.motion;
+    el.dataset.x=actor.x.toFixed(4);
+    el.dataset.z=actor.z.toFixed(4);
+    el.dataset.grounded=String(actor.grounded);
+    el.dataset.speed=speed.toFixed(3);
+    el.dataset.plantedLeft=String(!!feet?.left?.planted);
+    el.dataset.plantedRight=String(!!feet?.right?.planted);
+    el.textContent='BLENDER PLAYTEST · '+actor.motion.toUpperCase()+
+      ' · '+speed.toFixed(2)+' world units/s · '+(actor.grounded?'GROUNDED':'AIRBORNE')+
+      ' · planted L/R: '+(feet?.left?.planted?'yes':'no')+'/'+(feet?.right?.planted?'yes':'no')+
+      ' · x:'+actor.x.toFixed(2)+' z:'+actor.z.toFixed(2);
+  }
   if(physicsWorld){
     const crates=physicsWorld.getCrates();
     crateMeshes.forEach((mesh,i)=>{const body=crates[i];if(!body)return;
@@ -398,7 +417,7 @@ $('runBtn').onclick=()=>applyPrompt($('prompt').value);
 $('prompt').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();applyPrompt(e.target.value);}});
 document.querySelectorAll('[data-command]').forEach(x=>x.addEventListener('click',()=>applyPrompt(x.dataset.command)));
 $('dayBtn').onclick=()=>applyPrompt(spec.time==='night'?'Make it daytime':'Make it nighttime');
-$('resetBtn').onclick=()=>{actor=createActor(world.spawn.x,world.spawn.z);if(physicsWorld)physicsWorld.teleport(actor.x,0,actor.z);playerPos.set(actor.x,actor.y,actor.z);physicsAccum=0;cameraYaw=.45;cameraPitch=.32;cameraDistance=16;poseController?.reset();setStatus('Player and physics body reset. Quest progress retained.');};
+$('resetBtn').onclick=()=>{actor=createActor(world.spawn.x,world.spawn.z);if(physicsWorld)physicsWorld.teleport(actor.x,0,actor.z);playerPos.set(actor.x,actor.y,actor.z);physicsAccum=0;cameraYaw=.45;cameraPitch=blenderAnatomyPlaytest?.22:.32;cameraDistance=blenderAnatomyPlaytest?8.5:16;poseController?.reset();setStatus('Player and physics body reset. Quest progress retained.');};
 $('restartQuestBtn').onclick=()=>{clearProgress();progress=startQuest(quest);refreshQuestHUD();setStatus('Mission restarted.');};
 $('interactBtn').onclick=interact;
 function discardAvatarRig(rig){
@@ -482,6 +501,8 @@ async function loadBlenderHumanFromJob(){
   await loadAvatarBytes(bytes);
   if(avatarBytes!==bytes||characterRig?.skinnedCount<1)throw Error('GLB import was not accepted');
   blenderAnatomyPlaytest=true;
+  cameraDistance=8.5;cameraPitch=.22;
+  $('anatomyMotionStatus').hidden=false;
   const walk=characterRig.clipSources.walk,run=characterRig.clipSources.run;
   const summary=' · BLENDER PLAYTEST · Walk: '+walk+' · Run: '+run+' · contact IK available';
   $('avatarStatus').textContent+=summary;
@@ -570,4 +591,13 @@ $('inspectWorldCapture').onclick=()=>{
  },'image/png');
 };
 
-try { init(); if(!localStorage.getItem('blankbox-game-v1'))loadDemo(true); }catch(e){$('webglError').hidden=false;$('webglError').textContent='3D renderer could not initialize: '+e.message;setStatus('Rendering failed: '+e.message,true);}
+try {
+ init();
+ void (async()=>{
+  if(!localStorage.getItem('blankbox-game-v1'))await loadDemo(true);
+  await loadBlenderHumanFromJob();
+ })().catch(e=>{
+  $('avatarStatus').textContent='Anatomy startup error: '+e.message;
+  setStatus('Blender play-test could not initialize: '+e.message,true);
+ });
+}catch(e){$('webglError').hidden=false;$('webglError').textContent='3D renderer could not initialize: '+e.message;setStatus('Rendering failed: '+e.message,true);}

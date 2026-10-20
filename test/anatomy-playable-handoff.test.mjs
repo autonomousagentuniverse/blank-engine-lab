@@ -30,6 +30,10 @@ test('Playable handoff uses temporary verified job URL, not simulated animation 
  assert.match(api,/Bearer '\+token/);
  assert.match(ui,/Play-test this character in Blank Engine/);
  assert.match(editor,/loadBlenderHumanFromJob\(\)/);
+ assert.match(editor,/await loadBlenderHumanFromJob\(\)/,'Startup must invoke real Blender handoff, not only declare function');
+ assert.match(editor,/await loadDemo\(true\)/,'Wait for async world demo rebuild before importing avatar');
+ assert.match(editor,/anatomyMotionStatus/,'Expose actual actor state for mechanical validation');
+ assert.match(text('index.html'),/id="anatomyMotionStatus"/,'Browser shows playable character telemetry');
  assert.match(editor,/Blender game import FAILED/);
  assert.match(editor,/Walk: '\+walk/);
  assert.match(editor,/blenderAnatomyPlaytest/);
