@@ -1265,3 +1265,15 @@ replace all locomotion from scratch was too broad: reuse this infrastructure.
 - Deployed to a READY experimental Vercel preview at commit a2a9f95aa683d9ca4059178f362c094a85409863. Production unchanged. Hosted protected UI has not been independently clicked end to end.
 - Human-like walking remains NOT ACCEPTED: dark/small night-scene avatar, imperfect joint/foot mechanics, incomplete reference-based gait and retarget validation. The prior release-blocking locomotion gate is still active.
 - Full evidence, implementation limitations and next acceptance criteria: docs/anatomy-playtest-verified-20261019.md.
+
+
+### Phase 44 — 2026-10-20 — Fix Blender build rejection from real browser anatomy [EXPERIMENTAL]
+
+- User reported failed Blender generation. Hosted job-specific Vercel logs remained inaccessible (403), so the exact failed request could not be recovered. Reproduced a concrete build-blocking defect using **the old rig on real MakeHuman morph snapshots exported by the browser**, not synthetic tests: pre-fix Walk edge strain exceeded the strict 4.35× gate on default Afro 6.12×, short 10.12×, wide-hips 6.12×, masculine 9.96×, and tall 6.12×.
+- Root cause: an X/Z-only weight mask erroneously assigned *thigh* influences to low-hanging hand vertices near the pelvis, with an abrupt core/leg membership boundary. Previous artificial fixtures concealed the defect. A separate real-mesh probe reported hand-to-thigh contamination in the old rig.
+- Replaced it with continuous shoulder/elbow weighting, centerline-aware pelvis/thigh blending, explicit hand exclusion from thigh bones and gentler fight arm angles. Retained the 4.35× evaluated-mesh rejection gate.
+- All five actual browser morphology inputs now pass the same sampled Blender gait/skin checks with zero remote hand-to-thigh influence. Default: Walk 2.619×, Jog 3.162×, Run 3.631×, Fight 1.813×. New browser→Blender regression runner and Python skin probe included.
+- Full real Blender one-shot default with 286 hair instances, requested 960px stills and 24 Cycles samples finished all nine H.264 animations plus editable .blend/animated GLB/report in ~11min16s, proving the original project can build completely on the tested preset.
+- Worker render limit raised from 15 to 26min (within the 30min Vercel Sandbox lifetime); facial previews capped at 16 denoised Cycles samples while stills retain requested quality. Worker now surfaces explicit Blender failure diagnostics/traceback; UI displays exact error, phase and log.
+- Node suite passed 22/22. This is **a source/test/preview-worker correction**, not proof that the specific protected hosted job was fixed; it needs a fresh authenticated Generate test. No claims of natural locomotion realism or completed full game.
+- Evidence: docs/anatomy-blender-build-failure-20261020.md.

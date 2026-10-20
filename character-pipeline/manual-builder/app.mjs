@@ -311,7 +311,13 @@ async function check(id){
    clearInterval(poll);poll=null;activeJob=null;build.disabled=false;
    localStorage.removeItem(LAST_JOB_KEY);$('#resumeBuild').hidden=true;
    if(job.status==='complete'){showResults(job);dirty=0;note();}
-   else{$('#report').textContent='Blender failed: '+job.error+'. See the logs for the exact error.';status('BUILD FAILED')}
+   else{
+    $('#report').textContent='Blender failed: '+(job.error||'Unknown error')+'\nWorker details:\n'+(job.log||'No Blender log available');
+    $('#buildProgressPanel').hidden=false;
+    $('#buildProgressDetail').textContent='Build failed at '+(job.progress?.phase||'Blender')+
+      ' after '+(job.progress?.renderedFrames??0)+' frames: '+(job.error||'See log below');
+    status('BUILD FAILED');
+   }
   }
  }catch(err){
   checkFailures++;

@@ -106,11 +106,11 @@ def assign_weights(body,rig,height):
             add('Pelvis',1)
 
         # Arm membership is spatially gated, not cut off at the hand's Z.
-        arm_factor=mix(.115,.193,xn)*mix(.47,.53,zn)*(1-mix(.790,.854,zn))
+        arm_factor=mix(.095,.235,xn)*mix(.47,.53,zn)*(1-mix(.790,.854,zn))
         if arm_factor>1e-6:
             t=((xn-shoulder[0])*arm_dx+(zn-shoulder[1])*arm_dz)/arm_sq
             collar=1-mix(-.06,.16,t)
-            elbow=mix(.41,.59,t)
+            elbow=mix(.25,.75,t)
             fingers=mix(.855,1.075,t)
             limb={
                 'Clavicle.'+side:(1-fingers)*(1-elbow)*collar,
@@ -123,8 +123,15 @@ def assign_weights(body,rig,height):
 
         # Broad, soft pelvis/thigh blending prevents a crease at the groin.
         # At low Z the two legs are physically separated, including toes.
-        leg_factor=(1-mix(.405,.585,zn))
-        if zn>.40:leg_factor*=mix(.005,.070,xn)
+        leg_factor=1-mix(.34,.585,zn)
+        # At the crotch the two thighs blend into the *pelvis*. The old
+        # "if zn>.40" introduced a discontinuous full-Thigh->mostly-Pelvis
+        # switch across adjacent vertices: huge tearing during Run.
+        center_mask=mix(.005,.070,xn)
+        leg_factor*=1-mix(.30,.46,zn)*(1-center_mask)
+        # A low-hanging hand may share the hip's Z level. Never mix remote
+        # arm/hand vertices with leg bones because the same height overlaps.
+        leg_factor*=1-mix(.165,.24,xn)*mix(.37,.47,zn)
         if leg_factor>1e-6:
             if zn>=.275:
                 p=mix(.275,.345,zn)
@@ -370,10 +377,10 @@ def create_animations(rig,body):
         fight.append({
           'Chest':(.04*math.sin(t*2),0,.13*math.sin(t)),
           'Pelvis':(0,0,-.05*math.sin(t)),
-          'UpperArm.L':(-.45-.55*punch_l,0,.22),
-          'UpperArm.R':(-.45-.55*punch_r,0,-.22),
-          'Forearm.L':(-.75+.5*punch_l,0,0),
-          'Forearm.R':(-.75+.5*punch_r,0,0),
+          'UpperArm.L':(-.24-.34*punch_l,0,.16),
+          'UpperArm.R':(-.24-.34*punch_r,0,-.16),
+          'Forearm.L':(-.50+.28*punch_l,0,0),
+          'Forearm.R':(-.50+.28*punch_r,0,0),
           'Thigh.L':(.08*math.sin(t),0,0),
           'Thigh.R':(-.08*math.sin(t),0,0),
           'RootLocation':(0,0,.01*math.sin(t*2))
@@ -527,12 +534,17 @@ def render_animation_previews(rig,body,out,controls,selected=None):
         scene.render.resolution_y=min(640,int(controls['render.resolution']))
         scene.render.resolution_x=2*round(scene.render.resolution_y*.72/2)
         scene.cycles.samples=max(12,min(24,int(controls['render.samples'])))
+        body_preview_samples=scene.cycles.samples
         scene.cycles.use_denoising=True
         for layer in scene.view_layers:layer.cycles.use_denoising=True
         scene.frame_start=1;scene.frame_end=49;scene.frame_step=3
         scene.render.fps=12;scene.render.image_settings.file_format='PNG'
         clip_order=sorted(PREVIEW_CLIPS,key=lambda pair:0 if pair[0]==selected else 1)
         for kind,clip in clip_order:
+            # Face closeups with dense hair take far longer per frame.
+            # Keep six stills at the requested sample count and render
+            # denoised face motion at up to 16 spp, preserving 640p.
+            scene.cycles.samples=min(body_preview_samples,16) if kind in FACE_KEYS else body_preview_samples
             scene.camera=bpy.data.objects['Camera-Face-Macro' if kind in FACE_KEYS else 'Camera-Front']
             for track in tracks:track.mute=track.name!=clip
             for track in face_tracks:track.mute=track.name!=clip

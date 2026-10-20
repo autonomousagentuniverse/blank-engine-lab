@@ -70,11 +70,20 @@ async function runOne(job,blenderBin){
     lineTail=combined.slice(-90);
    };
    child.stdout.on('data',append);child.stderr.on('data',append);
-   const timeout=setTimeout(()=>{timedOut=true;child.kill('SIGKILL')},15*60*1000);
+   const timeout=setTimeout(()=>{timedOut=true;child.kill('SIGKILL')},26*60*1000);
    child.on('error',err=>{if(!done){done=true;clearTimeout(timeout);fail(err)}});
    child.on('close',(code,signal)=>{
     if(done)return;done=true;clearTimeout(timeout);
-    if(code===0)ok();else fail(Error(timedOut?'Blender exceeded the 15-minute rendering limit. Try lower Cycles samples or image resolution.':'Blender '+(signal||'exit '+code)));
+    if(code===0)ok();else{
+     // Preserve a concise, sanitized Blender traceback. Generic exit 1
+     // previously hid a morph-dependent skinning/QA failure from the user.
+     const diagnostic=job.log.split(/\r?\n/).reverse()
+       .map(line=>line.trim())
+       .find(line=>/^(?:RuntimeError|ValueError|KeyError|TypeError|AssertionError|ANATOMY_REPLICA_FAILED):/.test(line));
+     const explanation=diagnostic?': '+diagnostic.slice(0,260):'';
+     fail(Error(timedOut?'Blender exceeded the 26-minute rendering limit. Try lower Cycles samples or image resolution.':
+       'Blender '+(signal||'exit '+code)+explanation));
+    }
    });
   });
   const raw=JSON.parse(await readFile(join(job.output,'report.json'),'utf8'));

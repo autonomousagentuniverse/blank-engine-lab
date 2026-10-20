@@ -358,3 +358,57 @@ test('Skin rig assigns hands by shoulder-to-wrist joint axis and rejects excessi
  assert.match(app,/final biomechanics\/quality evidence pending/);
  assert.match(app,/Skin deformation QA:/);
 });
+
+
+test('Real browser morphology skinning is exclusive and build errors keep Blender traceback',async()=>{
+ const rig=await readFile(join(base,'../character-pipeline/manual-builder/animation_rig.py'),'utf8');
+ const server=await readFile(join(base,'../character-pipeline/manual-builder/server.mjs'),'utf8');
+ const app=await readFile(join(base,'../character-pipeline/manual-builder/app.mjs'),'utf8');
+ const probe=await readFile(join(base,'anatomy-browser-skin-probe.py'),'utf8');
+ const stress=await readFile(join(base,'../scripts/anatomy-browser-build-regression.mjs'),'utf8');
+ assert.match(rig,/leg_factor\*=1-mix\(\.165,\.24,xn\)/,'Exclude remote hands from thigh weights');
+ assert.match(rig,/elbow=mix\(\.25,\.75,t\)/,'Smooth elbow transitions');
+ assert.match(rig,/arm_factor=mix\(\.095,\.235,xn\)/,'Smooth shoulder transitions');
+ assert.match(rig,/body_preview_samples/,'Budget face motion previews safely');
+ assert.match(rig,/kind in FACE_KEYS else body_preview_samples/);
+ assert.match(server,/26\*60\*1000/);
+ assert.ok(server.includes("(?:RuntimeError|ValueError|KeyError|TypeError|AssertionError|ANATOMY_REPLICA_FAILED)"));
+ assert.match(server,/job\.log\.split/);
+ assert.match(app,/Worker details:/);
+ assert.match(probe,/hand_thigh_contamination/);
+ assert.match(probe,/audit_skin_strain\(rig,body,limit=4\.35\)/);
+ assert.match(stress,/REAL_BROWSER_MORPH_BLENDER_PASS/);
+});
+
+
+test('Failed Blender jobs preserve the real error instead of generic exit 1',async()=>{
+ const {mkdtemp,writeFile,chmod,rm}=await import('node:fs/promises');
+ const {tmpdir}=await import('node:os');
+ const dir=await mkdtemp(join(tmpdir(),'blank-blender-error-qa-'));
+ const fake=join(dir,'blender-stub');
+ await writeFile(fake,'#!/bin/sh\\necho "RuntimeError: Walk_InPlace skin strain 6.12x exceeds 4.35x; reject torn anatomy" >&2\\nexit 1\\n'.replaceAll('\\n','\n'));
+ await chmod(fake,0o700);
+ const server=createBuilderServer({blenderBin:fake});
+ await new Promise(done=>server.listen(0,'127.0.0.1',done));
+ try{
+  const url='http://127.0.0.1:'+server.address().port;
+  const response=await fetch(url+'/api/rebuild',{
+   method:'POST',headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({...defaultRequest(),snapshot:canonicalFixture(),selectedAnimation:'walk'})
+  });
+  assert.equal(response.status,202);
+  const {jobId}=await response.json();
+  let job;
+  for(let i=0;i<100;i++){
+   job=await (await fetch(url+'/api/jobs/'+jobId)).json();
+   if(job.status==='failed')break;
+   await new Promise(done=>setTimeout(done,30));
+  }
+  assert.equal(job.status,'failed');
+  assert.match(job.error,/RuntimeError: Walk_InPlace skin strain 6\.12x/);
+  assert.match(job.log,/reject torn anatomy/);
+ }finally{
+  await new Promise(done=>server.close(done));
+  await rm(dir,{recursive:true,force:true});
+ }
+});
